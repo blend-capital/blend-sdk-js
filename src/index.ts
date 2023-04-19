@@ -1,10 +1,5 @@
-import { Address } from 'stellar-base';
+export * from './backstop/backstop_contract';
+export * from './pool/pool_contract';
+export * from './token/token_contract';
 
-export class TestObject extends Address {
-  public objNumber: number;
-
-  constructor(num: number, id: string) {
-    super(id);
-    this.objNumber = num;
-  }
-}
+export * as scval_converter from './scval_converter';

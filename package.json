@@ -36,6 +36,7 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
+    "bignumber.js": "^9.1.1",
     "stellar-base": "^8.2.2-soroban.12"
   }
 }
