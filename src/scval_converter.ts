@@ -9,8 +9,6 @@ export function bigintToI128(value: bigint): xdr.ScVal {
   const buf = Buffer.alloc(16);
   buf.write(hex, 16 - Math.ceil(hex.length / 2), 'hex'); // BE
 
-  // const is_i128_min = hex == '80000000000000000000000000000000';
-
   // perform two's compliment if negative and i128:MIN is not passed
   if (value < 0) {
     // throw if MSB bit is 1 and is not i128:MIN
@@ -66,8 +64,20 @@ export function scvalToBigInt(scval: xdr.ScVal): bigint {
   }
 }
 
+export function scvalToString(scval: xdr.ScVal): string {
+  switch (scval.switch()) {
+    case xdr.ScValType.scvBytes(): {
+      const buffer = scval.bytes();
+      return buffer.toString('hex');
+    }
+    default: {
+      throw new Error(`Invalid type for scvalToString: ${scval?.switch().name}`);
+    }
+  }
+}
+
 /**
- * Perform two's compliment on the input buffer by reference
+ * Perform BE two's compliment on the input buffer by reference
  */
 function twosComplimentInPlace(buf: Buffer, bytes: number) {
   // iterate from LSByte first to carry the +1 if necessary

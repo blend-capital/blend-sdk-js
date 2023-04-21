@@ -13,7 +13,6 @@
     ],
     "ignorePatterns": ["dist"],
     "rules": {
-        "no-console": 1,
         "prettier/prettier": 2
     }
 }
