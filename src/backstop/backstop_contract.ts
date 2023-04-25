@@ -73,9 +73,57 @@ export class BackstopContract {
     );
   }
 
-  /***** DataKey *****/
+  /*========== Data Keys ==========*/
+
+  /***** Backstop ******/
 
   public datakey_RewardZone(): xdr.ScVal {
     return xdr.ScVal.scvVec([xdr.ScVal.scvSymbol('RewardZone')]);
   }
+
+  /***** Pool ******/
+
+  public datakey_PoolToken(pool_id: string): xdr.ScVal {
+    return xdr.ScVal.scvVec([
+      xdr.ScVal.scvSymbol('PoolTkn'),
+      xdr.ScVal.scvBytes(Buffer.from(pool_id, 'hex')),
+    ]);
+  }
+
+  public datakey_PoolShares(pool_id: string): xdr.ScVal {
+    return xdr.ScVal.scvVec([
+      xdr.ScVal.scvSymbol('PoolShares'),
+      xdr.ScVal.scvBytes(Buffer.from(pool_id, 'hex')),
+    ]);
+  }
+
+  public datakey_PoolQ4W(pool_id: string): xdr.ScVal {
+    return xdr.ScVal.scvVec([
+      xdr.ScVal.scvSymbol('PoolQ4W'),
+      xdr.ScVal.scvBytes(Buffer.from(pool_id, 'hex')),
+    ]);
+  }
+
+  /***** User ******/
+
+  public datakey_UserShares(pool_id: string, user: Address): xdr.ScVal {
+    return xdr.ScVal.scvVec([xdr.ScVal.scvSymbol('Shares'), getPoolUserKey(pool_id, user)]);
+  }
+
+  public datakey_UserQ4W(pool_id: string, user: Address): xdr.ScVal {
+    return xdr.ScVal.scvVec([xdr.ScVal.scvSymbol('Q4W'), getPoolUserKey(pool_id, user)]);
+  }
+}
+
+function getPoolUserKey(pool_id: string, user: Address): xdr.ScVal {
+  return xdr.ScVal.scvMap([
+    new xdr.ScMapEntry({
+      key: xdr.ScVal.scvSymbol('pool'),
+      val: xdr.ScVal.scvBytes(Buffer.from(pool_id, 'hex')),
+    }),
+    new xdr.ScMapEntry({
+      key: xdr.ScVal.scvSymbol('user'),
+      val: user.toScVal(),
+    }),
+  ]);
 }

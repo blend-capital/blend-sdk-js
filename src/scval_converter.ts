@@ -64,6 +64,24 @@ export function scvalToBigInt(scval: xdr.ScVal): bigint {
   }
 }
 
+export function scvalToNumber(scval: xdr.ScVal): number {
+  switch (scval.switch()) {
+    case xdr.ScValType.scvU64(): {
+      const parts = scval.u64();
+
+      // build BE buffer
+      const buf = Buffer.alloc(8);
+      buf.writeUInt32BE(parts.low, 4);
+      buf.writeUInt32BE(parts.high, 0);
+
+      return parseInt(buf.toString('hex'), 16);
+    }
+    default: {
+      throw new Error(`Invalid type for scvalToNumber: ${scval?.switch().name}`);
+    }
+  }
+}
+
 export function scvalToString(scval: xdr.ScVal): string {
   switch (scval.switch()) {
     case xdr.ScValType.scvBytes(): {
