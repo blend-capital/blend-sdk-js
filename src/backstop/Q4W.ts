@@ -10,7 +10,7 @@ export class Q4W {
     this.exp = exp;
   }
 
-  static fromXDR(xdr_string: string): Q4W[] {
+  static fromContractDataXDR(xdr_string: string): Q4W[] {
     const q4w: Q4W[] = [];
 
     const data_entry = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64').contractData();

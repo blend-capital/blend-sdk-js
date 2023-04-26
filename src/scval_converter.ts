@@ -76,6 +76,9 @@ export function scvalToNumber(scval: xdr.ScVal): number {
 
       return parseInt(buf.toString('hex'), 16);
     }
+    case xdr.ScValType.scvU32(): {
+      return scval.u32();
+    }
     default: {
       throw new Error(`Invalid type for scvalToNumber: ${scval?.switch().name}`);
     }
