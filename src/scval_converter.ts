@@ -1,5 +1,9 @@
 import { Address, xdr } from 'stellar-base';
 
+export function toScVal(xdr_string: string): xdr.ScVal {
+  return xdr.ScVal.fromXDR(xdr_string, 'base64');
+}
+
 export function bigintToI128(value: bigint): xdr.ScVal {
   let hex = value.toString(16).replace(/^-/, '');
   if (hex.length > 32) {
