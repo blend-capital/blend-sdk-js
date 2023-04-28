@@ -1,10 +1,19 @@
 import { xdr } from 'stellar-base';
 import { scvalToBigInt, scvalToNumber, scvalToString } from '../scval_converter';
 
+export type EstReserveData = {
+  b_rate: number;
+  d_rate: number;
+  total_supply: number;
+  total_liabilities: number;
+  cur_apy: number;
+  cur_util: number;
+};
+
 export class Reserve {
   constructor(
     public asset_id: string,
-    public name: string,
+    public symbol: string,
     public pool_tokens: bigint,
     public config: ReserveConfig,
     public data: ReserveData
@@ -19,17 +28,7 @@ export class Reserve {
    * @param block - The block number to accrue to, or undefined to remain at the Reserve's last block
    * @returns The estimated b_rate, d_rate, and cur_apy (as decimal)
    */
-  public estimateData(
-    backstop_take_rate: number,
-    block: number | undefined
-  ): {
-    b_rate: number;
-    d_rate: number;
-    total_supply: number;
-    total_liabilities: number;
-    cur_apy: number;
-    cur_util: number;
-  } {
+  public estimateData(backstop_take_rate: number, block: number | undefined): EstReserveData {
     const base_rate = 0.01; // base rate
     let d_rate = Number(this.data.d_rate / BigInt(1e9));
     let total_liabilities = Number(this.data.d_supply / BigInt(1e7)) * d_rate;
@@ -133,10 +132,10 @@ export class ReserveConfig {
           index = scvalToNumber(map_entry.val());
           break;
         case 'b_token':
-          b_token_id = scvalToString(map_entry.val());
+          b_token_id = scvalToString(map_entry.val(), 'hex');
           break;
         case 'd_token':
-          d_token_id = scvalToString(map_entry.val());
+          d_token_id = scvalToString(map_entry.val(), 'hex');
           break;
         case 'decimals':
           decimals = scvalToNumber(map_entry.val());

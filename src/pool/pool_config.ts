@@ -22,7 +22,7 @@ export class PoolConfig {
           bstop_rate = scvalToNumber(map_entry.val());
           break;
         case 'oracle':
-          oracle = scvalToString(map_entry.val());
+          oracle = scvalToString(map_entry.val(), 'hex');
           break;
         case 'status':
           status = scvalToNumber(map_entry.val());
