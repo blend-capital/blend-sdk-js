@@ -30,6 +30,13 @@ export function toBigInt(xdr_string: string): bigint {
   return scval_converter.scvalToBigInt(data_val);
 }
 
+// Expects val to an ScVal that can be converted to number
+export function toNumber(xdr_string: string): number {
+  const data_entry = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64').contractData();
+  const data_val = data_entry.val();
+  return scval_converter.scvalToNumber(data_val);
+}
+
 // Expects val to be directly converted to a BigInt or a map with
 export function toTokenBalance(xdr_string: string): bigint {
   const data_entry = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64').contractData();

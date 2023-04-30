@@ -88,8 +88,8 @@ export function scvalToNumber(scval: xdr.ScVal): number {
 
       // build BE buffer
       const buf = Buffer.alloc(8);
-      buf.writeUInt32BE(parts.low, 4);
-      buf.writeUInt32BE(parts.high, 0);
+      buf.writeInt32BE(parts.low, 4);
+      buf.writeInt32BE(parts.high, 0);
 
       return parseInt(buf.toString('hex'), 16);
     }

@@ -25,6 +25,14 @@ test('convert to string -> contract data entry with symbol', () => {
   expect(result).toEqual('mockPool');
 });
 
+test('convert to number -> contract data entry with u64', () => {
+  const to_convert =
+    'AAAABpgZaAkf/HOfaD5Zs3OmCNQbq0ByBvKxRqDXx+U5KmmiAAAAEAAAAAEAAAACAAAADwAAAAZQcmljZXMAAAAAAA0AAAAgFPyI3Hkqm0aTHohxaN+sQULdc1cWVtAxJqeME2R666AAAAAFAAAALpDt0AA=';
+
+  const result = converter.toNumber(to_convert);
+  expect(result).toEqual(20_000_0000000);
+});
+
 test('convert to bigint -> SAC token balance', () => {
   const to_convert =
     'AAAABuhxNpmeTt/8jwCz4Vg4ksnbSVILv8XhkjxQ/RtGcchCAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABMAAAABsgXrrvCWGzreCq2kCGG16qzl/hO6WprtqWySaGohuQwAAAARAAAAAQAAAAMAAAAPAAAABmFtb3VudAAAAAAACgAAAASoF8gAAAAAAAAAAAAAAAAPAAAACmF1dGhvcml6ZWQAAAAAAAAAAAABAAAADwAAAAhjbGF3YmFjawAAAAAAAAAA';

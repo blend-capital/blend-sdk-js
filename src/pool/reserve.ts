@@ -30,18 +30,17 @@ export class Reserve {
    */
   public estimateData(backstop_take_rate: number, block: number | undefined): EstReserveData {
     const base_rate = 0.01; // base rate
-    let d_rate = Number(this.data.d_rate / BigInt(1e9));
-    let total_liabilities = Number(this.data.d_supply / BigInt(1e7)) * d_rate;
+    let d_rate = Number(this.data.d_rate) / 1e9;
+    let total_liabilities = (Number(this.data.d_supply) / 1e7) * d_rate;
     let b_rate =
       this.data.b_supply == BigInt(0)
         ? 1
-        : (total_liabilities + Number(this.pool_tokens / BigInt(1e7))) /
-          Number(this.data.b_supply / BigInt(1e7));
-    let total_supply = Number(this.data.b_supply / BigInt(1e7)) * b_rate;
+        : (total_liabilities + Number(this.pool_tokens) / 1e7) / (Number(this.data.b_supply) / 1e7);
+    let total_supply = (Number(this.data.b_supply) / 1e7) * b_rate;
 
     if (total_supply != 0) {
       let cur_apy: number;
-      const cur_ir_mod = Number(this.data.ir_mod / BigInt(1e9));
+      const cur_ir_mod = Number(this.data.ir_mod) / 1e9;
       const cur_util = total_liabilities / total_supply;
       const target_util = this.config.util / 1e7;
       if (cur_util <= target_util) {
