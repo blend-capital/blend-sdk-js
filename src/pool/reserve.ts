@@ -25,10 +25,10 @@ export class Reserve {
    * Translated from: https://github.com/blend-capital/blend-contracts/blob/main/lending-pool/src/reserve.rs#L113
    *
    * @param backstop_take_rate - The block number to accrue to, or undefined to remain at the Reserve's last block
-   * @param block - The block number to accrue to, or undefined to remain at the Reserve's last block
+   * @param timestamp - The timestamp to accrue to, or undefined to remain at the Reserve's last block
    * @returns The estimated b_rate, d_rate, and cur_apy (as decimal)
    */
-  public estimateData(backstop_take_rate: number, block: number | undefined): EstReserveData {
+  public estimateData(backstop_take_rate: number, timestamp: number | undefined): EstReserveData {
     const base_rate = 0.01; // base rate
     let d_rate = Number(this.data.d_rate) / 1e9;
     let total_liabilities = (Number(this.data.d_supply) / 1e7) * d_rate;
@@ -59,7 +59,7 @@ export class Reserve {
       }
 
       const accrual =
-        ((block != undefined ? block - this.data.last_block : 0) / 6307200) * cur_apy + 1;
+        ((timestamp != undefined ? timestamp - this.data.last_time : 0) / 31536000) * cur_apy + 1;
       if (backstop_take_rate > 0) {
         const b_accrual = (accrual - 1) * cur_util;
         total_supply *= b_accrual * backstop_take_rate + 1;
@@ -209,7 +209,7 @@ export class ReserveData {
     public ir_mod: bigint,
     public b_supply: bigint,
     public d_supply: bigint,
-    public last_block: number
+    public last_time: number
   ) {}
 
   static fromContractDataXDR(xdr_string: string): ReserveData {
@@ -225,7 +225,7 @@ export class ReserveData {
     let ir_mod: bigint | undefined;
     let b_supply: bigint | undefined;
     let d_supply: bigint | undefined;
-    let last_block: number | undefined;
+    let last_time: number | undefined;
     for (const map_entry of data_entry_map) {
       switch (map_entry?.key()?.sym()?.toString()) {
         case 'd_rate':
@@ -240,8 +240,8 @@ export class ReserveData {
         case 'd_supply':
           d_supply = scvalToBigInt(map_entry.val());
           break;
-        case 'last_block':
-          last_block = scvalToNumber(map_entry.val());
+        case 'last_time':
+          last_time = scvalToNumber(map_entry.val());
           break;
         default:
           throw Error(
@@ -255,11 +255,11 @@ export class ReserveData {
       ir_mod == undefined ||
       b_supply == undefined ||
       d_supply == undefined ||
-      last_block == undefined
+      last_time == undefined
     ) {
       throw Error('scvMap value malformed');
     }
 
-    return new ReserveData(d_rate, ir_mod, b_supply, d_supply, last_block);
+    return new ReserveData(d_rate, ir_mod, b_supply, d_supply, last_time);
   }
 }
