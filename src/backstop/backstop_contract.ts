@@ -40,7 +40,7 @@ export class BackstopContract {
     amount: bigint
   ): xdr.Operation<Operation.InvokeHostFunction> {
     return this._contract.call(
-      'q_withdraw',
+      'queue_withdrawal',
       from.toScVal(),
       xdr.ScVal.scvBytes(Buffer.from(pool_id, 'hex')),
       scval_converter.bigintToI128(amount)
@@ -53,7 +53,7 @@ export class BackstopContract {
     amount: bigint
   ): xdr.Operation<Operation.InvokeHostFunction> {
     return this._contract.call(
-      'dequeue_wd',
+      'dequeue_withdrawal',
       from.toScVal(),
       xdr.ScVal.scvBytes(Buffer.from(pool_id, 'hex')),
       scval_converter.bigintToI128(amount)

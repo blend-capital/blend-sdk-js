@@ -25,30 +25,12 @@ export class TokenContract {
     );
   }
 
-  public mint(
-    admin: Address,
-    to: Address,
-    amount: bigint
-  ): xdr.Operation<Operation.InvokeHostFunction> {
-    return this._contract.call(
-      'mint',
-      admin.toScVal(),
-      to.toScVal(),
-      scval_converter.bigintToI128(amount)
-    );
+  public mint(to: Address, amount: bigint): xdr.Operation<Operation.InvokeHostFunction> {
+    return this._contract.call('mint', to.toScVal(), scval_converter.bigintToI128(amount));
   }
 
-  public clawback(
-    admin: Address,
-    from: Address,
-    amount: bigint
-  ): xdr.Operation<Operation.InvokeHostFunction> {
-    return this._contract.call(
-      'clawback',
-      admin.toScVal(),
-      from.toScVal(),
-      scval_converter.bigintToI128(amount)
-    );
+  public clawback(from: Address, amount: bigint): xdr.Operation<Operation.InvokeHostFunction> {
+    return this._contract.call('clawback', from.toScVal(), scval_converter.bigintToI128(amount));
   }
 
   public incrAllowance(
@@ -57,7 +39,7 @@ export class TokenContract {
     amount: bigint
   ): xdr.Operation<Operation.InvokeHostFunction> {
     return this._contract.call(
-      'incr_allow',
+      'increase_allowance',
       from.toScVal(),
       spender.toScVal(),
       scval_converter.bigintToI128(amount)
@@ -70,7 +52,7 @@ export class TokenContract {
     amount: bigint
   ): xdr.Operation<Operation.InvokeHostFunction> {
     return this._contract.call(
-      'decr_allow',
+      'decrease_allowance',
       from.toScVal(),
       spender.toScVal(),
       scval_converter.bigintToI128(amount)
@@ -83,7 +65,7 @@ export class TokenContract {
     amount: bigint
   ): xdr.Operation<Operation.InvokeHostFunction> {
     return this._contract.call(
-      'xfer',
+      'transfer',
       from.toScVal(),
       to.toScVal(),
       scval_converter.bigintToI128(amount)

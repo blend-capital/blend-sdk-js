@@ -10,31 +10,38 @@ test('convert bigint to i128 ScVal', () => {
   const negative = BigInt('-123');
   const large = BigInt('10000000000000');
   let result = converter.bigintToI128(max);
-  expect(result.toXDR().toString('base64')).toEqual('AAAACv//////////f/////////8=');
+  expect(result.toXDR().toString('base64')).toEqual('AAAACn////////////////////8=');
 
   result = converter.bigintToI128(min);
-  expect(result.toXDR().toString('base64')).toEqual('AAAACgAAAAAAAAAAgAAAAAAAAAA=');
+  expect(result.toXDR().toString('base64')).toEqual('AAAACoAAAAAAAAAAAAAAAAAAAAA=');
 
   result = converter.bigintToI128(zero);
+  console.log(result.toXDR().toString('base64'));
+
   expect(result.toXDR().toString('base64')).toEqual('AAAACgAAAAAAAAAAAAAAAAAAAAA=');
 
   result = converter.bigintToI128(normal);
-  expect(result.toXDR().toString('base64')).toEqual('AAAACgAAAAAAAAB7AAAAAAAAAAA=');
+
+  expect(result.toXDR().toString('base64')).toEqual('AAAACgAAAAAAAAAAAAAAAAAAAHs=');
 
   result = converter.bigintToI128(negative);
-  expect(result.toXDR().toString('base64')).toEqual('AAAACv////////+F//////////8=');
+  console.log(result.toXDR().toString('base64'));
+
+  expect(result.toXDR().toString('base64')).toEqual('AAAACv///////////////////4U=');
 
   result = converter.bigintToI128(large);
-  expect(result.toXDR().toString('base64')).toEqual('AAAACgAACRhOcqAAAAAAAAAAAAA=');
+  console.log(result.toXDR().toString('base64'));
+
+  expect(result.toXDR().toString('base64')).toEqual('AAAACgAAAAAAAAAAAAAJGE5yoAA=');
 });
 
 test('convert ScVal to i128', () => {
-  const max = xdr.ScVal.fromXDR('AAAACv//////////f/////////8=', 'base64');
-  const min = xdr.ScVal.fromXDR('AAAACgAAAAAAAAAAgAAAAAAAAAA=', 'base64');
+  const max = xdr.ScVal.fromXDR('AAAACn////////////////////8=', 'base64');
+  const min = xdr.ScVal.fromXDR('AAAACoAAAAAAAAAAAAAAAAAAAAA=', 'base64');
   const zero = xdr.ScVal.fromXDR('AAAACgAAAAAAAAAAAAAAAAAAAAA=', 'base64');
-  const normal = xdr.ScVal.fromXDR('AAAACgAAAAAAAAB7AAAAAAAAAAA=', 'base64');
-  const negative = xdr.ScVal.fromXDR('AAAACv////////+F//////////8=', 'base64');
-  const large = xdr.ScVal.fromXDR('AAAACgAACRhOcqAAAAAAAAAAAAA=', 'base64');
+  const normal = xdr.ScVal.fromXDR('AAAACgAAAAAAAAAAAAAAAAAAAHs=', 'base64');
+  const negative = xdr.ScVal.fromXDR('AAAACv///////////////////4U=', 'base64');
+  const large = xdr.ScVal.fromXDR('AAAACgAAAAAAAAAAAAAJGE5yoAA=', 'base64');
   let result = converter.scvalToBigInt(max);
   expect(result).toEqual(BigInt('170141183460469231731687303715884105727'));
 
