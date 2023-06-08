@@ -1,4 +1,3 @@
-// import BigNumber from 'bignumber.js';
 import * as converter from '../src/data_entry_converter';
 
 test('convert to string array -> contract data entry with Vec::Bytes', () => {
