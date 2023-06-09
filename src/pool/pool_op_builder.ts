@@ -8,6 +8,7 @@ import {
   ReserveMetadataToXDR,
   LiquidationMetadataToXDR,
 } from '.';
+import { bigintToI128 } from '../scval_converter';
 
 export class PoolOpBuilder {
   _contract: Contract;
@@ -46,13 +47,13 @@ export class PoolOpBuilder {
       args: [
         ((i) => Address.fromString(i).toScVal())(admin),
         ((i) => xdr.ScVal.scvSymbol(i))(name),
-        ((i) => Address.fromString(i).toScVal())(oracle),
+        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(oracle),
         ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(bstop_rate),
-        ((i) => Address.fromString(i).toScVal())(backstop_id),
+        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(backstop_id),
         ((i) => xdr.ScVal.scvBytes(i))(b_token_hash),
         ((i) => xdr.ScVal.scvBytes(i))(d_token_hash),
-        ((i) => Address.fromString(i).toScVal())(blnd_id),
-        ((i) => Address.fromString(i).toScVal())(usdc_id),
+        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(blnd_id),
+        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(usdc_id),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -75,7 +76,7 @@ export class PoolOpBuilder {
       method: 'init_reserve',
       args: [
         ((i) => Address.fromString(i).toScVal())(admin),
-        ((i) => Address.fromString(i).toScVal())(asset),
+        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(asset),
         ((i) => ReserveMetadataToXDR(i))(metadata),
       ],
     };
@@ -99,7 +100,7 @@ export class PoolOpBuilder {
       method: 'update_reserve',
       args: [
         ((i) => Address.fromString(i).toScVal())(admin),
-        ((i) => Address.fromString(i).toScVal())(asset),
+        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(asset),
         ((i) => ReserveMetadataToXDR(i))(metadata),
       ],
     };
@@ -115,7 +116,7 @@ export class PoolOpBuilder {
   public reserve_config({ asset }: { asset: string }): string {
     const invokeArgs = {
       method: 'reserve_config',
-      args: [((i) => Address.fromString(i).toScVal())(asset)],
+      args: [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(asset)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
@@ -143,8 +144,8 @@ export class PoolOpBuilder {
       method: 'supply',
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => Address.fromString(i).toScVal())(asset),
-        ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(amount),
+        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(asset),
+        ((i) => bigintToI128(i))(amount),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -169,8 +170,8 @@ export class PoolOpBuilder {
       method: 'withdraw',
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => Address.fromString(i).toScVal())(asset),
-        ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(amount),
+        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(asset),
+        ((i) => bigintToI128(i))(amount),
         ((i) => Address.fromString(i).toScVal())(to),
       ],
     };
@@ -196,8 +197,8 @@ export class PoolOpBuilder {
       method: 'borrow',
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => Address.fromString(i).toScVal())(asset),
-        ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(amount),
+        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(asset),
+        ((i) => bigintToI128(i))(amount),
         ((i) => Address.fromString(i).toScVal())(to),
       ],
     };
@@ -223,8 +224,8 @@ export class PoolOpBuilder {
       method: 'repay',
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => Address.fromString(i).toScVal())(asset),
-        ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(amount),
+        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(asset),
+        ((i) => bigintToI128(i))(amount),
         ((i) => Address.fromString(i).toScVal())(on_behalf_of),
       ],
     };
@@ -240,7 +241,7 @@ export class PoolOpBuilder {
   public get_d_rate({ asset }: { asset: string }): string {
     const invokeArgs = {
       method: 'get_d_rate',
-      args: [((i) => Address.fromString(i).toScVal())(asset)],
+      args: [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(asset)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
@@ -254,7 +255,7 @@ export class PoolOpBuilder {
   public get_b_rate({ asset }: { asset: string }): string {
     const invokeArgs = {
       method: 'get_b_rate',
-      args: [((i) => Address.fromString(i).toScVal())(asset)],
+      args: [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(asset)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
@@ -398,7 +399,7 @@ export class PoolOpBuilder {
     const invokeArgs = {
       method: 'get_reserve_emissions',
       args: [
-        ((i) => Address.fromString(i).toScVal())(asset),
+        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(asset),
         ((i) => xdr.ScVal.scvU32(i))(token_type),
       ],
     };

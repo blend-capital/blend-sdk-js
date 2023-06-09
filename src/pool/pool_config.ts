@@ -1,4 +1,4 @@
-import { xdr } from 'stellar-base';
+import { Address, xdr } from 'stellar-base';
 import { scvalToNumber, scvalToString } from '../scval_converter';
 
 export class PoolConfig {
@@ -39,5 +39,26 @@ export class PoolConfig {
     }
 
     return new PoolConfig(bstop_rate, oracle, status);
+  }
+
+  public PoolConfigToXDR(poolConfig?: PoolConfig): xdr.ScVal {
+    if (!poolConfig) {
+      return xdr.ScVal.scvVoid();
+    }
+    const arr = [
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('bstop_rate'),
+        val: ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(poolConfig.bstop_rate),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('oracle'),
+        val: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(poolConfig.oracle),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('status'),
+        val: ((i) => xdr.ScVal.scvU32(i))(poolConfig.status),
+      }),
+    ];
+    return xdr.ScVal.scvMap(arr);
   }
 }
