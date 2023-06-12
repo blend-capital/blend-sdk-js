@@ -1,5 +1,6 @@
 import { Address, Contract, xdr } from 'stellar-base';
 import { u32, i128 } from '..';
+import { bigintToI128 } from '../scval_converter';
 
 export class BlendTokenOpBuilder {
   _contract: Contract;
@@ -34,10 +35,7 @@ export class BlendTokenOpBuilder {
   public clawback({ from, amount }: { from: string; amount: i128 }): string {
     const invokeArgs = {
       method: 'clawback',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(amount),
-      ],
+      args: [((i) => Address.fromString(i).toScVal())(from), ((i) => bigintToI128(i))(amount)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
@@ -45,10 +43,7 @@ export class BlendTokenOpBuilder {
   public mint({ to, amount }: { to: string; amount: i128 }): string {
     const invokeArgs = {
       method: 'mint',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(to),
-        ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(amount),
-      ],
+      args: [((i) => Address.fromString(i).toScVal())(to), ((i) => bigintToI128(i))(amount)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
@@ -86,7 +81,7 @@ export class BlendTokenOpBuilder {
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
         ((i) => Address.fromString(i).toScVal())(spender),
-        ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(amount),
+        ((i) => bigintToI128(i))(amount),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -106,7 +101,7 @@ export class BlendTokenOpBuilder {
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
         ((i) => Address.fromString(i).toScVal())(spender),
-        ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(amount),
+        ((i) => bigintToI128(i))(amount),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -118,7 +113,7 @@ export class BlendTokenOpBuilder {
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
         ((i) => Address.fromString(i).toScVal())(to),
-        ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(amount),
+        ((i) => bigintToI128(i))(amount),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -141,7 +136,7 @@ export class BlendTokenOpBuilder {
         ((i) => Address.fromString(i).toScVal())(spender),
         ((i) => Address.fromString(i).toScVal())(from),
         ((i) => Address.fromString(i).toScVal())(to),
-        ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(amount),
+        ((i) => bigintToI128(i))(amount),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -150,10 +145,7 @@ export class BlendTokenOpBuilder {
   public burn({ from, amount }: { from: string; amount: i128 }): string {
     const invokeArgs = {
       method: 'burn',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(amount),
-      ],
+      args: [((i) => Address.fromString(i).toScVal())(from), ((i) => bigintToI128(i))(amount)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
@@ -172,7 +164,7 @@ export class BlendTokenOpBuilder {
       args: [
         ((i) => Address.fromString(i).toScVal())(_spender),
         ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(amount),
+        ((i) => bigintToI128(i))(amount),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -243,7 +235,7 @@ export class BlendTokenOpBuilder {
       method: 'initialize_asset',
       args: [
         ((i) => Address.fromString(i).toScVal())(admin),
-        ((i) => Address.fromString(i).toScVal())(asset),
+        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(asset),
         ((i) => xdr.ScVal.scvU32(i))(index),
       ],
     };
