@@ -17,8 +17,8 @@ export class EmitterOpBuilder {
     const invokeArgs = {
       method: 'initialize',
       args: [
-        ((i) => Address.fromString(i).toScVal())(backstop),
-        ((i) => Address.fromString(i).toScVal())(blnd_token_id),
+        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(backstop),
+        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(blnd_token_id),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -37,7 +37,7 @@ export class EmitterOpBuilder {
   public swap_backstop({ new_backstop_id }: { new_backstop_id: string }): string {
     const invokeArgs = {
       method: 'swap_backstop',
-      args: [((i) => Address.fromString(i).toScVal())(new_backstop_id)],
+      args: [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(new_backstop_id)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
