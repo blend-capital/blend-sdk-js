@@ -62,36 +62,6 @@ export enum PoolError {
 }
 
 /**
- * The pool's config
- */
-export interface PoolConfig {
-  bstop_rate: u64;
-  oracle: string;
-  status: u32;
-}
-
-export function PoolConfigToXDR(poolConfig?: PoolConfig): xdr.ScVal {
-  if (!poolConfig) {
-    return xdr.ScVal.scvVoid();
-  }
-  const arr = [
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('bstop_rate'),
-      val: ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(poolConfig.bstop_rate),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('oracle'),
-      val: ((i) => Address.fromString(i).toScVal())(poolConfig.oracle),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('status'),
-      val: ((i) => xdr.ScVal.scvU32(i))(poolConfig.status),
-    }),
-  ];
-  return xdr.ScVal.scvMap(arr);
-}
-
-/**
  * The pool's emission config
  */
 export interface PoolEmissionConfig {
@@ -175,129 +145,6 @@ export function ReserveMetadataToXDR(reserveMetadata?: ReserveMetadata): xdr.ScV
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('util'),
       val: ((i) => xdr.ScVal.scvU32(i))(reserveMetadata.util),
-    }),
-  ];
-  return xdr.ScVal.scvMap(arr);
-}
-
-/**
- * The configuration information about a reserve asset
- */
-export interface ReserveConfig {
-  b_token: string;
-  c_factor: u32;
-  d_token: string;
-  decimals: u32;
-  index: u32;
-  l_factor: u32;
-  max_util: u32;
-  r_one: u32;
-  r_three: u32;
-  r_two: u32;
-  reactivity: u32;
-  util: u32;
-}
-
-export function ReserveConfigToXDR(reserveConfig?: ReserveConfig): xdr.ScVal {
-  if (!reserveConfig) {
-    return xdr.ScVal.scvVoid();
-  }
-  const arr = [
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('b_token'),
-      val: ((i) => Address.fromString(i).toScVal())(reserveConfig.b_token),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('c_factor'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.c_factor),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('d_token'),
-      val: ((i) => Address.fromString(i).toScVal())(reserveConfig.d_token),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('decimals'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.decimals),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('index'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.index),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('l_factor'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.l_factor),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('max_util'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.max_util),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('r_one'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.r_one),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('r_three'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.r_three),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('r_two'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.r_two),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('reactivity'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.reactivity),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('util'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.util),
-    }),
-  ];
-  return xdr.ScVal.scvMap(arr);
-}
-
-/**
- * The data for a reserve asset
- */
-export interface ReserveData {
-  b_supply: i128;
-  d_rate: i128;
-  d_supply: i128;
-  ir_mod: i128;
-  last_time: u64;
-}
-
-export function ReserveDataToXDR(reserveData?: ReserveData): xdr.ScVal {
-  if (!reserveData) {
-    return xdr.ScVal.scvVoid();
-  }
-  const arr = [
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('b_supply'),
-      val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-        reserveData.b_supply
-      ),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('d_rate'),
-      val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-        reserveData.d_rate
-      ),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('d_supply'),
-      val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-        reserveData.d_supply
-      ),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('ir_mod'),
-      val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-        reserveData.ir_mod
-      ),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('last_time'),
-      val: ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(reserveData.last_time),
     }),
   ];
   return xdr.ScVal.scvMap(arr);
@@ -410,7 +257,7 @@ export function UserReserveKeyToXDR(userReserveKey?: UserReserveKey): xdr.ScVal 
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('user'),
-      val: ((i) => Address.fromString(i).toScVal())(userReserveKey.user),
+      val: ((i) => Address.account(Buffer.from(i, 'hex')).toScVal())(userReserveKey.user),
     }),
   ];
   return xdr.ScVal.scvMap(arr);
@@ -432,7 +279,7 @@ function AuctionKeyToXDR(auctionKey?: AuctionKey): xdr.ScVal {
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('user'),
-      val: ((i) => Address.fromString(i).toScVal())(auctionKey.user),
+      val: ((i) => Address.account(Buffer.from(i, 'hex')).toScVal())(auctionKey.user),
     }),
   ];
   return xdr.ScVal.scvMap(arr);
@@ -493,11 +340,19 @@ export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
       break;
     case 'ResConfig':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('ResConfig'));
-      res.push(...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolDataKey.values));
+      res.push(
+        ...((i) => [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(i[0])])(
+          poolDataKey.values
+        )
+      );
       break;
     case 'ResData':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('ResData'));
-      res.push(...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolDataKey.values));
+      res.push(
+        ...((i) => [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(i[0])])(
+          poolDataKey.values
+        )
+      );
       break;
     case 'ResList':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('ResList'));
@@ -524,7 +379,11 @@ export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
       break;
     case 'AuctData':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('AuctData'));
-      res.push(...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolDataKey.values));
+      res.push(
+        ...((i) => [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(i[0])])(
+          poolDataKey.values
+        )
+      );
       break;
   }
   return xdr.ScVal.scvVec(res);
@@ -546,7 +405,7 @@ export function LiquidationMetadataToXDR(liquidationMetadata?: LiquidationMetada
         xdr.ScVal.scvMap(
           Array.from(i.entries()).map(([key, value]) => {
             return new xdr.ScMapEntry({
-              key: ((i) => Address.fromString(i).toScVal())(key),
+              key: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(key),
               val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
                 value
               ),
@@ -560,7 +419,7 @@ export function LiquidationMetadataToXDR(liquidationMetadata?: LiquidationMetada
         xdr.ScVal.scvMap(
           Array.from(i.entries()).map(([key, value]) => {
             return new xdr.ScMapEntry({
-              key: ((i) => Address.fromString(i).toScVal())(key),
+              key: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(key),
               val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
                 value
               ),

@@ -113,7 +113,7 @@ export function PoolUserKeyToXDR(poolUserKey?: PoolUserKey): xdr.ScVal {
   const arr = [
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('pool'),
-      val: ((i) => Address.fromString(i).toScVal())(poolUserKey.pool),
+      val: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(poolUserKey.pool),
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('user'),
@@ -157,19 +157,25 @@ export function BackstopDataKeyToXDR(backstopDataKey?: BackstopDataKey): xdr.ScV
     case 'PoolTkn':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolTkn'));
       res.push(
-        ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
+        ...((i) => [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(i[0])])(
+          backstopDataKey.values
+        )
       );
       break;
     case 'PoolShares':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolShares'));
       res.push(
-        ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
+        ...((i) => [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(i[0])])(
+          backstopDataKey.values
+        )
       );
       break;
     case 'PoolQ4W':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolQ4W'));
       res.push(
-        ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
+        ...((i) => [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(i[0])])(
+          backstopDataKey.values
+        )
       );
       break;
     case 'NextDist':
@@ -181,25 +187,33 @@ export function BackstopDataKeyToXDR(backstopDataKey?: BackstopDataKey): xdr.ScV
     case 'PoolEPS':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolEPS'));
       res.push(
-        ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
+        ...((i) => [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(i[0])])(
+          backstopDataKey.values
+        )
       );
       break;
     case 'PoolEmis':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolEmis'));
       res.push(
-        ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
+        ...((i) => [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(i[0])])(
+          backstopDataKey.values
+        )
       );
       break;
     case 'BEmisCfg':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('BEmisCfg'));
       res.push(
-        ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
+        ...((i) => [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(i[0])])(
+          backstopDataKey.values
+        )
       );
       break;
     case 'BEmisData':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('BEmisData'));
       res.push(
-        ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
+        ...((i) => [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(i[0])])(
+          backstopDataKey.values
+        )
       );
       break;
     case 'UEmisData':

@@ -1,4 +1,4 @@
-import { xdr } from 'stellar-base';
+import { Address, xdr } from 'stellar-base';
 import { scvalToBigInt, scvalToNumber, scvalToString } from '../scval_converter';
 
 export type EstReserveData = {
@@ -201,6 +201,63 @@ export class ReserveConfig {
       reactivity
     );
   }
+
+  public ReserveConfigToXDR(reserveConfig?: ReserveConfig): xdr.ScVal {
+    if (!reserveConfig) {
+      return xdr.ScVal.scvVoid();
+    }
+    const arr = [
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('b_token'),
+        val: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(reserveConfig.b_token_id),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('c_factor'),
+        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.c_factor),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('d_token'),
+        val: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(reserveConfig.d_token_id),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('decimals'),
+        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.decimals),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('index'),
+        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.index),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('l_factor'),
+        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.l_factor),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('max_util'),
+        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.max_util),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('r_one'),
+        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.r_one),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('r_three'),
+        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.r_three),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('r_two'),
+        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.r_two),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('reactivity'),
+        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.reactivity),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('util'),
+        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.util),
+      }),
+    ];
+    return xdr.ScVal.scvMap(arr);
+  }
 }
 
 export class ReserveData {
@@ -261,5 +318,42 @@ export class ReserveData {
     }
 
     return new ReserveData(d_rate, ir_mod, b_supply, d_supply, last_time);
+  }
+
+  public ReserveDataToXDR(reserveData?: ReserveData): xdr.ScVal {
+    if (!reserveData) {
+      return xdr.ScVal.scvVoid();
+    }
+    const arr = [
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('b_supply'),
+        val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
+          reserveData.b_supply
+        ),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('d_rate'),
+        val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
+          reserveData.d_rate
+        ),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('d_supply'),
+        val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
+          reserveData.d_supply
+        ),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('ir_mod'),
+        val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
+          reserveData.ir_mod
+        ),
+      }),
+      new xdr.ScMapEntry({
+        key: ((i) => xdr.ScVal.scvSymbol(i))('last_time'),
+        val: ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(reserveData.last_time),
+      }),
+    ];
+    return xdr.ScVal.scvMap(arr);
   }
 }
