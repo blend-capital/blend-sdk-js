@@ -1,5 +1,6 @@
 import { xdr, Address } from 'stellar-base';
 import { u64, i128 } from '..';
+import { bigintToI128 } from '../scval_converter';
 
 export * from './backstop_op_builder';
 export * from './Q4W';
