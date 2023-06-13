@@ -28,7 +28,7 @@ export function AssetToXDR(asset?: Asset): xdr.ScVal {
   const arr = [
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('id'),
-      val: ((i) => Address.fromString(i).toScVal())(asset.id),
+      val: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(asset.id),
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('res_index'),

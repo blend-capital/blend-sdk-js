@@ -1,5 +1,6 @@
 import { xdr, Address } from 'stellar-base';
 import { u32, u64, u128, i128 } from '..';
+import { bigintToI128 } from '../scval_converter';
 
 export * from './pool_op_builder';
 export * from './pool_config';
@@ -198,9 +199,7 @@ export function ReserveEmissionsDataToXDR(reserveEmissionsData?: ReserveEmission
   const arr = [
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('index'),
-      val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-        reserveEmissionsData.index
-      ),
+      val: ((i) => bigintToI128(i))(reserveEmissionsData.index),
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('last_time'),
@@ -227,15 +226,11 @@ export function UserEmissionDataToXDR(userEmissionData?: UserEmissionData): xdr.
   const arr = [
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('accrued'),
-      val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-        userEmissionData.accrued
-      ),
+      val: ((i) => bigintToI128(i))(userEmissionData.accrued),
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('index'),
-      val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-        userEmissionData.index
-      ),
+      val: ((i) => bigintToI128(i))(userEmissionData.index),
     }),
   ];
   return xdr.ScVal.scvMap(arr);
@@ -406,9 +401,7 @@ export function LiquidationMetadataToXDR(liquidationMetadata?: LiquidationMetada
           Array.from(i.entries()).map(([key, value]) => {
             return new xdr.ScMapEntry({
               key: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(key),
-              val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-                value
-              ),
+              val: ((i) => bigintToI128(i))(value),
             });
           })
         ))(liquidationMetadata.collateral),
@@ -420,9 +413,7 @@ export function LiquidationMetadataToXDR(liquidationMetadata?: LiquidationMetada
           Array.from(i.entries()).map(([key, value]) => {
             return new xdr.ScMapEntry({
               key: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(key),
-              val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-                value
-              ),
+              val: ((i) => bigintToI128(i))(value),
             });
           })
         ))(liquidationMetadata.liability),
@@ -492,9 +483,7 @@ export function AuctionDataToXDR(auctionData?: AuctionData): xdr.ScVal {
           Array.from(i.entries()).map(([key, value]) => {
             return new xdr.ScMapEntry({
               key: ((i) => xdr.ScVal.scvU32(i))(key),
-              val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-                value
-              ),
+              val: ((i) => bigintToI128(i))(value),
             });
           })
         ))(auctionData.bid),
@@ -510,9 +499,7 @@ export function AuctionDataToXDR(auctionData?: AuctionData): xdr.ScVal {
           Array.from(i.entries()).map(([key, value]) => {
             return new xdr.ScMapEntry({
               key: ((i) => xdr.ScVal.scvU32(i))(key),
-              val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-                value
-              ),
+              val: ((i) => bigintToI128(i))(value),
             });
           })
         ))(auctionData.lot),
