@@ -1,5 +1,6 @@
 import { xdr, Address } from 'stellar-base';
 import { u64, i128 } from '..';
+import { bigintToI128 } from '../scval_converter';
 
 export * from './backstop_op_builder';
 export * from './Q4W';
@@ -58,9 +59,7 @@ export function BackstopEmissionsDataToXDR(
   const arr = [
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('index'),
-      val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-        backstopEmissionsData.index
-      ),
+      val: ((i) => bigintToI128(i))(backstopEmissionsData.index),
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('last_time'),
@@ -87,15 +86,11 @@ export function UserEmissionDataToXDR(userEmissionData?: UserEmissionData): xdr.
   const arr = [
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('accrued'),
-      val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-        userEmissionData.accrued
-      ),
+      val: ((i) => bigintToI128(i))(userEmissionData.accrued),
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('index'),
-      val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-        userEmissionData.index
-      ),
+      val: ((i) => bigintToI128(i))(userEmissionData.index),
     }),
   ];
   return xdr.ScVal.scvMap(arr);

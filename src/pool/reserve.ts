@@ -1,5 +1,5 @@
 import { Address, xdr } from 'stellar-base';
-import { scvalToBigInt, scvalToNumber, scvalToString } from '../scval_converter';
+import { bigintToI128, scvalToBigInt, scvalToNumber, scvalToString } from '../scval_converter';
 
 export type EstReserveData = {
   b_rate: number;
@@ -327,27 +327,19 @@ export class ReserveData {
     const arr = [
       new xdr.ScMapEntry({
         key: ((i) => xdr.ScVal.scvSymbol(i))('b_supply'),
-        val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-          reserveData.b_supply
-        ),
+        val: ((i) => bigintToI128(i))(reserveData.b_supply),
       }),
       new xdr.ScMapEntry({
         key: ((i) => xdr.ScVal.scvSymbol(i))('d_rate'),
-        val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-          reserveData.d_rate
-        ),
+        val: ((i) => bigintToI128(i))(reserveData.d_rate),
       }),
       new xdr.ScMapEntry({
         key: ((i) => xdr.ScVal.scvSymbol(i))('d_supply'),
-        val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-          reserveData.d_supply
-        ),
+        val: ((i) => bigintToI128(i))(reserveData.d_supply),
       }),
       new xdr.ScMapEntry({
         key: ((i) => xdr.ScVal.scvSymbol(i))('ir_mod'),
-        val: ((i) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(i.toString(16), 'hex')))(
-          reserveData.ir_mod
-        ),
+        val: ((i) => bigintToI128(i))(reserveData.ir_mod),
       }),
       new xdr.ScMapEntry({
         key: ((i) => xdr.ScVal.scvSymbol(i))('last_time'),

@@ -17,7 +17,9 @@ export function PoolFactoryDataKeyToXDR(poolFactoryDataKey?: PoolFactoryDataKey)
     case 'Contracts':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('Contracts'));
       res.push(
-        ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolFactoryDataKey.values)
+        ...((i) => [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(i[0])])(
+          poolFactoryDataKey.values
+        )
       );
       break;
     case 'PoolInitMeta':
@@ -47,11 +49,11 @@ export function PoolInitMetaToXDR(poolInitMeta?: PoolInitMeta): xdr.ScVal {
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('backstop'),
-      val: ((i) => Address.fromString(i).toScVal())(poolInitMeta.backstop),
+      val: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(poolInitMeta.backstop),
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('blnd_id'),
-      val: ((i) => Address.fromString(i).toScVal())(poolInitMeta.blnd_id),
+      val: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(poolInitMeta.blnd_id),
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('d_token_hash'),
@@ -63,7 +65,7 @@ export function PoolInitMetaToXDR(poolInitMeta?: PoolInitMeta): xdr.ScVal {
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('usdc_id'),
-      val: ((i) => Address.fromString(i).toScVal())(poolInitMeta.usdc_id),
+      val: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(poolInitMeta.usdc_id),
     }),
   ];
   return xdr.ScVal.scvMap(arr);
