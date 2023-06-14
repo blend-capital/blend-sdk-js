@@ -21,9 +21,9 @@ export class BackstopOpBuilder {
     const invokeArgs = {
       method: 'initialize',
       args: [
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(backstop_token),
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(blnd_token),
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(pool_factory),
+        ((i) => Address.fromString(i).toScVal())(backstop_token),
+        ((i) => Address.fromString(i).toScVal())(blnd_token),
+        ((i) => Address.fromString(i).toScVal())(pool_factory),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -42,7 +42,7 @@ export class BackstopOpBuilder {
       method: 'deposit',
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(pool_address),
+        ((i) => Address.fromString(i).toScVal())(pool_address),
         ((i) => bigintToI128(i))(amount),
       ],
     };
@@ -62,7 +62,7 @@ export class BackstopOpBuilder {
       method: 'queue_withdrawal',
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(pool_address),
+        ((i) => Address.fromString(i).toScVal())(pool_address),
         ((i) => bigintToI128(i))(amount),
       ],
     };
@@ -82,7 +82,7 @@ export class BackstopOpBuilder {
       method: 'dequeue_withdrawal',
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(pool_address),
+        ((i) => Address.fromString(i).toScVal())(pool_address),
         ((i) => bigintToI128(i))(amount),
       ],
     };
@@ -102,7 +102,7 @@ export class BackstopOpBuilder {
       method: 'withdraw',
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(pool_address),
+        ((i) => Address.fromString(i).toScVal())(pool_address),
         ((i) => bigintToI128(i))(amount),
       ],
     };
@@ -113,7 +113,7 @@ export class BackstopOpBuilder {
     const invokeArgs = {
       method: 'balance',
       args: [
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(pool),
+        ((i) => Address.fromString(i).toScVal())(pool),
         ((i) => Address.fromString(i).toScVal())(user),
       ],
     };
@@ -124,7 +124,7 @@ export class BackstopOpBuilder {
     const invokeArgs = {
       method: 'withdrawal_queue',
       args: [
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(pool),
+        ((i) => Address.fromString(i).toScVal())(pool),
         ((i) => Address.fromString(i).toScVal())(user),
       ],
     };
@@ -134,7 +134,7 @@ export class BackstopOpBuilder {
   public pool_balance({ pool }: { pool: string }): string {
     const invokeArgs = {
       method: 'pool_balance',
-      args: [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(pool)],
+      args: [((i) => Address.fromString(i).toScVal())(pool)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
@@ -158,8 +158,8 @@ export class BackstopOpBuilder {
     const invokeArgs = {
       method: 'add_reward',
       args: [
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(to_add),
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(to_remove),
+        ((i) => Address.fromString(i).toScVal())(to_add),
+        ((i) => Address.fromString(i).toScVal())(to_remove),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -173,7 +173,7 @@ export class BackstopOpBuilder {
   public pool_eps({ pool_address }: { pool_address: string }): string {
     const invokeArgs = {
       method: 'pool_eps',
-      args: [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(pool_address)],
+      args: [((i) => Address.fromString(i).toScVal())(pool_address)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
@@ -190,7 +190,7 @@ export class BackstopOpBuilder {
     const invokeArgs = {
       method: 'pool_claim',
       args: [
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(pool_address),
+        ((i) => Address.fromString(i).toScVal())(pool_address),
         ((i) => Address.fromString(i).toScVal())(to),
         ((i) => bigintToI128(i))(amount),
       ],
@@ -232,7 +232,7 @@ export class BackstopOpBuilder {
     const invokeArgs = {
       method: 'draw',
       args: [
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(pool_address),
+        ((i) => Address.fromString(i).toScVal())(pool_address),
         ((i) => bigintToI128(i))(amount),
         ((i) => Address.fromString(i).toScVal())(to),
       ],
@@ -253,7 +253,7 @@ export class BackstopOpBuilder {
       method: 'donate',
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(pool_address),
+        ((i) => Address.fromString(i).toScVal())(pool_address),
         ((i) => bigintToI128(i))(amount),
       ],
     };

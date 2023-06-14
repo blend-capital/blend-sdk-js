@@ -52,7 +52,7 @@ export class PoolConfig {
       }),
       new xdr.ScMapEntry({
         key: ((i) => xdr.ScVal.scvSymbol(i))('oracle'),
-        val: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(poolConfig.oracle),
+        val: ((i) => Address.fromString(i).toScVal())(poolConfig.oracle),
       }),
       new xdr.ScMapEntry({
         key: ((i) => xdr.ScVal.scvSymbol(i))('status'),

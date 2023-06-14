@@ -209,7 +209,7 @@ export class ReserveConfig {
     const arr = [
       new xdr.ScMapEntry({
         key: ((i) => xdr.ScVal.scvSymbol(i))('b_token'),
-        val: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(reserveConfig.b_token_id),
+        val: ((i) => Address.fromString(i).toScVal())(reserveConfig.b_token_id),
       }),
       new xdr.ScMapEntry({
         key: ((i) => xdr.ScVal.scvSymbol(i))('c_factor'),
@@ -217,7 +217,7 @@ export class ReserveConfig {
       }),
       new xdr.ScMapEntry({
         key: ((i) => xdr.ScVal.scvSymbol(i))('d_token'),
-        val: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(reserveConfig.d_token_id),
+        val: ((i) => Address.fromString(i).toScVal())(reserveConfig.d_token_id),
       }),
       new xdr.ScMapEntry({
         key: ((i) => xdr.ScVal.scvSymbol(i))('decimals'),
