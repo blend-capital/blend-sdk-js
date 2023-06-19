@@ -335,19 +335,11 @@ export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
       break;
     case 'ResConfig':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('ResConfig'));
-      res.push(
-        ...((i) => [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(i[0])])(
-          poolDataKey.values
-        )
-      );
+      res.push(...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolDataKey.values));
       break;
     case 'ResData':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('ResData'));
-      res.push(
-        ...((i) => [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(i[0])])(
-          poolDataKey.values
-        )
-      );
+      res.push(...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolDataKey.values));
       break;
     case 'ResList':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('ResList'));
@@ -374,11 +366,7 @@ export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
       break;
     case 'AuctData':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('AuctData'));
-      res.push(
-        ...((i) => [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(i[0])])(
-          poolDataKey.values
-        )
-      );
+      res.push(...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolDataKey.values));
       break;
   }
   return xdr.ScVal.scvVec(res);
@@ -400,7 +388,7 @@ export function LiquidationMetadataToXDR(liquidationMetadata?: LiquidationMetada
         xdr.ScVal.scvMap(
           Array.from(i.entries()).map(([key, value]) => {
             return new xdr.ScMapEntry({
-              key: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(key),
+              key: ((i) => Address.fromString(i).toScVal())(key),
               val: ((i) => bigintToI128(i))(value),
             });
           })
@@ -412,7 +400,7 @@ export function LiquidationMetadataToXDR(liquidationMetadata?: LiquidationMetada
         xdr.ScVal.scvMap(
           Array.from(i.entries()).map(([key, value]) => {
             return new xdr.ScMapEntry({
-              key: ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(key),
+              key: ((i) => Address.fromString(i).toScVal())(key),
               val: ((i) => bigintToI128(i))(value),
             });
           })

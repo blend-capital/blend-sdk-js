@@ -36,7 +36,7 @@ export class PoolFactoryOpBuilder {
         ((i) => Address.fromString(i).toScVal())(admin),
         ((i) => xdr.ScVal.scvSymbol(i))(name),
         ((i) => xdr.ScVal.scvBytes(i))(salt),
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(oracle),
+        ((i) => Address.fromString(i).toScVal())(oracle),
         ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(backstop_take_rate),
       ],
     };
@@ -46,7 +46,7 @@ export class PoolFactoryOpBuilder {
   public is_pool({ pool_address }: { pool_address: string }): string {
     const invokeArgs = {
       method: 'is_pool',
-      args: [((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(pool_address)],
+      args: [((i) => Address.fromString(i).toScVal())(pool_address)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }

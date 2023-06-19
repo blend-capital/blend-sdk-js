@@ -109,7 +109,7 @@ export function scvalToString(scval: xdr.ScVal, encoding?: BufferEncoding | unde
       return scval.sym().toString(encoding);
     }
     case xdr.ScValType.scvAddress(): {
-      return Address.fromScVal(scval).toBuffer().toString('hex');
+      return Address.fromScVal(scval).toString();
     }
     default: {
       throw new Error(`Invalid type for scvalToString: ${scval?.switch().name}`);

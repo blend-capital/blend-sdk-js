@@ -235,7 +235,7 @@ export class BlendTokenOpBuilder {
       method: 'initialize_asset',
       args: [
         ((i) => Address.fromString(i).toScVal())(admin),
-        ((i) => Address.contract(Buffer.from(i, 'hex')).toScVal())(asset),
+        ((i) => Address.fromString(i).toScVal())(asset),
         ((i) => xdr.ScVal.scvU32(i))(index),
       ],
     };
