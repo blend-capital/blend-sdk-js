@@ -1,8 +1,9 @@
 export * as Backstop from './backstop';
-export * as BlendToken from './blend_token';
+export * as Token from './token';
 export * as Emitter from './emitter';
 export * as Pool from './pool';
 export * as PoolFactory from './pool_factory';
+export * as Oracle from './oracle';
 
 export * as scval_converter from './scval_converter';
 export * as data_entry_converter from './data_entry_converter';
