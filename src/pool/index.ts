@@ -1,10 +1,32 @@
 import { xdr, Address } from 'stellar-base';
 import { u32, u64, u128, i128 } from '..';
-import { bigintToI128 } from '../scval_converter';
+import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter';
 
 export * from './pool_op_builder';
 export * from './pool_config';
 export * from './reserve';
+
+export enum PoolError {
+  NotAuthorized = 1,
+  BadRequest = 2,
+  AlreadyInitialized = 3,
+  NegativeAmount = 4,
+  InvalidPoolInitArgs = 5,
+  InvalidReserveMetadata = 6,
+  InvalidHf = 10,
+  InvalidPoolStatus = 11,
+  InvalidUtilRate = 12,
+  EmissionFailure = 20,
+  InvalidLiquidation = 100,
+  InvalidLot = 101,
+  InvalidBids = 102,
+  AuctionInProgress = 103,
+  InvalidAuctionType = 104,
+  InvalidLotTooLarge = 105,
+  InvalidLotTooSmall = 106,
+  InvalidBidTooLarge = 107,
+  InvalidBidTooSmall = 108,
+}
 
 /**
  * Metadata for a pool's reserve emission configuration
@@ -40,28 +62,6 @@ export function ReserveEmissionMetadataToXDR(
   return xdr.ScVal.scvMap(arr);
 }
 
-export enum PoolError {
-  NotAuthorized = 1,
-  BadRequest = 2,
-  AlreadyInitialized = 3,
-  NegativeAmount = 4,
-  InvalidPoolInitArgs = 5,
-  InvalidReserveMetadata = 6,
-  InvalidHf = 10,
-  InvalidPoolStatus = 11,
-  InvalidUtilRate = 12,
-  EmissionFailure = 20,
-  InvalidLiquidation = 100,
-  InvalidLot = 101,
-  InvalidBids = 102,
-  AuctionInProgress = 103,
-  InvalidAuctionType = 104,
-  InvalidLotTooLarge = 105,
-  InvalidLotTooSmall = 106,
-  InvalidBidTooLarge = 107,
-  InvalidBidTooSmall = 108,
-}
-
 /**
  * The pool's emission config
  */
@@ -86,66 +86,6 @@ export function PoolEmissionConfigToXDR(poolEmissionConfig?: PoolEmissionConfig)
       val: ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(
         poolEmissionConfig.last_time
       ),
-    }),
-  ];
-  return xdr.ScVal.scvMap(arr);
-}
-
-/**
- * The mutable configuration information about a reserve asset
- */
-export interface ReserveMetadata {
-  c_factor: u32;
-  decimals: u32;
-  l_factor: u32;
-  max_util: u32;
-  r_one: u32;
-  r_three: u32;
-  r_two: u32;
-  reactivity: u32;
-  util: u32;
-}
-
-export function ReserveMetadataToXDR(reserveMetadata?: ReserveMetadata): xdr.ScVal {
-  if (!reserveMetadata) {
-    return xdr.ScVal.scvVoid();
-  }
-  const arr = [
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('c_factor'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveMetadata.c_factor),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('decimals'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveMetadata.decimals),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('l_factor'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveMetadata.l_factor),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('max_util'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveMetadata.max_util),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('r_one'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveMetadata.r_one),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('r_three'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveMetadata.r_three),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('r_two'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveMetadata.r_two),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('reactivity'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveMetadata.reactivity),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('util'),
-      val: ((i) => xdr.ScVal.scvU32(i))(reserveMetadata.util),
     }),
   ];
   return xdr.ScVal.scvMap(arr);
@@ -184,6 +124,40 @@ export function ReserveEmissionsConfigToXDR(
   return xdr.ScVal.scvMap(arr);
 }
 
+export function ReserveEmissionsConfigFromXDR(xdr_string: string): ReserveEmissionsConfig {
+  const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
+    .contractData()
+    ?.val()
+    .map();
+  if (data_entry_map == undefined) {
+    throw Error('contract data value is not a map');
+  }
+
+  let expiration: number | undefined;
+  let eps: number | undefined;
+  for (const map_entry of data_entry_map) {
+    switch (map_entry?.key()?.sym()?.toString()) {
+      case 'expiration':
+        expiration = scvalToNumber(map_entry.val());
+        break;
+      case 'eps':
+        eps = scvalToNumber(map_entry.val());
+        break;
+      default:
+        throw Error('scvMap value malformed');
+    }
+  }
+
+  if (eps == undefined || expiration == undefined) {
+    throw Error('scvMap value malformed');
+  }
+
+  return {
+    eps: BigInt(eps),
+    expiration: BigInt(expiration),
+  };
+}
+
 /**
  * The emission data for the reserve b or d token
  */
@@ -211,6 +185,40 @@ export function ReserveEmissionsDataToXDR(reserveEmissionsData?: ReserveEmission
   return xdr.ScVal.scvMap(arr);
 }
 
+export function ReserveEmissionsDataFromXDR(xdr_string: string): ReserveEmissionsData {
+  const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
+    .contractData()
+    ?.val()
+    .map();
+  if (data_entry_map == undefined) {
+    throw Error('contract data value is not a map');
+  }
+
+  let index: bigint | undefined;
+  let last_time: number | undefined;
+  for (const map_entry of data_entry_map) {
+    switch (map_entry?.key()?.sym()?.toString()) {
+      case 'index':
+        index = scvalToBigInt(map_entry.val());
+        break;
+      case 'last_time':
+        last_time = scvalToNumber(map_entry.val());
+        break;
+      default:
+        throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+    }
+  }
+
+  if (index == undefined || last_time == undefined) {
+    throw Error('scvMap value malformed');
+  }
+
+  return {
+    index,
+    last_time: BigInt(last_time),
+  };
+}
+
 /**
  * The user emission data for the reserve b or d token
  */
@@ -236,6 +244,40 @@ export function UserEmissionDataToXDR(userEmissionData?: UserEmissionData): xdr.
   return xdr.ScVal.scvMap(arr);
 }
 
+export function UserEmissionDataFromXDR(xdr_string: string): UserEmissionData {
+  const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
+    .contractData()
+    ?.val()
+    .map();
+  if (data_entry_map == undefined) {
+    throw Error('contract data value is not a map');
+  }
+
+  let accrued: bigint | undefined;
+  let index: bigint | undefined;
+  for (const map_entry of data_entry_map) {
+    switch (map_entry?.key()?.sym()?.toString()) {
+      case 'accrued':
+        accrued = scvalToBigInt(map_entry.val());
+        break;
+      case 'index':
+        index = scvalToBigInt(map_entry.val());
+        break;
+      default:
+        throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+    }
+  }
+
+  if (accrued == undefined || index == undefined) {
+    throw Error('scvMap value malformed');
+  }
+
+  return {
+    accrued,
+    index,
+  };
+}
+
 export interface UserReserveKey {
   reserve_id: u32;
   user: string;
@@ -252,10 +294,94 @@ export function UserReserveKeyToXDR(userReserveKey?: UserReserveKey): xdr.ScVal 
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('user'),
-      val: ((i) => Address.account(Buffer.from(i, 'hex')).toScVal())(userReserveKey.user),
+      val: ((i) => Address.fromString(i).toScVal())(userReserveKey.user),
     }),
   ];
   return xdr.ScVal.scvMap(arr);
+}
+
+/**
+ * Request for submitting actions
+ */
+export interface Request {
+  request_type: u32;
+  reserve_index: u32;
+  amount: i128;
+}
+
+export function RequestToXDR(request?: Request): xdr.ScVal {
+  if (!request) {
+    return xdr.ScVal.scvVoid();
+  }
+  const arr = [
+    new xdr.ScMapEntry({
+      key: ((i) => xdr.ScVal.scvSymbol(i))('amount'),
+      val: ((i) => bigintToI128(i))(request.amount),
+    }),
+    new xdr.ScMapEntry({
+      key: ((i) => xdr.ScVal.scvSymbol(i))('request_type'),
+      val: ((i) => xdr.ScVal.scvU32(i))(request.request_type),
+    }),
+    new xdr.ScMapEntry({
+      key: ((i) => xdr.ScVal.scvSymbol(i))('reserve_index'),
+      val: ((i) => xdr.ScVal.scvU32(i))(request.reserve_index),
+    }),
+  ];
+  return xdr.ScVal.scvMap(arr);
+}
+
+export interface Positions {
+  liabilities: Map<u32, i128>;
+  collateral: Map<u32, i128>;
+  supply: Map<u32, i128>;
+}
+
+export function PositionsFromXDR(xdr_string: string): Positions {
+  const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
+    .contractData()
+    ?.val()
+    .map();
+
+  if (data_entry_map == undefined) {
+    throw Error('contract data value is not a map');
+  }
+  let liability_map: Map<u32, i128> | undefined;
+  let collateral_map: Map<u32, i128> | undefined;
+  let supply_map: Map<u32, i128> | undefined;
+
+  for (const map_entry of data_entry_map) {
+    switch (map_entry?.key()?.sym()?.toString()) {
+      case 'liabilities':
+        liability_map = new Map<u32, i128>();
+        for (const liability of xdr.ScMap.fromXDR(map_entry.val().toXDR())) {
+          liability_map.set(liability.key().u32(), scvalToBigInt(liability.val()));
+        }
+        break;
+      case 'colleratal':
+        collateral_map = new Map<u32, i128>();
+        for (const colat of xdr.ScMap.fromXDR(map_entry.val().toXDR())) {
+          collateral_map.set(colat.key().u32(), scvalToBigInt(colat.val()));
+        }
+        break;
+      case 'supply':
+        supply_map = new Map<u32, i128>();
+        for (const supply of xdr.ScMap.fromXDR(map_entry.val().toXDR())) {
+          supply_map.set(supply.key().u32(), scvalToBigInt(supply.val()));
+        }
+        break;
+      default:
+        throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+    }
+  }
+
+  if (!liability_map || !collateral_map || !supply_map) {
+    throw Error('xdr_string is malformed');
+  }
+  return {
+    liabilities: liability_map,
+    collateral: collateral_map,
+    supply: supply_map,
+  };
 }
 
 export interface AuctionKey {
@@ -274,7 +400,7 @@ function AuctionKeyToXDR(auctionKey?: AuctionKey): xdr.ScVal {
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('user'),
-      val: ((i) => Address.account(Buffer.from(i, 'hex')).toScVal())(auctionKey.user),
+      val: ((i) => Address.fromString(i).toScVal())(auctionKey.user),
     }),
   ];
   return xdr.ScVal.scvMap(arr);
@@ -289,7 +415,7 @@ export type PoolDataKey =
   | { tag: 'USDCTkn' }
   | { tag: 'PoolConfig' }
   | { tag: 'PoolEmis' }
-  | { tag: 'PEConfig' }
+  | { tag: 'Positions'; values: [string] }
   | { tag: 'ResConfig'; values: [string] }
   | { tag: 'ResData'; values: [string] }
   | { tag: 'ResList' }
@@ -330,8 +456,9 @@ export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
     case 'PoolEmis':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolEmis'));
       break;
-    case 'PEConfig':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('PEConfig'));
+    case 'Positions':
+      res.push(((i) => xdr.ScVal.scvSymbol(i))('Positions'));
+      res.push(...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolDataKey.values));
       break;
     case 'ResConfig':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('ResConfig'));

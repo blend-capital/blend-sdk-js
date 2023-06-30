@@ -1,14 +1,14 @@
 import { Address, Contract, xdr } from 'stellar-base';
-import { i128, u32, u64 } from '..';
+import { u32, u64 } from '..';
 import {
-  ReserveMetadata,
   ReserveEmissionMetadata,
   LiquidationMetadata,
   ReserveEmissionMetadataToXDR,
-  ReserveMetadataToXDR,
   LiquidationMetadataToXDR,
+  ReserveConfig,
+  RequestToXDR,
+  Request,
 } from '.';
-import { bigintToI128 } from '../scval_converter';
 
 export class PoolOpBuilder {
   _contract: Contract;
@@ -27,8 +27,7 @@ export class PoolOpBuilder {
     oracle,
     bstop_rate,
     backstop_id,
-    b_token_hash,
-    d_token_hash,
+
     blnd_id,
     usdc_id,
   }: {
@@ -37,8 +36,7 @@ export class PoolOpBuilder {
     oracle: string;
     bstop_rate: u64;
     backstop_id: string;
-    b_token_hash: Buffer;
-    d_token_hash: Buffer;
+
     blnd_id: string;
     usdc_id: string;
   }): string {
@@ -50,10 +48,29 @@ export class PoolOpBuilder {
         ((i) => Address.fromString(i).toScVal())(oracle),
         ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(bstop_rate),
         ((i) => Address.fromString(i).toScVal())(backstop_id),
-        ((i) => xdr.ScVal.scvBytes(i))(b_token_hash),
-        ((i) => xdr.ScVal.scvBytes(i))(d_token_hash),
         ((i) => Address.fromString(i).toScVal())(blnd_id),
         ((i) => Address.fromString(i).toScVal())(usdc_id),
+      ],
+    };
+    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
+  }
+
+  /**
+   * Update the pool backstop take rate
+   * @returns - Base64 XDR string of the InvokeHostOperation
+   */
+  public update_pool({
+    admin,
+    backstop_take_rate,
+  }: {
+    admin: string;
+    backstop_take_rate: u64;
+  }): string {
+    const invokeArgs = {
+      method: 'update_pool',
+      args: [
+        ((i) => Address.fromString(i).toScVal())(admin),
+        ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(backstop_take_rate),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -66,18 +83,18 @@ export class PoolOpBuilder {
   public init_reserve({
     admin,
     asset,
-    metadata,
+    config,
   }: {
     admin: string;
     asset: string;
-    metadata: ReserveMetadata;
+    config: ReserveConfig;
   }): string {
     const invokeArgs = {
       method: 'init_reserve',
       args: [
         ((i) => Address.fromString(i).toScVal())(admin),
         ((i) => Address.fromString(i).toScVal())(asset),
-        ((i) => ReserveMetadataToXDR(i))(metadata),
+        ((i) => ReserveConfig.ReserveConfigToXDR(i))(config),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -90,18 +107,18 @@ export class PoolOpBuilder {
   public update_reserve({
     admin,
     asset,
-    metadata,
+    config,
   }: {
     admin: string;
     asset: string;
-    metadata: ReserveMetadata;
+    config: ReserveConfig;
   }): string {
     const invokeArgs = {
       method: 'update_reserve',
       args: [
         ((i) => Address.fromString(i).toScVal())(admin),
         ((i) => Address.fromString(i).toScVal())(asset),
-        ((i) => ReserveMetadataToXDR(i))(metadata),
+        ((i) => ReserveConfig.ReserveConfigToXDR(i))(config),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -113,9 +130,9 @@ export class PoolOpBuilder {
    * Get a reserve's configuration
    * @returns - Base64 XDR string of the InvokeHostOperation
    */
-  public reserve_config({ asset }: { asset: string }): string {
+  public get_reserve_config({ asset }: { asset: string }): string {
     const invokeArgs = {
-      method: 'reserve_config',
+      method: 'get_reserve_config',
       args: [((i) => Address.fromString(i).toScVal())(asset)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -124,138 +141,40 @@ export class PoolOpBuilder {
   /**
    * @readonly - VIEW
    *
-   * Get the configuration for a user
+   * Get a reserve's data
    * @returns - Base64 XDR string of the InvokeHostOperation
    */
-  public config({ user }: { user: string }): string {
+  public get_reserve_data({ asset }: { asset: string }): string {
     const invokeArgs = {
-      method: 'config',
-      args: [((i) => Address.fromString(i).toScVal())(user)],
+      method: 'get_reserve_data',
+      args: [((i) => Address.fromString(i).toScVal())(asset)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 
   /**
-   * Supply "amount" of "asset" from "from"
+   * Submit "requests" containing actions from "from" to "to"
    * @returns - Base64 XDR string of the InvokeHostOperation
    */
-  public supply({ from, asset, amount }: { from: string; asset: string; amount: i128 }): string {
-    const invokeArgs = {
-      method: 'supply',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => Address.fromString(i).toScVal())(asset),
-        ((i) => bigintToI128(i))(amount),
-      ],
-    };
-    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
-  }
-
-  /**
-   * Withdraw "amount" of "asset" from "from" and send to "to"
-   * @returns - Base64 XDR string of the InvokeHostOperation
-   */
-  public withdraw({
+  public submit({
     from,
-    asset,
-    amount,
+    spender,
     to,
+    requests,
   }: {
     from: string;
-    asset: string;
-    amount: i128;
+    spender: string;
     to: string;
+    requests: Array<Request>;
   }): string {
     const invokeArgs = {
-      method: 'withdraw',
+      method: 'submit',
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => Address.fromString(i).toScVal())(asset),
-        ((i) => bigintToI128(i))(amount),
+        ((i) => Address.fromString(i).toScVal())(spender),
         ((i) => Address.fromString(i).toScVal())(to),
+        ((i) => xdr.ScVal.scvVec(i.map((request) => RequestToXDR(request))))(requests),
       ],
-    };
-    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
-  }
-
-  /**
-   * Borrow "amount" of "asset" from "from" and send to "to"
-   * @returns - Base64 XDR string of the InvokeHostOperation
-   */
-  public borrow({
-    from,
-    asset,
-    amount,
-    to,
-  }: {
-    from: string;
-    asset: string;
-    amount: i128;
-    to: string;
-  }): string {
-    const invokeArgs = {
-      method: 'borrow',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => Address.fromString(i).toScVal())(asset),
-        ((i) => bigintToI128(i))(amount),
-        ((i) => Address.fromString(i).toScVal())(to),
-      ],
-    };
-    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
-  }
-
-  /**
-   * Repay "amount" of "asset" from "from" for "on_behalf_of"
-   * @returns - Base64 XDR string of the InvokeHostOperation
-   */
-  public repay({
-    from,
-    asset,
-    amount,
-    on_behalf_of,
-  }: {
-    from: string;
-    asset: string;
-    amount: i128;
-    on_behalf_of: string;
-  }): string {
-    const invokeArgs = {
-      method: 'repay',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => Address.fromString(i).toScVal())(asset),
-        ((i) => bigintToI128(i))(amount),
-        ((i) => Address.fromString(i).toScVal())(on_behalf_of),
-      ],
-    };
-    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
-  }
-
-  /**
-   * @readonly - VIEW
-   *
-   * Get the d rate for a reserve
-   * @returns - Base64 XDR string of the InvokeHostOperation
-   */
-  public get_d_rate({ asset }: { asset: string }): string {
-    const invokeArgs = {
-      method: 'get_d_rate',
-      args: [((i) => Address.fromString(i).toScVal())(asset)],
-    };
-    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
-  }
-
-  /**
-   * @readonly - VIEW
-   *
-   * Get the b rate for a reserve
-   * @returns - Base64 XDR string of the InvokeHostOperation
-   */
-  public get_b_rate({ asset }: { asset: string }): string {
-    const invokeArgs = {
-      method: 'get_b_rate',
-      args: [((i) => Address.fromString(i).toScVal())(asset)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
@@ -276,8 +195,8 @@ export class PoolOpBuilder {
    * Update the state of the pool based on market conditions
    * @returns - Base64 XDR string of the InvokeHostOperation
    */
-  public update_state(): string {
-    const invokeArgs = { method: 'update_state', args: [] };
+  public update_status(): string {
+    const invokeArgs = { method: 'update_status', args: [] };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 
@@ -294,6 +213,34 @@ export class PoolOpBuilder {
         ((i) => Address.fromString(i).toScVal())(admin),
         ((i) => xdr.ScVal.scvU32(i))(pool_status),
       ],
+    };
+    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
+  }
+
+  /**
+   * @readonly - VIEW
+   *
+   * Get the pool config
+   * @returns - Base64 XDR string of the InvokeHostOperation
+   */
+  public get_pool_config(): string {
+    const invokeArgs = {
+      method: 'get_pool_config',
+      args: [],
+    };
+    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
+  }
+
+  /**
+   * @readonly - VIEW
+   *
+   * Get the emissions config for all reserves
+   * @returns - Base64 XDR string of the InvokeHostOperation
+   */
+  public get_emissions_config(): string {
+    const invokeArgs = {
+      method: 'get_emissions_config',
+      args: [],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
