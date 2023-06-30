@@ -421,7 +421,6 @@ export type PoolDataKey =
   | { tag: 'ResList' }
   | { tag: 'EmisConfig'; values: [u32] }
   | { tag: 'EmisData'; values: [u32] }
-  | { tag: 'UserConfig'; values: [string] }
   | { tag: 'UserEmis'; values: [UserReserveKey] }
   | { tag: 'Auction'; values: [AuctionKey] }
   | { tag: 'AuctData'; values: [string] };
@@ -433,26 +432,17 @@ export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
   const res: xdr.ScVal[] = [];
   switch (poolDataKey.tag) {
     case 'Admin':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('Admin'));
-      break;
+      return ((i) => xdr.ScVal.scvSymbol(i))('Admin');
     case 'Name':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('Name'));
-      break;
+      return ((i) => xdr.ScVal.scvSymbol(i))('Name');
     case 'Backstop':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('Backstop'));
-      break;
-    case 'TokenHash':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('TokenHash'));
-      break;
+      return ((i) => xdr.ScVal.scvSymbol(i))('Backstop');
     case 'BLNDTkn':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('BLNDTkn'));
-      break;
+      return ((i) => xdr.ScVal.scvSymbol(i))('BLNDTkn');
     case 'USDCTkn':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('USDCTkn'));
-      break;
+      return ((i) => xdr.ScVal.scvSymbol(i))('USDCTkn');
     case 'PoolConfig':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolConfig'));
-      break;
+      return ((i) => xdr.ScVal.scvSymbol(i))('PoolConfig');
     case 'PoolEmis':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolEmis'));
       break;
@@ -469,8 +459,7 @@ export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
       res.push(...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolDataKey.values));
       break;
     case 'ResList':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('ResList'));
-      break;
+      return ((i) => xdr.ScVal.scvSymbol(i))('ResList');
     case 'EmisConfig':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('EmisConfig'));
       res.push(...((i) => [((i) => xdr.ScVal.scvU32(i))(i[0])])(poolDataKey.values));
@@ -478,10 +467,6 @@ export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
     case 'EmisData':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('EmisData'));
       res.push(...((i) => [((i) => xdr.ScVal.scvU32(i))(i[0])])(poolDataKey.values));
-      break;
-    case 'UserConfig':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('UserConfig'));
-      res.push(...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolDataKey.values));
       break;
     case 'UserEmis':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('UserEmis'));
