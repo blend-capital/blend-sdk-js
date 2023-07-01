@@ -351,24 +351,38 @@ export function PositionsFromXDR(xdr_string: string): Positions {
 
   for (const map_entry of data_entry_map) {
     switch (map_entry?.key()?.sym()?.toString()) {
-      case 'liabilities':
+      case 'liabilities': {
         liability_map = new Map<u32, i128>();
-        for (const liability of xdr.ScMap.fromXDR(map_entry.val().toXDR())) {
-          liability_map.set(liability.key().u32(), scvalToBigInt(liability.val()));
+        const liabilities = map_entry.val().map();
+        if (liabilities) {
+          for (const liability of liabilities) {
+            liability_map.set(liability.key().u32(), scvalToBigInt(liability.val()));
+          }
         }
         break;
-      case 'colleratal':
+      }
+      case 'collateral': {
         collateral_map = new Map<u32, i128>();
-        for (const colat of xdr.ScMap.fromXDR(map_entry.val().toXDR())) {
-          collateral_map.set(colat.key().u32(), scvalToBigInt(colat.val()));
+
+        const collaterals = map_entry.val().map();
+        if (collaterals) {
+          for (const collateral of collaterals) {
+            collateral_map.set(collateral.key().u32(), scvalToBigInt(collateral.val()));
+          }
         }
+
         break;
-      case 'supply':
+      }
+      case 'supply': {
         supply_map = new Map<u32, i128>();
-        for (const supply of xdr.ScMap.fromXDR(map_entry.val().toXDR())) {
-          supply_map.set(supply.key().u32(), scvalToBigInt(supply.val()));
+        const supplies = map_entry.val().map();
+        if (supplies) {
+          for (const supply of supplies) {
+            supply_map.set(supply.key().u32(), scvalToBigInt(supply.val()));
+          }
         }
         break;
+      }
       default:
         throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
     }
