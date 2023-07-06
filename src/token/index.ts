@@ -1,7 +1,7 @@
 import { Address, xdr } from 'stellar-base';
 import { u32 } from '..';
 
-export * from './blend_token_op_builder';
+export * from './token_op_builder';
 
 export enum TokenError {
   NotImplemented = 999,

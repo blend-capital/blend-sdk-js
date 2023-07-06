@@ -299,39 +299,6 @@ export class PoolOpBuilder {
   }
 
   /**
-   * @readonly - VIEW
-   *
-   * Get the b rate for a reserve
-   * @returns - Base64 XDR string of the InvokeHostOperation
-   */
-  public get_status(): string {
-    const invokeArgs = { method: 'get_status', args: [] };
-    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
-  }
-
-  /**
-   * @readonly - VIEW
-   *
-   * Get the name of the pool
-   * @returns - Base64 XDR string of the InvokeHostOperation
-   */
-  public get_name(): string {
-    const invokeArgs = { method: 'get_name', args: [] };
-    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
-  }
-
-  /**
-   * @readonly - VIEW
-   *
-   * Get the emission config for the pool reserves
-   * @returns - Base64 XDR string of the InvokeHostOperation
-   */
-  public get_emissions_config(): string {
-    const invokeArgs = { method: 'get_emissions_config', args: [] };
-    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
-  }
-
-  /**
    * Update the emissions for the next cycle
    * @returns - Base64 XDR string of the InvokeHostOperation
    */

@@ -2,7 +2,7 @@ import { Address, Contract, xdr } from 'stellar-base';
 import { u32, i128 } from '..';
 import { bigintToI128 } from '../scval_converter';
 
-export class BlendTokenOpBuilder {
+export class TokenOpBuilder {
   _contract: Contract;
 
   constructor(address: string) {
