@@ -17,16 +17,16 @@ export class TokenOpBuilder {
   }: {
     admin: string;
     decimal: u32;
-    name: Buffer;
-    symbol: Buffer;
+    name: string;
+    symbol: string;
   }): string {
     const invokeArgs = {
       method: 'initialize',
       args: [
         ((i) => Address.fromString(i).toScVal())(admin),
         ((i) => xdr.ScVal.scvU32(i))(decimal),
-        ((i) => xdr.ScVal.scvBytes(i))(name),
-        ((i) => xdr.ScVal.scvBytes(i))(symbol),
+        ((i) => xdr.ScVal.scvString(i))(name),
+        ((i) => xdr.ScVal.scvString(i))(symbol),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
