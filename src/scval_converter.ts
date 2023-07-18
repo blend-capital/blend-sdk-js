@@ -30,8 +30,11 @@ export function bigintToI128(value: bigint): xdr.ScVal {
   }
 
   // store binary in xdr i128 parts
-  const lo = new xdr.Uint64(buf.subarray(12, 16).readInt32BE(), buf.subarray(8, 12).readInt32BE());
-  const hi = new xdr.Int64(buf.subarray(4, 8).readInt32BE(), buf.subarray(0, 4).readInt32BE());
+  const lo = new xdr.Uint64([
+    buf.subarray(12, 16).readInt32BE(),
+    buf.subarray(8, 12).readInt32BE(),
+  ]);
+  const hi = new xdr.Int64([buf.subarray(4, 8).readInt32BE(), buf.subarray(0, 4).readInt32BE()]);
 
   return xdr.ScVal.scvI128(new xdr.Int128Parts({ lo, hi }));
 }
