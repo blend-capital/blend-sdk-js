@@ -109,20 +109,9 @@ export class BackstopOpBuilder {
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 
-  public balance({ pool, user }: { pool: string; user: string }): string {
+  public user_balance({ pool, user }: { pool: string; user: string }): string {
     const invokeArgs = {
-      method: 'balance',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(pool),
-        ((i) => Address.fromString(i).toScVal())(user),
-      ],
-    };
-    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
-  }
-
-  public withdrawal_queue({ pool, user }: { pool: string; user: string }): string {
-    const invokeArgs = {
-      method: 'withdrawal_queue',
+      method: 'user_balance',
       args: [
         ((i) => Address.fromString(i).toScVal())(pool),
         ((i) => Address.fromString(i).toScVal())(user),
@@ -144,13 +133,13 @@ export class BackstopOpBuilder {
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 
-  public distribute(): string {
-    const invokeArgs = { method: 'distribute', args: [] };
+  public update_emission_cycle(): string {
+    const invokeArgs = { method: 'update_emission_cycle', args: [] };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 
-  public next_distribution(): string {
-    const invokeArgs = { method: 'next_distribution', args: [] };
+  public next_emission_cycle(): string {
+    const invokeArgs = { method: 'next_emission_cycle', args: [] };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 
@@ -174,26 +163,6 @@ export class BackstopOpBuilder {
     const invokeArgs = {
       method: 'pool_eps',
       args: [((i) => Address.fromString(i).toScVal())(pool_address)],
-    };
-    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
-  }
-
-  public pool_claim({
-    pool_address,
-    to,
-    amount,
-  }: {
-    pool_address: string;
-    to: string;
-    amount: i128;
-  }): string {
-    const invokeArgs = {
-      method: 'pool_claim',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(pool_address),
-        ((i) => Address.fromString(i).toScVal())(to),
-        ((i) => bigintToI128(i))(amount),
-      ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
