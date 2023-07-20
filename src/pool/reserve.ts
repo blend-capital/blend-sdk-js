@@ -1,5 +1,5 @@
-import { Address, xdr } from 'stellar-base';
-import { bigintToI128, scvalToBigInt, scvalToNumber, scvalToString } from '../scval_converter';
+import { xdr } from 'stellar-base';
+import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter';
 
 export type EstReserveData = {
   b_rate: number;
@@ -91,8 +91,6 @@ export class Reserve {
 export class ReserveConfig {
   constructor(
     public index: number,
-    public b_token_id: string,
-    public d_token_id: string,
     public decimals: number,
     public c_factor: number,
     public l_factor: number,
@@ -114,8 +112,6 @@ export class ReserveConfig {
     }
 
     let index: number | undefined;
-    let b_token_id: string | undefined;
-    let d_token_id: string | undefined;
     let decimals: number | undefined;
     let c_factor: number | undefined;
     let l_factor: number | undefined;
@@ -129,12 +125,6 @@ export class ReserveConfig {
       switch (map_entry?.key()?.sym()?.toString()) {
         case 'index':
           index = scvalToNumber(map_entry.val());
-          break;
-        case 'b_token':
-          b_token_id = scvalToString(map_entry.val(), 'hex');
-          break;
-        case 'd_token':
-          d_token_id = scvalToString(map_entry.val(), 'hex');
           break;
         case 'decimals':
           decimals = scvalToNumber(map_entry.val());
@@ -170,9 +160,7 @@ export class ReserveConfig {
 
     if (
       index == undefined ||
-      b_token_id == undefined ||
       c_factor == undefined ||
-      d_token_id == undefined ||
       decimals == undefined ||
       index == undefined ||
       l_factor == undefined ||
@@ -188,8 +176,6 @@ export class ReserveConfig {
 
     return new ReserveConfig(
       index,
-      b_token_id,
-      d_token_id,
       decimals,
       c_factor,
       l_factor,
@@ -202,22 +188,14 @@ export class ReserveConfig {
     );
   }
 
-  public ReserveConfigToXDR(reserveConfig?: ReserveConfig): xdr.ScVal {
+  static ReserveConfigToXDR(reserveConfig?: ReserveConfig): xdr.ScVal {
     if (!reserveConfig) {
       return xdr.ScVal.scvVoid();
     }
     const arr = [
       new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('b_token'),
-        val: ((i) => Address.fromString(i).toScVal())(reserveConfig.b_token_id),
-      }),
-      new xdr.ScMapEntry({
         key: ((i) => xdr.ScVal.scvSymbol(i))('c_factor'),
         val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.c_factor),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('d_token'),
-        val: ((i) => Address.fromString(i).toScVal())(reserveConfig.d_token_id),
       }),
       new xdr.ScMapEntry({
         key: ((i) => xdr.ScVal.scvSymbol(i))('decimals'),
@@ -263,9 +241,11 @@ export class ReserveConfig {
 export class ReserveData {
   constructor(
     public d_rate: bigint,
+    public b_rate: bigint,
     public ir_mod: bigint,
     public b_supply: bigint,
     public d_supply: bigint,
+    public backstop_credit: bigint,
     public last_time: number
   ) {}
 
@@ -279,14 +259,19 @@ export class ReserveData {
     }
 
     let d_rate: bigint | undefined;
+    let b_rate: bigint | undefined;
     let ir_mod: bigint | undefined;
     let b_supply: bigint | undefined;
     let d_supply: bigint | undefined;
+    let backstop_credit: bigint | undefined;
     let last_time: number | undefined;
     for (const map_entry of data_entry_map) {
       switch (map_entry?.key()?.sym()?.toString()) {
         case 'd_rate':
           d_rate = scvalToBigInt(map_entry.val());
+          break;
+        case 'b_rate':
+          b_rate = scvalToBigInt(map_entry.val());
           break;
         case 'ir_mod':
           ir_mod = scvalToBigInt(map_entry.val());
@@ -296,6 +281,9 @@ export class ReserveData {
           break;
         case 'd_supply':
           d_supply = scvalToBigInt(map_entry.val());
+          break;
+        case 'backstop_credit':
+          backstop_credit = scvalToBigInt(map_entry.val());
           break;
         case 'last_time':
           last_time = scvalToNumber(map_entry.val());
@@ -309,15 +297,17 @@ export class ReserveData {
 
     if (
       d_rate == undefined ||
+      b_rate == undefined ||
       ir_mod == undefined ||
       b_supply == undefined ||
       d_supply == undefined ||
+      backstop_credit == undefined ||
       last_time == undefined
     ) {
       throw Error('scvMap value malformed');
     }
 
-    return new ReserveData(d_rate, ir_mod, b_supply, d_supply, last_time);
+    return new ReserveData(d_rate, b_rate, ir_mod, b_supply, d_supply, backstop_credit, last_time);
   }
 
   public ReserveDataToXDR(reserveData?: ReserveData): xdr.ScVal {
