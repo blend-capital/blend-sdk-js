@@ -277,8 +277,8 @@ export function PoolBalanceFromXDR(xdr_string: string): PoolBalance {
     }
   }
 
-  if (!shares || !tokens || !q4w) {
-    throw Error('scvMap value malformed');
+  if (shares == undefined || tokens == undefined || q4w == undefined) {
+    throw Error(`scvMap value malformed`);
   }
   return {
     shares,

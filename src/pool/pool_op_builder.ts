@@ -59,19 +59,10 @@ export class PoolOpBuilder {
    * Update the pool backstop take rate
    * @returns - Base64 XDR string of the InvokeHostOperation
    */
-  public update_pool({
-    admin,
-    backstop_take_rate,
-  }: {
-    admin: string;
-    backstop_take_rate: u64;
-  }): string {
+  public update_pool({ backstop_take_rate }: { backstop_take_rate: u64 }): string {
     const invokeArgs = {
       method: 'update_pool',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(admin),
-        ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(backstop_take_rate),
-      ],
+      args: [((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(backstop_take_rate)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
@@ -80,19 +71,10 @@ export class PoolOpBuilder {
    * Initialize a new reserve
    * @returns - Base64 XDR string of the InvokeHostOperation
    */
-  public init_reserve({
-    admin,
-    asset,
-    config,
-  }: {
-    admin: string;
-    asset: string;
-    config: ReserveConfig;
-  }): string {
+  public init_reserve({ asset, config }: { asset: string; config: ReserveConfig }): string {
     const invokeArgs = {
       method: 'init_reserve',
       args: [
-        ((i) => Address.fromString(i).toScVal())(admin),
         ((i) => Address.fromString(i).toScVal())(asset),
         ((i) => ReserveConfig.ReserveConfigToXDR(i))(config),
       ],
@@ -104,19 +86,10 @@ export class PoolOpBuilder {
    * Update an existing reserve
    * @returns - Base64 XDR string of the InvokeHostOperation
    */
-  public update_reserve({
-    admin,
-    asset,
-    config,
-  }: {
-    admin: string;
-    asset: string;
-    config: ReserveConfig;
-  }): string {
+  public update_reserve({ asset, config }: { asset: string; config: ReserveConfig }): string {
     const invokeArgs = {
       method: 'update_reserve',
       args: [
-        ((i) => Address.fromString(i).toScVal())(admin),
         ((i) => Address.fromString(i).toScVal())(asset),
         ((i) => ReserveConfig.ReserveConfigToXDR(i))(config),
       ],
@@ -206,13 +179,10 @@ export class PoolOpBuilder {
    * Set the status of the pool
    * @returns - Base64 XDR string of the InvokeHostOperation
    */
-  public set_status({ admin, pool_status }: { admin: string; pool_status: u32 }): string {
+  public set_status({ pool_status }: { pool_status: u32 }): string {
     const invokeArgs = {
       method: 'set_status',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(admin),
-        ((i) => xdr.ScVal.scvU32(i))(pool_status),
-      ],
+      args: [((i) => xdr.ScVal.scvU32(i))(pool_status)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
@@ -261,16 +231,13 @@ export class PoolOpBuilder {
    * @returns - Base64 XDR string of the InvokeHostOperation
    */
   public set_emissions_config({
-    admin,
     res_emission_metadata,
   }: {
-    admin: string;
     res_emission_metadata: Array<ReserveEmissionMetadata>;
   }): string {
     const invokeArgs = {
       method: 'set_emissions_config',
       args: [
-        ((i) => Address.fromString(i).toScVal())(admin),
         ((i) => xdr.ScVal.scvVec(i.map((j) => ReserveEmissionMetadataToXDR(j))))(
           res_emission_metadata
         ),
