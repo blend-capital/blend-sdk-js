@@ -7,7 +7,9 @@ export class PoolConfig {
   static fromContractDataXDR(xdr_string: string): PoolConfig {
     const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
       .contractData()
-      ?.val()
+      .body()
+      .data()
+      .val()
       .map();
     if (data_entry_map == undefined) {
       throw Error('contract data value is not a map');

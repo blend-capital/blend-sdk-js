@@ -105,7 +105,9 @@ export class ReserveConfig {
   static fromContractDataXDR(xdr_string: string): ReserveConfig {
     const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
       .contractData()
-      ?.val()
+      .body()
+      .data()
+      .val()
       .map();
     if (data_entry_map == undefined) {
       throw Error('contract data value is not a map');
@@ -252,7 +254,9 @@ export class ReserveData {
   static fromContractDataXDR(xdr_string: string): ReserveData {
     const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
       .contractData()
-      ?.val()
+      .body()
+      .data()
+      .val()
       .map();
     if (data_entry_map == undefined) {
       throw Error('contract data value is not a map');

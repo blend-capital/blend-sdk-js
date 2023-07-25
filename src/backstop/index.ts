@@ -1,6 +1,6 @@
 import { xdr, Address } from 'stellar-base';
 import { u64, i128 } from '..';
-import { bigintToI128 } from '../scval_converter';
+import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter';
 
 export * from './backstop_op_builder';
 export * from './Q4W';
@@ -118,16 +118,181 @@ export function PoolUserKeyToXDR(poolUserKey?: PoolUserKey): xdr.ScVal {
   return xdr.ScVal.scvMap(arr);
 }
 
+interface Q4W {
+  amount: bigint;
+  exp: number;
+}
+
+export interface UserBalance {
+  shares: i128;
+  q4w: Q4W[];
+}
+
+export function UserBalanceFromXDR(xdr_string: string): UserBalance {
+  const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
+    .contractData()
+    .body()
+    .data()
+    .val()
+    .map();
+  if (data_entry_map == undefined) {
+    throw Error('contract data value is not a map');
+  }
+  let shares: bigint | undefined;
+  let q4w: Q4W[] | undefined;
+  for (const map_entry of data_entry_map) {
+    switch (map_entry?.key()?.sym()?.toString()) {
+      case 'shares':
+        shares = scvalToBigInt(map_entry.val());
+        break;
+      case 'q4w':
+        q4w = map_entry
+          .val()
+          .vec()
+          ?.map((entry) => {
+            const q4w_array = entry.map();
+            let amount: bigint | undefined;
+            let exp: number | undefined;
+            for (const q4w of q4w_array ?? []) {
+              switch (q4w.key().sym().toString()) {
+                case 'amount':
+                  amount = scvalToBigInt(q4w.val());
+                  break;
+                case 'exp':
+                  exp = scvalToNumber(q4w.val());
+                  break;
+                default:
+                  throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+              }
+            }
+            if (!amount || !exp) {
+              throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+            }
+            return { amount, exp };
+          });
+        break;
+      default:
+        throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+    }
+  }
+  if (!shares || !q4w) {
+    throw Error('scvMap value malformed');
+  }
+  return {
+    shares,
+    q4w,
+  };
+}
+
+export function Q4WFromXDR(xdr_string: string): UserBalance {
+  const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
+    .contractData()
+    .body()
+    .data()
+    .val()
+    .map();
+  if (data_entry_map == undefined) {
+    throw Error('contract data value is not a map');
+  }
+  let shares: bigint | undefined;
+  let q4w: Q4W[] | undefined;
+  for (const map_entry of data_entry_map) {
+    switch (map_entry?.key()?.sym()?.toString()) {
+      case 'shares':
+        shares = scvalToBigInt(map_entry.val());
+        break;
+      case 'q4w':
+        q4w = map_entry
+          .val()
+          .vec()
+          ?.map((entry) => {
+            const q4w_array = entry.map();
+            let amount: bigint | undefined;
+            let exp: number | undefined;
+            for (const q4w of q4w_array ?? []) {
+              switch (q4w.key().sym().toString()) {
+                case 'amount':
+                  amount = scvalToBigInt(q4w.val());
+                  break;
+                case 'exp':
+                  exp = scvalToNumber(q4w.val());
+                  break;
+                default:
+                  throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+              }
+            }
+            if (!amount || !exp) {
+              throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+            }
+            return { amount, exp };
+          });
+        break;
+      default:
+        throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+    }
+  }
+
+  if (!shares || !q4w) {
+    throw Error('scvMap value malformed');
+  }
+  return {
+    shares,
+    q4w,
+  };
+}
+
+export interface PoolBalance {
+  shares: i128;
+  tokens: i128;
+  q4w: i128;
+}
+
+export function PoolBalanceFromXDR(xdr_string: string): PoolBalance {
+  const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
+    .contractData()
+    .body()
+    .data()
+    .val()
+    .map();
+  if (data_entry_map == undefined) {
+    throw Error('contract data value is not a map');
+  }
+  let shares: bigint | undefined;
+  let tokens: bigint | undefined;
+  let q4w: bigint | undefined;
+
+  for (const map_entry of data_entry_map) {
+    switch (map_entry?.key()?.sym()?.toString()) {
+      case 'shares':
+        shares = scvalToBigInt(map_entry.val());
+        break;
+      case 'tokens':
+        tokens = scvalToBigInt(map_entry.val());
+        break;
+      case 'q4w':
+        q4w = scvalToBigInt(map_entry.val());
+        break;
+      default:
+        throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+    }
+  }
+
+  if (!shares || !tokens || !q4w) {
+    throw Error('scvMap value malformed');
+  }
+  return {
+    shares,
+    tokens,
+    q4w,
+  };
+}
+
 export type BackstopDataKey =
-  | { tag: 'Shares'; values: [PoolUserKey] }
-  | { tag: 'Q4W'; values: [PoolUserKey] }
-  | { tag: 'PoolTkn'; values: [string] }
-  | { tag: 'PoolShares'; values: [string] }
-  | { tag: 'PoolQ4W'; values: [string] }
-  | { tag: 'NextDist' }
+  | { tag: 'UserBalance'; values: [PoolUserKey] }
+  | { tag: 'PoolBalance'; values: [string] }
+  | { tag: 'NextEmis' }
   | { tag: 'RewardZone' }
   | { tag: 'PoolEPS'; values: [string] }
-  | { tag: 'PoolEmis'; values: [string] }
   | { tag: 'BEmisCfg'; values: [string] }
   | { tag: 'BEmisData'; values: [string] }
   | { tag: 'UEmisData'; values: [PoolUserKey] }
@@ -141,46 +306,24 @@ export function BackstopDataKeyToXDR(backstopDataKey?: BackstopDataKey): xdr.ScV
   }
   const res: xdr.ScVal[] = [];
   switch (backstopDataKey.tag) {
-    case 'Shares':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('Shares'));
+    case 'UserBalance':
+      res.push(((i) => xdr.ScVal.scvSymbol(i))('UserBalance'));
       res.push(...((i) => [((i) => PoolUserKeyToXDR(i))(i[0])])(backstopDataKey.values));
       break;
-    case 'Q4W':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('Q4W'));
-      res.push(...((i) => [((i) => PoolUserKeyToXDR(i))(i[0])])(backstopDataKey.values));
-      break;
-    case 'PoolTkn':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolTkn'));
+    case 'PoolBalance':
+      res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolBalance'));
       res.push(
         ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
       );
       break;
-    case 'PoolShares':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolShares'));
-      res.push(
-        ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
-      );
-      break;
-    case 'PoolQ4W':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolQ4W'));
-      res.push(
-        ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
-      );
-      break;
-    case 'NextDist':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('NextDist'));
+    case 'NextEmis':
+      res.push(((i) => xdr.ScVal.scvSymbol(i))('NextEmis'));
       break;
     case 'RewardZone':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('RewardZone'));
       break;
     case 'PoolEPS':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolEPS'));
-      res.push(
-        ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
-      );
-      break;
-    case 'PoolEmis':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolEmis'));
       res.push(
         ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
       );

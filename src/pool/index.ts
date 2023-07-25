@@ -127,7 +127,9 @@ export function ReserveEmissionsConfigToXDR(
 export function ReserveEmissionsConfigFromXDR(xdr_string: string): ReserveEmissionsConfig {
   const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
     .contractData()
-    ?.val()
+    .body()
+    .data()
+    .val()
     .map();
   if (data_entry_map == undefined) {
     throw Error('contract data value is not a map');
@@ -188,7 +190,9 @@ export function ReserveEmissionsDataToXDR(reserveEmissionsData?: ReserveEmission
 export function ReserveEmissionsDataFromXDR(xdr_string: string): ReserveEmissionsData {
   const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
     .contractData()
-    ?.val()
+    .body()
+    .data()
+    .val()
     .map();
   if (data_entry_map == undefined) {
     throw Error('contract data value is not a map');
@@ -247,7 +251,9 @@ export function UserEmissionDataToXDR(userEmissionData?: UserEmissionData): xdr.
 export function UserEmissionDataFromXDR(xdr_string: string): UserEmissionData {
   const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
     .contractData()
-    ?.val()
+    .body()
+    .data()
+    .val()
     .map();
   if (data_entry_map == undefined) {
     throw Error('contract data value is not a map');
@@ -339,7 +345,9 @@ export interface Positions {
 export function PositionsFromXDR(xdr_string: string): Positions {
   const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
     .contractData()
-    ?.val()
+    .body()
+    .data()
+    .val()
     .map();
 
   if (data_entry_map == undefined) {
@@ -363,7 +371,6 @@ export function PositionsFromXDR(xdr_string: string): Positions {
       }
       case 'collateral': {
         collateral_map = new Map<u32, i128>();
-
         const collaterals = map_entry.val().map();
         if (collaterals) {
           for (const collateral of collaterals) {
