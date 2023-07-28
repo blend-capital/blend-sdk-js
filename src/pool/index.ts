@@ -311,7 +311,7 @@ export function UserReserveKeyToXDR(userReserveKey?: UserReserveKey): xdr.ScVal 
  */
 export interface Request {
   request_type: u32;
-  reserve_index: u32;
+  address: string;
   amount: i128;
 }
 
@@ -321,16 +321,16 @@ export function RequestToXDR(request?: Request): xdr.ScVal {
   }
   const arr = [
     new xdr.ScMapEntry({
+      key: ((i) => xdr.ScVal.scvSymbol(i))('address'),
+      val: ((i) => Address.fromString(i).toScVal())(request.address),
+    }),
+    new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('amount'),
       val: ((i) => bigintToI128(i))(request.amount),
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('request_type'),
       val: ((i) => xdr.ScVal.scvU32(i))(request.request_type),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('reserve_index'),
-      val: ((i) => xdr.ScVal.scvU32(i))(request.reserve_index),
     }),
   ];
   return xdr.ScVal.scvMap(arr);
@@ -465,8 +465,7 @@ export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
     case 'PoolConfig':
       return ((i) => xdr.ScVal.scvSymbol(i))('PoolConfig');
     case 'PoolEmis':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolEmis'));
-      break;
+      return ((i) => xdr.ScVal.scvSymbol(i))('PoolEmis');
     case 'Positions':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('Positions'));
       res.push(...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolDataKey.values));

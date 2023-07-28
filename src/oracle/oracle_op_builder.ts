@@ -1,4 +1,5 @@
-import { Address, Contract, xdr } from 'stellar-base';
+import { Address, Contract } from 'stellar-base';
+import { bigintToI128 } from '../scval_converter';
 
 export class OracleOpBuilder {
   _contract: Contract;
@@ -10,10 +11,7 @@ export class OracleOpBuilder {
   public set_price({ asset, price }: { asset: string; price: bigint }): string {
     const invokeArgs = {
       method: 'set_price',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(asset),
-        ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(price),
-      ],
+      args: [((i) => Address.fromString(i).toScVal())(asset), ((i) => bigintToI128(i))(price)],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
