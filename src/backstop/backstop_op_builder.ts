@@ -13,10 +13,12 @@ export class BackstopOpBuilder {
     backstop_token,
     blnd_token,
     pool_factory,
+    drop_list,
   }: {
     backstop_token: string;
     blnd_token: string;
     pool_factory: string;
+    drop_list: Map<string, i128>;
   }): string {
     const invokeArgs = {
       method: 'initialize',
@@ -24,6 +26,26 @@ export class BackstopOpBuilder {
         ((i) => Address.fromString(i).toScVal())(backstop_token),
         ((i) => Address.fromString(i).toScVal())(blnd_token),
         ((i) => Address.fromString(i).toScVal())(pool_factory),
+        ((i) =>
+          xdr.ScVal.scvMap(
+            Array.from(i.entries())
+              .sort((a, b) => {
+                // sort by key in alphabetical order
+                if (a[0] < b[0]) {
+                  return -1;
+                }
+                if (a[0] > b[0]) {
+                  return 1;
+                }
+                return 0;
+              })
+              .map(([key, value]) => {
+                return new xdr.ScMapEntry({
+                  key: ((i) => Address.fromString(i).toScVal())(key),
+                  val: ((i) => bigintToI128(i))(value),
+                });
+              })
+          ))(drop_list),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
