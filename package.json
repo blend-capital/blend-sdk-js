@@ -38,6 +38,6 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "stellar-base": "^10.0.0-soroban.3"
+    "stellar-base": "^10.0.0-soroban.6"
   }
 }
