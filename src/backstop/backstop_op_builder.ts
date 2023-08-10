@@ -202,9 +202,7 @@ export class BackstopOpBuilder {
       method: 'claim',
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => xdr.ScVal.scvVec(i.map((j) => Address.contract(Buffer.from(j, 'hex')).toScVal())))(
-          pool_addresses
-        ),
+        ((i) => xdr.ScVal.scvVec(i.map((j) => Address.fromString(j).toScVal())))(pool_addresses),
         ((i) => Address.fromString(i).toScVal())(to),
       ],
     };
