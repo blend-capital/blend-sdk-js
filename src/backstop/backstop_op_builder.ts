@@ -160,11 +160,6 @@ export class BackstopOpBuilder {
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 
-  public next_emission_cycle(): string {
-    const invokeArgs = { method: 'next_emission_cycle', args: [] };
-    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
-  }
-
   public add_reward({ to_add, to_remove }: { to_add: string; to_remove: string }): string {
     const invokeArgs = {
       method: 'add_reward',
