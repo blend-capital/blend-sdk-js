@@ -56,9 +56,9 @@ export class TokenOpBuilder {
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 
-  public setauthorized({ id, authorize }: { id: string; authorize: boolean }): string {
+  public set_authorized({ id, authorize }: { id: string; authorize: boolean }): string {
     const invokeArgs = {
-      method: 'setauthorized',
+      method: 'set_authorized',
       args: [
         ((i) => Address.fromString(i).toScVal())(id),
         ((i) => xdr.ScVal.scvBool(i))(authorize),
@@ -67,41 +67,24 @@ export class TokenOpBuilder {
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 
-  public increase_allowance({
+  public approve({
     from,
     spender,
     amount,
+    expiration_ledger,
   }: {
     from: string;
     spender: string;
     amount: i128;
+    expiration_ledger: number;
   }): string {
     const invokeArgs = {
-      method: 'increase_allowance',
+      method: 'approve',
       args: [
         ((i) => Address.fromString(i).toScVal())(from),
         ((i) => Address.fromString(i).toScVal())(spender),
         ((i) => bigintToI128(i))(amount),
-      ],
-    };
-    return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
-  }
-
-  public decrease_allowance({
-    from,
-    spender,
-    amount,
-  }: {
-    from: string;
-    spender: string;
-    amount: i128;
-  }): string {
-    const invokeArgs = {
-      method: 'decrease_allowance',
-      args: [
-        ((i) => Address.fromString(i).toScVal())(from),
-        ((i) => Address.fromString(i).toScVal())(spender),
-        ((i) => bigintToI128(i))(amount),
+        ((i) => xdr.ScVal.scvU32(i))(expiration_ledger),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
@@ -119,7 +102,7 @@ export class TokenOpBuilder {
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 
-  public transferfrom({
+  public transfer_from({
     spender,
     from,
     to,
@@ -131,7 +114,7 @@ export class TokenOpBuilder {
     amount: i128;
   }): string {
     const invokeArgs = {
-      method: 'transferfrom',
+      method: 'transfer_from',
       args: [
         ((i) => Address.fromString(i).toScVal())(spender),
         ((i) => Address.fromString(i).toScVal())(from),
@@ -150,7 +133,7 @@ export class TokenOpBuilder {
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
   }
 
-  public burnfrom({
+  public burn_from({
     _spender,
     from,
     amount,
@@ -160,7 +143,7 @@ export class TokenOpBuilder {
     amount: i128;
   }): string {
     const invokeArgs = {
-      method: 'burnfrom',
+      method: 'burn_from',
       args: [
         ((i) => Address.fromString(i).toScVal())(_spender),
         ((i) => Address.fromString(i).toScVal())(from),
