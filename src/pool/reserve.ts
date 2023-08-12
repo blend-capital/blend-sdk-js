@@ -30,13 +30,15 @@ export class Reserve {
    */
   public estimateData(backstop_take_rate: number, timestamp: number | undefined): EstReserveData {
     const base_rate = 0.01; // base rate
+    const scaler = 10 ** this.config.decimals;
     let d_rate = Number(this.data.d_rate) / 1e9;
-    let total_liabilities = (Number(this.data.d_supply) / 1e7) * d_rate;
+    let total_liabilities = (Number(this.data.d_supply) / scaler) * d_rate;
     let b_rate =
       this.data.b_supply == BigInt(0)
         ? 1
-        : (total_liabilities + Number(this.pool_tokens) / 1e7) / (Number(this.data.b_supply) / 1e7);
-    let total_supply = (Number(this.data.b_supply) / 1e7) * b_rate;
+        : (total_liabilities + Number(this.pool_tokens) / scaler) /
+          (Number(this.data.b_supply) / scaler);
+    let total_supply = (Number(this.data.b_supply) / scaler) * b_rate;
 
     if (total_supply != 0) {
       let cur_apy: number;
