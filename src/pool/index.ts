@@ -504,44 +504,6 @@ export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
   return xdr.ScVal.scvVec(res);
 }
 
-export interface LiquidationMetadata {
-  collateral: Map<string, i128>;
-  liability: Map<string, i128>;
-}
-
-export function LiquidationMetadataToXDR(liquidationMetadata?: LiquidationMetadata): xdr.ScVal {
-  if (!liquidationMetadata) {
-    return xdr.ScVal.scvVoid();
-  }
-  const arr = [
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('collateral'),
-      val: ((i) =>
-        xdr.ScVal.scvMap(
-          Array.from(i.entries()).map(([key, value]) => {
-            return new xdr.ScMapEntry({
-              key: ((i) => Address.fromString(i).toScVal())(key),
-              val: ((i) => bigintToI128(i))(value),
-            });
-          })
-        ))(liquidationMetadata.collateral),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('liability'),
-      val: ((i) =>
-        xdr.ScVal.scvMap(
-          Array.from(i.entries()).map(([key, value]) => {
-            return new xdr.ScMapEntry({
-              key: ((i) => Address.fromString(i).toScVal())(key),
-              val: ((i) => bigintToI128(i))(value),
-            });
-          })
-        ))(liquidationMetadata.liability),
-    }),
-  ];
-  return xdr.ScVal.scvMap(arr);
-}
-
 export interface AuctionQuote {
   bid: Array<[string, i128]>;
   block: u32;

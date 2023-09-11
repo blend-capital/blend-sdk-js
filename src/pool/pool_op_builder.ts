@@ -2,9 +2,7 @@ import { Address, Contract, xdr } from 'stellar-base';
 import { u32, u64 } from '..';
 import {
   ReserveEmissionMetadata,
-  LiquidationMetadata,
   ReserveEmissionMetadataToXDR,
-  LiquidationMetadataToXDR,
   ReserveConfig,
   RequestToXDR,
   Request,
@@ -293,16 +291,16 @@ export class PoolOpBuilder {
    */
   public new_liquidation_auction({
     user,
-    data,
+    pct_liquidated,
   }: {
     user: string;
-    data: LiquidationMetadata;
+    pct_liquidated: u64;
   }): string {
     const invokeArgs = {
       method: 'new_liquidation_auction',
       args: [
         ((i) => Address.fromString(i).toScVal())(user),
-        ((i) => LiquidationMetadataToXDR(i))(data),
+        ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(pct_liquidated),
       ],
     };
     return this._contract.call(invokeArgs.method, ...invokeArgs.args).toXDR('base64');
