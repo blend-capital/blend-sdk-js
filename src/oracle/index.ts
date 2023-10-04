@@ -1,4 +1,4 @@
-import { scValToBigInt, xdr } from 'stellar-base';
+import { scValToBigInt, xdr } from 'soroban-client';
 import { i128, u64 } from '..';
 
 export * from './oracle_op_builder';
@@ -16,8 +16,6 @@ export interface PriceData {
 export function PriceDataFromXDR(xdr_string: string): PriceData {
   const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
     .contractData()
-    .body()
-    .data()
     .val()
     .map();
 

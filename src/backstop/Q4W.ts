@@ -1,4 +1,4 @@
-import { xdr } from 'stellar-base';
+import { xdr } from 'soroban-client';
 import { scvalToBigInt, scvalToNumber } from '../scval_converter';
 
 export class Q4W {
@@ -14,7 +14,7 @@ export class Q4W {
     const q4w: Q4W[] = [];
 
     const data_entry = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64').contractData();
-    const data_val = data_entry.body().data().val().vec();
+    const data_val = data_entry.val().vec();
     if (data_val == undefined) {
       throw Error('contract data value is not an array');
     }

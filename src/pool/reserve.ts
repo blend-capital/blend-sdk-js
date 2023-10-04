@@ -1,4 +1,4 @@
-import { xdr } from 'stellar-base';
+import { xdr } from 'soroban-client';
 import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter';
 
 export type EstReserveData = {
@@ -107,8 +107,6 @@ export class ReserveConfig {
   static fromContractDataXDR(xdr_string: string): ReserveConfig {
     const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
       .contractData()
-      .body()
-      .data()
       .val()
       .map();
     if (data_entry_map == undefined) {
@@ -256,8 +254,6 @@ export class ReserveData {
   static fromContractDataXDR(xdr_string: string): ReserveData {
     const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
       .contractData()
-      .body()
-      .data()
       .val()
       .map();
     if (data_entry_map == undefined) {

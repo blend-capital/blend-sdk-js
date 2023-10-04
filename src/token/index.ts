@@ -1,4 +1,4 @@
-import { Address, xdr } from 'stellar-base';
+import { Address, xdr } from 'soroban-client';
 import { u32 } from '..';
 
 export * from './token_op_builder';

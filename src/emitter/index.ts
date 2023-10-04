@@ -1,6 +1,6 @@
-import { xdr } from 'stellar-base';
+import { xdr } from 'soroban-client';
 
-export * from './emitter_op_builder';
+export * from './emitter_client';
 
 export enum EmitterError {
   AlreadyInitialized = 10,

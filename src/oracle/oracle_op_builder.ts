@@ -1,4 +1,4 @@
-import { Address, Contract } from 'stellar-base';
+import { Address, Contract } from 'soroban-client';
 import { bigintToI128 } from '../scval_converter';
 
 export class OracleOpBuilder {
