@@ -1,5 +1,5 @@
-import { Address, xdr } from 'stellar-base';
-import { scvalToNumber, scvalToString } from '../scval_converter';
+import { Address, xdr } from 'soroban-client';
+import { scvalToNumber, scvalToString } from '../scval_converter.js';
 
 export class PoolConfig {
   constructor(public bstop_rate: number, public oracle: string, public status: number) {}
@@ -7,8 +7,6 @@ export class PoolConfig {
   static fromContractDataXDR(xdr_string: string): PoolConfig {
     const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
       .contractData()
-      .body()
-      .data()
       .val()
       .map();
     if (data_entry_map == undefined) {

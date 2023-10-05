@@ -1,6 +1,6 @@
-import { xdr, Address } from 'stellar-base';
+import { xdr, Address } from 'soroban-client';
 
-export * from './pool_factory_op_builder';
+export * from './pool_factory_client.js';
 
 export enum PoolFactoryError {
   InvalidPoolInitArgs = 50,

@@ -1,10 +1,10 @@
-import { xdr, Address } from 'stellar-base';
-import { u32, u64, u128, i128 } from '..';
-import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter';
+import { xdr, Address } from 'soroban-client';
+import { u32, u64, u128, i128 } from '../index.js';
+import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter.js';
 
-export * from './pool_op_builder';
-export * from './pool_config';
-export * from './reserve';
+export * from './pool_client.js';
+export * from './pool_config.js';
+export * from './reserve.js';
 
 export enum PoolError {
   NotAuthorized = 1,
@@ -127,8 +127,6 @@ export function ReserveEmissionsConfigToXDR(
 export function ReserveEmissionsConfigFromXDR(xdr_string: string): ReserveEmissionsConfig {
   const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
     .contractData()
-    .body()
-    .data()
     .val()
     .map();
   if (data_entry_map == undefined) {
@@ -190,8 +188,6 @@ export function ReserveEmissionsDataToXDR(reserveEmissionsData?: ReserveEmission
 export function ReserveEmissionsDataFromXDR(xdr_string: string): ReserveEmissionsData {
   const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
     .contractData()
-    .body()
-    .data()
     .val()
     .map();
   if (data_entry_map == undefined) {
@@ -251,8 +247,6 @@ export function UserEmissionDataToXDR(userEmissionData?: UserEmissionData): xdr.
 export function UserEmissionDataFromXDR(xdr_string: string): UserEmissionData {
   const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
     .contractData()
-    .body()
-    .data()
     .val()
     .map();
   if (data_entry_map == undefined) {
@@ -345,8 +339,6 @@ export interface Positions {
 export function PositionsFromXDR(xdr_string: string): Positions {
   const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
     .contractData()
-    .body()
-    .data()
     .val()
     .map();
 

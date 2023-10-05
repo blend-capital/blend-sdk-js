@@ -1,5 +1,5 @@
 // import BigNumber from 'bignumber.js';
-import { xdr } from 'stellar-base';
+import { xdr } from 'soroban-client';
 import * as converter from '../src/scval_converter';
 
 test('convert bigint to i128 ScVal', () => {

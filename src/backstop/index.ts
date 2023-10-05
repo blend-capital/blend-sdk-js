@@ -1,9 +1,9 @@
-import { xdr, Address } from 'stellar-base';
-import { u64, i128 } from '..';
-import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter';
+import { xdr, Address } from 'soroban-client';
+import { u64, i128 } from '../index.js';
+import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter.js';
 
-export * from './backstop_op_builder';
-export * from './Q4W';
+export * from './backstop_client.js';
+export * from './Q4W.js';
 
 export enum BackstopError {
   BadRequest = 1,
@@ -131,8 +131,6 @@ export interface UserBalance {
 export function UserBalanceFromXDR(xdr_string: string): UserBalance {
   const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
     .contractData()
-    .body()
-    .data()
     .val()
     .map();
   if (data_entry_map == undefined) {
@@ -187,8 +185,6 @@ export function UserBalanceFromXDR(xdr_string: string): UserBalance {
 export function Q4WFromXDR(xdr_string: string): UserBalance {
   const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
     .contractData()
-    .body()
-    .data()
     .val()
     .map();
   if (data_entry_map == undefined) {
@@ -250,8 +246,6 @@ export interface PoolBalance {
 export function PoolBalanceFromXDR(xdr_string: string): PoolBalance {
   const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
     .contractData()
-    .body()
-    .data()
     .val()
     .map();
   if (data_entry_map == undefined) {
@@ -287,18 +281,28 @@ export function PoolBalanceFromXDR(xdr_string: string): PoolBalance {
   };
 }
 
+/**
+ * The pool's backstop data
+ */
+export interface PoolBackstopData {
+  blnd: i128;
+  q4w_pct: i128;
+  tokens: i128;
+  usdc: i128;
+}
+
 export type BackstopDataKey =
-  | { tag: 'UserBalance'; values: [PoolUserKey] }
-  | { tag: 'PoolBalance'; values: [string] }
-  | { tag: 'NextEmis' }
-  | { tag: 'RewardZone' }
-  | { tag: 'PoolEPS'; values: [string] }
-  | { tag: 'BEmisCfg'; values: [string] }
-  | { tag: 'BEmisData'; values: [string] }
-  | { tag: 'UEmisData'; values: [PoolUserKey] }
-  | { tag: 'BckstpTkn' }
-  | { tag: 'PoolFact' }
-  | { tag: 'BLNDTkn' };
+  | { tag: 'UserBalance'; values: readonly [PoolUserKey] }
+  | { tag: 'PoolBalance'; values: readonly [string] }
+  | { tag: 'PoolUSDC'; values: readonly [string] }
+  | { tag: 'NextEmis'; values: void }
+  | { tag: 'RewardZone'; values: void }
+  | { tag: 'PoolEPS'; values: readonly [string] }
+  | { tag: 'BEmisCfg'; values: readonly [string] }
+  | { tag: 'BEmisData'; values: readonly [string] }
+  | { tag: 'UEmisData'; values: readonly [PoolUserKey] }
+  | { tag: 'DropList'; values: void }
+  | { tag: 'LPTknVal'; values: void };
 
 export function BackstopDataKeyToXDR(backstopDataKey?: BackstopDataKey): xdr.ScVal {
   if (!backstopDataKey) {
@@ -343,15 +347,6 @@ export function BackstopDataKeyToXDR(backstopDataKey?: BackstopDataKey): xdr.ScV
     case 'UEmisData':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('UEmisData'));
       res.push(...((i) => [((i) => PoolUserKeyToXDR(i))(i[0])])(backstopDataKey.values));
-      break;
-    case 'BckstpTkn':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('BckstpTkn'));
-      break;
-    case 'PoolFact':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolFact'));
-      break;
-    case 'BLNDTkn':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('BLNDTkn'));
       break;
   }
   return xdr.ScVal.scvVec(res);

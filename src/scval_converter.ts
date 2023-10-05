@@ -1,4 +1,4 @@
-import { Address, xdr } from 'stellar-base';
+import { Address, xdr } from 'soroban-client';
 
 export function toScVal(xdr_string: string): xdr.ScVal {
   return xdr.ScVal.fromXDR(xdr_string, 'base64');
@@ -39,7 +39,11 @@ export function bigintToI128(value: bigint): xdr.ScVal {
   return xdr.ScVal.scvI128(new xdr.Int128Parts({ lo, hi }));
 }
 
-export function scvalToBigInt(scval: xdr.ScVal): bigint {
+export function scvalToBigInt(value: xdr.ScVal | string): bigint {
+  let scval = value;
+  if (typeof scval == 'string') {
+    scval = xdr.ScVal.fromXDR(scval, 'base64');
+  }
   switch (scval.switch()) {
     case xdr.ScValType.scvI128(): {
       const parts = scval.i128();
@@ -81,7 +85,11 @@ export function scvalToBigInt(scval: xdr.ScVal): bigint {
   }
 }
 
-export function scvalToNumber(scval: xdr.ScVal): number {
+export function scvalToNumber(value: xdr.ScVal | string): number {
+  let scval = value;
+  if (typeof scval == 'string') {
+    scval = xdr.ScVal.fromXDR(scval, 'base64');
+  }
   switch (scval.switch()) {
     case xdr.ScValType.scvU64(): {
       const parts = scval.u64();
@@ -102,7 +110,14 @@ export function scvalToNumber(scval: xdr.ScVal): number {
   }
 }
 
-export function scvalToString(scval: xdr.ScVal, encoding?: BufferEncoding | undefined): string {
+export function scvalToString(
+  value: xdr.ScVal | string,
+  encoding?: BufferEncoding | undefined
+): string {
+  let scval = value;
+  if (typeof scval == 'string') {
+    scval = xdr.ScVal.fromXDR(scval, 'base64');
+  }
   switch (scval.switch()) {
     case xdr.ScValType.scvBytes(): {
       const buffer = scval.bytes();
