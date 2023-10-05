@@ -1,10 +1,10 @@
 import { Address, Contract, ContractSpec, xdr } from 'soroban-client';
-import { ContractResult, Network, TxOptions, i128 } from '..';
-import { invokeOperation } from '../tx';
+import { ContractResult, Network, TxOptions, i128 } from '../index.js';
+import { invokeOperation } from '../tx.js';
 
 export interface InitializeArgs {
-  backstop: Address;
-  blnd_token_id: Address;
+  backstop: Address | string;
+  blnd_token_id: Address | string;
 }
 
 export class EmitterClient {

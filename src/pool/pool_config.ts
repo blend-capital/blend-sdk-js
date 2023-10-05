@@ -1,5 +1,5 @@
 import { Address, xdr } from 'soroban-client';
-import { scvalToNumber, scvalToString } from '../scval_converter';
+import { scvalToNumber, scvalToString } from '../scval_converter.js';
 
 export class PoolConfig {
   constructor(public bstop_rate: number, public oracle: string, public status: number) {}

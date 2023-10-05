@@ -1,5 +1,5 @@
 import { xdr } from 'soroban-client';
-import { scvalToBigInt, scvalToNumber } from '../scval_converter';
+import { scvalToBigInt, scvalToNumber } from '../scval_converter.js';
 
 export class Q4W {
   amount: bigint;

@@ -6,7 +6,7 @@ import {
   assembleTransaction,
   xdr,
 } from 'soroban-client';
-import { ContractResult, Network, SorobanResponse, TxOptions } from '.';
+import { ContractResult, Network, SorobanResponse, TxOptions } from './index.js';
 
 /**
  * Invoke a `InvokeHostFunction` operation against the Stellar network.

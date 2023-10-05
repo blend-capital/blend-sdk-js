@@ -1,7 +1,7 @@
 import { Contract, Address, xdr, ContractSpec } from 'soroban-client';
-import { PoolInitMeta } from '.';
-import { ContractResult, Network, TxOptions, u64 } from '..';
-import { invokeOperation } from '../tx';
+import { PoolInitMeta } from './index.js';
+import { ContractResult, Network, TxOptions, u64 } from '../index.js';
+import { invokeOperation } from '../tx.js';
 
 export interface DeployArgs {
   admin: Address | string;

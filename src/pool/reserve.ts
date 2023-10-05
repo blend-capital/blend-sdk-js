@@ -1,5 +1,5 @@
 import { xdr } from 'soroban-client';
-import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter';
+import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter.js';
 
 export type EstReserveData = {
   b_rate: number;

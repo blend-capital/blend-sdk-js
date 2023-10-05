@@ -1,7 +1,13 @@
 import { Address, Contract, ContractSpec, xdr } from 'soroban-client';
-import { ContractResult, Network, TxOptions, i128, u32, u64 } from '..';
-import { ReserveEmissionMetadata, ReserveConfig, Request, AuctionData, Positions } from '.';
-import { invokeOperation } from '../tx';
+import { ContractResult, Network, TxOptions, i128, u32, u64 } from '../index.js';
+import {
+  ReserveEmissionMetadata,
+  ReserveConfig,
+  Request,
+  AuctionData,
+  Positions,
+} from './index.js';
+import { invokeOperation } from '../tx.js';
 
 export interface SubmitArgs {
   from: Address | string;

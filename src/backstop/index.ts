@@ -1,9 +1,9 @@
 import { xdr, Address } from 'soroban-client';
-import { u64, i128 } from '..';
-import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter';
+import { u64, i128 } from '../index.js';
+import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter.js';
 
-export * from './backstop_client';
-export * from './Q4W';
+export * from './backstop_client.js';
+export * from './Q4W.js';
 
 export enum BackstopError {
   BadRequest = 1,

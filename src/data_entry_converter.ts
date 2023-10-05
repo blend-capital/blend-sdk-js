@@ -3,7 +3,7 @@
  */
 
 import { xdr } from 'soroban-client';
-import * as scval_converter from './scval_converter';
+import * as scval_converter from './scval_converter.js';
 
 // Expects val to an ScVal that can be converted to a hex string
 export function toString(xdr_string: string, encoding?: BufferEncoding | undefined): string {

@@ -1,15 +1,13 @@
 import { Server, SorobanRpc, TransactionBuilder } from 'soroban-client';
 import { Buffer } from 'buffer';
 
-export * as Backstop from './backstop';
-export * as Token from './token';
-export * as Emitter from './emitter';
-export * as Pool from './pool';
-export * as PoolFactory from './pool_factory';
-export * as Oracle from './oracle';
+export * as Backstop from './backstop/index.js';
+export * as Emitter from './emitter/index.js';
+export * as Pool from './pool/index.js';
+export * as PoolFactory from './pool_factory/index.js';
 
-export * as scval_converter from './scval_converter';
-export * as data_entry_converter from './data_entry_converter';
+export * as scval_converter from './scval_converter.js';
+export * as data_entry_converter from './data_entry_converter.js';
 
 export type u32 = number;
 export type i32 = number;
