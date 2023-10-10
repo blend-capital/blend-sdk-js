@@ -38,7 +38,7 @@ export async function invokeOperation<T>(
   const simulation_resp = await rpc.simulateTransaction(tx);
   if (txOptions.sim || SorobanRpc.isSimulationError(simulation_resp)) {
     // allow the response formatter to fetch the error or return the simulation results
-    return responseToResult(tx.hash().toString('hex'), simulation_resp, parse);
+    return ContractResult.fromResponse(tx.hash().toString('hex'), simulation_resp, parse);
   }
 
   // assemble and sign the TX
@@ -64,57 +64,5 @@ export async function invokeOperation<T>(
     response = await rpc.getTransaction(tx_hash);
     status = response.status;
   }
-  return responseToResult(tx_hash, response, parse);
-}
-
-/**
- * Transforms a Soroban RPC response into a ContractResult.
- *
- * @param hash - The hash of the transaction.
- * @param response - The Soroban RPC response.
- * @param parseFn - The XDR parsing function to unwrap the result.
- * @returns - A ContractResult containing the result of the response.
- */
-export function responseToResult<T>(
-  hash: string,
-  response: SorobanResponse,
-  parse: (value: string | xdr.ScVal | undefined) => T | undefined
-): ContractResult<T> {
-  // response is a SimulateTransactionResponse
-  if ('id' in response) {
-    const simulated = response as SorobanRpc.SimulateTransactionResponse;
-    if (SorobanRpc.isSimulationSuccess(simulated)) {
-      const xdr_str = simulated.result?.retval.toXDR('base64');
-      return ContractResult.success<T>(hash, parse(xdr_str));
-    } else if (SorobanRpc.isSimulationError(simulated)) {
-      return ContractResult.error(hash, new Error(simulated.error));
-    } else {
-      return ContractResult.error(hash, new Error(`invalid simulation: no result in ${simulated}`));
-    }
-  }
-
-  // response is a GetTransactionResponse
-  if ('resultXdr' in response) {
-    // if `sendTx` awaited the inclusion of the tx in the ledger, it used
-    // `getTransaction`, which has a `resultXdr` field
-    const getResult = response as SorobanRpc.GetTransactionResponse;
-    if (getResult.status === SorobanRpc.GetTransactionStatus.SUCCESS) {
-      const xdr_str = getResult.returnValue?.toXDR('base64');
-      return ContractResult.success<T>(hash, parse(xdr_str));
-    } else {
-      return ContractResult.error(hash, new Error(`Transaction failed: ${getResult}`));
-    }
-  }
-
-  // otherwise, it returned the result of `sendTransaction`
-  if ('errorResultXdr' in response) {
-    const sendResult = response as SorobanRpc.SendTransactionResponse;
-    return ContractResult.error(
-      hash,
-      new Error(`Failed to send transaction: ${sendResult.errorResultXdr}`)
-    );
-  }
-
-  // if neither of these are present, something went wrong
-  return ContractResult.error(hash, new Error(`Unable to parse response: ${response}`));
+  return ContractResult.fromResponse(tx_hash, response, parse);
 }
