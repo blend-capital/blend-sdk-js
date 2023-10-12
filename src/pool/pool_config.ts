@@ -1,64 +1,85 @@
-import { Address, xdr } from 'soroban-client';
-import { scvalToNumber, scvalToString } from '../scval_converter.js';
+import { Address, xdr, Server, scValToNative } from 'soroban-client';
+import { Network } from '../index.js';
 
 export class PoolConfig {
-  constructor(public bstop_rate: number, public oracle: string, public status: number) {}
+  constructor(
+    public admin: string,
+    public name: string,
+    public blndTkn: string,
+    public usdcTkn: string,
+    public backstop: string,
+    public bstop_rate: number,
+    public oracle: string,
+    public status: number
+  ) {}
 
-  static fromContractDataXDR(xdr_string: string): PoolConfig {
-    const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
-      .contractData()
-      .val()
-      .map();
-    if (data_entry_map == undefined) {
-      throw Error('contract data value is not a map');
-    }
-
+  static async load(network: Network, pool_id: string) {
+    const SorobanRpc = new Server(network.rpc, network.opts);
+    const contractInstanceXDR = xdr.LedgerKey.contractData(
+      new xdr.LedgerKeyContractData({
+        contract: Address.fromString(pool_id).toScAddress(),
+        key: xdr.ScVal.scvLedgerKeyContractInstance(),
+        durability: xdr.ContractDataDurability.persistent(),
+      })
+    );
+    let admin: string | undefined;
+    let name: string | undefined;
+    let blndTkn: string | undefined;
+    let usdcTkn: string | undefined;
+    let backstop: string | undefined;
     let bstop_rate: number | undefined;
     let oracle: string | undefined;
     let status: number | undefined;
-    for (const map_entry of data_entry_map) {
-      switch (map_entry?.key()?.sym()?.toString()) {
-        case 'bstop_rate':
-          bstop_rate = scvalToNumber(map_entry.val());
-          break;
-        case 'oracle':
-          oracle = scvalToString(map_entry.val(), 'hex');
-          break;
-        case 'status':
-          status = scvalToNumber(map_entry.val());
-          break;
-        default:
-          throw Error(
-            `scvMap value malformed: should not contain ${map_entry?.key()?.sym()?.toString()}`
-          );
-      }
-    }
 
-    if (bstop_rate == undefined || oracle == undefined || status == undefined) {
-      throw Error('scvMap value malformed');
+    const entries_results = (await SorobanRpc.getLedgerEntries(contractInstanceXDR)).entries ?? [];
+    const instance_entry = xdr.LedgerEntryData.fromXDR(entries_results[0].xdr, 'base64')
+      .contractData()
+      .val()
+      .instance()
+      .storage()
+      ?.map((entry) => {
+        switch (entry.key().sym().toString()) {
+          case 'Admin':
+            admin = Address.fromScVal(entry.val()).toString();
+            return;
+          case 'BLNDTkn':
+            blndTkn = Address.fromScVal(entry.val()).toString();
+            return;
+          case 'Backstop':
+            backstop = Address.fromScVal(entry.val()).toString();
+            return;
+          case 'USDCTkn':
+            usdcTkn = Address.fromScVal(entry.val()).toString();
+            return;
+          case 'PoolConfig':
+            entry
+              .val()
+              .map()
+              ?.map((config_entry) => {
+                switch (config_entry.key().sym().toString()) {
+                  case 'bstop_rate':
+                    bstop_rate = Number(config_entry.val().u64().toString());
+                    return;
+                  case 'oracle':
+                    oracle = Address.fromScVal(config_entry.val()).toString();
+                    return;
+                  case 'status':
+                    status = scValToNative(config_entry.val());
+                    return;
+                }
+              });
+            if (bstop_rate == undefined || oracle == undefined || status == undefined) {
+              throw new Error();
+            }
+            return;
+          case 'Name':
+            name = entry.val().sym().toString();
+            return;
+        }
+      });
+    if (instance_entry == undefined) {
+      throw Error('unable to load pool instance');
     }
-
-    return new PoolConfig(bstop_rate, oracle, status);
-  }
-
-  public PoolConfigToXDR(poolConfig?: PoolConfig): xdr.ScVal {
-    if (!poolConfig) {
-      return xdr.ScVal.scvVoid();
-    }
-    const arr = [
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('bstop_rate'),
-        val: ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(poolConfig.bstop_rate),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('oracle'),
-        val: ((i) => Address.fromString(i).toScVal())(poolConfig.oracle),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('status'),
-        val: ((i) => xdr.ScVal.scvU32(i))(poolConfig.status),
-      }),
-    ];
-    return xdr.ScVal.scvMap(arr);
+    return new PoolConfig(admin, name, blndTkn, usdcTkn, backstop, bstop_rate, oracle, status);
   }
 }

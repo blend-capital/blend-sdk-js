@@ -1,5 +1,15 @@
-import { xdr } from 'soroban-client';
-import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter.js';
+import {
+  Account,
+  Address,
+  Contract,
+  Server,
+  SorobanRpc,
+  TransactionBuilder,
+  scValToNative,
+  xdr,
+} from 'soroban-client';
+import { scvalToBigInt, scvalToNumber } from '../scval_converter.js';
+import { Network, i128, u32, u64 } from '../index.js';
 
 export type EstReserveData = {
   b_rate: number;
@@ -10,14 +20,112 @@ export type EstReserveData = {
   cur_util: number;
 };
 
+// TODO: add emission config and data
 export class Reserve {
   constructor(
-    public asset_id: string,
+    public AssetId: string,
     public symbol: string,
-    public pool_tokens: bigint,
+    public poolTokens: bigint,
     public config: ReserveConfig,
-    public data: ReserveData
+    public data: ReserveData,
+    public emissionConfig: ReserveEmissionConfig | undefined,
+    public emissionData: ReserveEmissionData | undefined
   ) {}
+  static async load(network: Network, poolId: string, AssetId: string) {
+    const SorobanRpc = new Server(network.rpc, network.opts);
+    const reserveConfigKey = ReserveConfig.contractDataKey(poolId, AssetId);
+    const reserveDataKey = ReserveData.contractDataKey(poolId, AssetId);
+    const tokenConfigKey = xdr.LedgerKey.contractData(
+      new xdr.LedgerKeyContractData({
+        contract: Address.fromString(AssetId).toScAddress(),
+        key: xdr.ScVal.scvLedgerKeyContractInstance(),
+        durability: xdr.ContractDataDurability.persistent(),
+      })
+    );
+    const reserveLedgerEntries = await SorobanRpc.getLedgerEntries(
+      tokenConfigKey,
+      reserveConfigKey,
+      reserveDataKey
+    );
+
+    let reserveConfig: ReserveConfig;
+    let reserveData: ReserveData;
+    let tokenConfig: TokenConfig;
+    let emissionConfig: ReserveEmissionConfig | undefined;
+    let emissionData: ReserveEmissionData | undefined;
+
+    for (const entry of reserveLedgerEntries.entries) {
+      const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64').contractData();
+      let key: xdr.ScVal;
+      switch (ledgerData.key().switch()) {
+        case xdr.ScValType.scvVec():
+          key = ledgerData.key().vec().at(0);
+          break;
+        case xdr.ScValType.scvLedgerKeyContractInstance():
+          key = xdr.ScVal.scvSymbol('TokenConfig');
+      }
+      switch (key.sym().toString()) {
+        case 'ResConfig':
+          reserveConfig = ReserveConfig.fromContractDataXDR(entry.xdr);
+          break;
+        case 'ResData':
+          reserveData = ReserveData.fromContractDataXDR(entry.xdr);
+          break;
+        case 'TokenConfig':
+          tokenConfig = loadTokenConfig(entry.xdr);
+      }
+    }
+    const poolTokens = await getTokenBalance(
+      SorobanRpc,
+      network.passphrase,
+      AssetId,
+      Address.fromString(poolId)
+    );
+    const supplyEmissionConfigXDR = ReserveEmissionConfig.contractDataKey(
+      poolId,
+      reserveConfig.index * 2 + 1
+    );
+
+    const supplyEmissionDataXDR = ReserveEmissionData.contractDataKey(
+      poolId,
+      reserveConfig.index * 2 + 1
+    );
+    const borrowEmissionConfigXDR = ReserveEmissionConfig.contractDataKey(
+      poolId,
+      reserveConfig.index * 2
+    );
+
+    const borrowEmissionDataXDR = ReserveEmissionData.contractDataKey(
+      poolId,
+      reserveConfig.index * 2
+    );
+    const emissionLedgerEntries = await SorobanRpc.getLedgerEntries(
+      supplyEmissionConfigXDR,
+      supplyEmissionDataXDR,
+      borrowEmissionConfigXDR,
+      borrowEmissionDataXDR
+    );
+    for (const entry of emissionLedgerEntries.entries) {
+      const entryKey = xdr.LedgerKey.fromXDR(entry.key, 'base64').contractData().key().vec().at(0);
+      switch (entryKey.sym().toString()) {
+        case 'EmisConfig':
+          emissionConfig = ReserveEmissionConfig.fromContractDataXDR(entry.xdr);
+          break;
+        case 'EmisData':
+          emissionData = ReserveEmissionData.fromContractDataXDR(entry.xdr);
+          break;
+      }
+    }
+    return new Reserve(
+      AssetId,
+      tokenConfig.symbol,
+      poolTokens,
+      reserveConfig,
+      reserveData,
+      emissionConfig,
+      emissionData
+    );
+  }
 
   /**
    * Estimate the reserve data at a given block
@@ -36,7 +144,7 @@ export class Reserve {
     let b_rate =
       this.data.b_supply == BigInt(0)
         ? 1
-        : (total_liabilities + Number(this.pool_tokens) / scaler) /
+        : (total_liabilities + Number(this.poolTokens) / scaler) /
           (Number(this.data.b_supply) / scaler);
     let total_supply = (Number(this.data.b_supply) / scaler) * b_rate;
 
@@ -104,13 +212,27 @@ export class ReserveConfig {
     public reactivity: number
   ) {}
 
+  static contractDataKey(poolId: string, assetId: string): xdr.LedgerKey {
+    const res: xdr.ScVal[] = [
+      xdr.ScVal.scvSymbol('ResConfig'),
+      Address.fromString(assetId).toScVal(),
+    ];
+    return xdr.LedgerKey.contractData(
+      new xdr.LedgerKeyContractData({
+        contract: Address.fromString(poolId).toScAddress(),
+        key: xdr.ScVal.scvVec(res),
+        durability: xdr.ContractDataDurability.persistent(),
+      })
+    );
+  }
+
   static fromContractDataXDR(xdr_string: string): ReserveConfig {
     const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
       .contractData()
       .val()
       .map();
     if (data_entry_map == undefined) {
-      throw Error('contract data value is not a map');
+      throw Error('Error: ReserveConfig contract data value is not a map');
     }
 
     let index: number | undefined;
@@ -156,7 +278,7 @@ export class ReserveConfig {
           reactivity = scvalToNumber(map_entry.val());
           break;
         default:
-          throw Error('scvMap value malformed');
+          throw Error('Error: ReserveConfig scvMap value malformed');
       }
     }
 
@@ -173,7 +295,7 @@ export class ReserveConfig {
       reactivity == undefined ||
       util == undefined
     ) {
-      throw Error('scvMap value malformed');
+      throw Error('Error: ReserveConfig scvMap value malformed');
     }
 
     return new ReserveConfig(
@@ -189,55 +311,6 @@ export class ReserveConfig {
       reactivity
     );
   }
-
-  static ReserveConfigToXDR(reserveConfig?: ReserveConfig): xdr.ScVal {
-    if (!reserveConfig) {
-      return xdr.ScVal.scvVoid();
-    }
-    const arr = [
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('c_factor'),
-        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.c_factor),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('decimals'),
-        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.decimals),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('index'),
-        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.index),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('l_factor'),
-        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.l_factor),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('max_util'),
-        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.max_util),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('r_one'),
-        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.r_one),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('r_three'),
-        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.r_three),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('r_two'),
-        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.r_two),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('reactivity'),
-        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.reactivity),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('util'),
-        val: ((i) => xdr.ScVal.scvU32(i))(reserveConfig.util),
-      }),
-    ];
-    return xdr.ScVal.scvMap(arr);
-  }
 }
 
 export class ReserveData {
@@ -250,14 +323,26 @@ export class ReserveData {
     public backstop_credit: bigint,
     public last_time: number
   ) {}
-
+  static contractDataKey(poolId: string, AssetId: string): xdr.LedgerKey {
+    const res: xdr.ScVal[] = [
+      xdr.ScVal.scvSymbol('ResData'),
+      Address.fromString(AssetId).toScVal(),
+    ];
+    return xdr.LedgerKey.contractData(
+      new xdr.LedgerKeyContractData({
+        contract: Address.fromString(poolId).toScAddress(),
+        key: xdr.ScVal.scvVec(res),
+        durability: xdr.ContractDataDurability.persistent(),
+      })
+    );
+  }
   static fromContractDataXDR(xdr_string: string): ReserveData {
     const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
       .contractData()
       .val()
       .map();
     if (data_entry_map == undefined) {
-      throw Error('contract data value is not a map');
+      throw Error('Error: ReserveData contract data value is not a map');
     }
 
     let d_rate: bigint | undefined;
@@ -292,7 +377,10 @@ export class ReserveData {
           break;
         default:
           throw Error(
-            `scvMap value malformed: should not contain ${map_entry?.key()?.sym()?.toString()}`
+            `Error: ReserveData scvMap value malformed: should not contain ${map_entry
+              ?.key()
+              ?.sym()
+              ?.toString()}`
           );
       }
     }
@@ -306,38 +394,223 @@ export class ReserveData {
       backstop_credit == undefined ||
       last_time == undefined
     ) {
-      throw Error('scvMap value malformed');
+      throw Error('Error: ReserveData scvMap value malformed');
     }
 
     return new ReserveData(d_rate, b_rate, ir_mod, b_supply, d_supply, backstop_credit, last_time);
   }
+}
 
-  public ReserveDataToXDR(reserveData?: ReserveData): xdr.ScVal {
-    if (!reserveData) {
-      return xdr.ScVal.scvVoid();
+export class ReserveEmissionConfig {
+  constructor(public eps: u64, public expiration: u64) {}
+
+  static contractDataKey(poolId: string, reserveIndex: u32) {
+    const res: xdr.ScVal[] = [xdr.ScVal.scvSymbol('EmisConfig'), xdr.ScVal.scvU32(reserveIndex)];
+    return xdr.LedgerKey.contractData(
+      new xdr.LedgerKeyContractData({
+        contract: Address.fromString(poolId).toScAddress(),
+        key: xdr.ScVal.scvVec(res),
+        durability: xdr.ContractDataDurability.persistent(),
+      })
+    );
+  }
+
+  static fromContractDataXDR(xdr_string: string): ReserveEmissionConfig | undefined {
+    const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
+      .contractData()
+      .val()
+      .map();
+    if (data_entry_map == undefined) {
+      return undefined;
     }
-    const arr = [
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('b_supply'),
-        val: ((i) => bigintToI128(i))(reserveData.b_supply),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('d_rate'),
-        val: ((i) => bigintToI128(i))(reserveData.d_rate),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('d_supply'),
-        val: ((i) => bigintToI128(i))(reserveData.d_supply),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('ir_mod'),
-        val: ((i) => bigintToI128(i))(reserveData.ir_mod),
-      }),
-      new xdr.ScMapEntry({
-        key: ((i) => xdr.ScVal.scvSymbol(i))('last_time'),
-        val: ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(reserveData.last_time),
-      }),
-    ];
-    return xdr.ScVal.scvMap(arr);
+    let expiration: number | undefined;
+    let eps: number | undefined;
+    for (const map_entry of data_entry_map) {
+      switch (map_entry?.key()?.sym()?.toString()) {
+        case 'expiration':
+          expiration = scValToNative(map_entry.val());
+          break;
+        case 'eps':
+          eps = scValToNative(map_entry.val());
+          break;
+        default:
+          throw Error(
+            `Error: ReserveData scvMap value malformed: should not contain ${map_entry
+              ?.key()
+              ?.sym()
+              ?.toString()}`
+          );
+      }
+    }
+    if (eps == undefined || expiration == undefined) {
+      throw Error('Error: ReserveEmissionConfig scvMap value malformed');
+    }
+    return new ReserveEmissionConfig(BigInt(eps), BigInt(expiration));
+  }
+}
+
+/**
+ * The emission data for the reserve b or d token
+ */
+export class ReserveEmissionData {
+  constructor(public index: i128, public last_time: u64) {}
+
+  static contractDataKey(poolId: string, reserveIndex: u32) {
+    const res: xdr.ScVal[] = [xdr.ScVal.scvSymbol('EmisData'), xdr.ScVal.scvU32(reserveIndex)];
+    return xdr.LedgerKey.contractData(
+      new xdr.LedgerKeyContractData({
+        contract: Address.fromString(poolId).toScAddress(),
+        key: xdr.ScVal.scvVec(res),
+        durability: xdr.ContractDataDurability.persistent(),
+      })
+    );
+  }
+
+  static fromContractDataXDR(xdr_string: string): ReserveEmissionData | undefined {
+    const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
+      .contractData()
+      .val()
+      .map();
+    if (data_entry_map == undefined) {
+      return undefined;
+    }
+
+    let index: bigint | undefined;
+    let last_time: number | undefined;
+    for (const map_entry of data_entry_map) {
+      switch (map_entry?.key()?.sym()?.toString()) {
+        case 'index':
+          index = scvalToBigInt(map_entry.val());
+          break;
+        case 'last_time':
+          last_time = scvalToNumber(map_entry.val());
+          break;
+        default:
+          throw new Error(
+            `Error: ReserveEmissionData scvMap value malformed: should not contain ${map_entry
+              ?.key()
+              ?.sym()
+              ?.toString()}`
+          );
+      }
+    }
+
+    if (index == undefined || last_time == undefined) {
+      throw new Error(`Error: ReserveEmissionData scvMap value malformed`);
+    }
+
+    return {
+      index,
+      last_time: BigInt(last_time),
+    };
+  }
+}
+
+// Token things (Not sure where to put)
+
+interface TokenConfig {
+  name: string;
+  symbol: string;
+  decimal: number;
+}
+
+export function loadTokenConfig(xdr_string: string): TokenConfig {
+  try {
+    let name: string | undefined;
+    let symbol: string | undefined;
+    let decimal: number | undefined;
+
+    xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
+      .contractData()
+      .val()
+      .instance()
+      .storage()
+      ?.map((entry) => {
+        switch (entry.key().switch()) {
+          case xdr.ScValType.scvSymbol():
+            switch (entry.key().sym().toString()) {
+              case 'METADATA':
+                entry
+                  .val()
+                  .map()
+                  ?.map((meta_entry) => {
+                    switch (meta_entry.key().sym().toString()) {
+                      case 'name':
+                        name = scValToNative(meta_entry.val());
+                        return;
+                      case 'symbol':
+                        symbol = scValToNative(meta_entry.val());
+                        return;
+                      case 'decimal':
+                        decimal = scValToNative(meta_entry.val());
+                        return;
+                      default:
+                        throw new Error(
+                          `Error: Token scvMap value malformed: should not contain ${meta_entry
+                            ?.key()
+                            ?.sym()
+                            ?.toString()}`
+                        );
+                    }
+                  });
+            }
+            break;
+
+          default:
+            throw new Error(
+              `Error: Token scvMap value malformed: should not contain ${entry
+                ?.key()
+                ?.sym()
+                ?.toString()}`
+            );
+        }
+      });
+    if (name == undefined || symbol == undefined || decimal == undefined) {
+      throw Error('Error: token config malformed');
+    }
+    return { name, symbol, decimal };
+  } catch (e) {
+    console.error(e);
+    return { name: 'NULL', symbol: 'NULL', decimal: -1 };
+  }
+}
+
+async function getTokenBalance(
+  stellar_rpc: Server,
+  network_passphrase: string,
+  token_id: string,
+  address: Address
+): Promise<bigint> {
+  try {
+    // account does not get validated during simulateTx
+    const account = new Account('GANXGJV2RNOFMOSQ2DTI3RKDBAVERXUVFC27KW3RLVQCLB3RYNO3AAI4', '123');
+    const tx_builder = new TransactionBuilder(account, {
+      fee: '1000',
+      timebounds: { minTime: 0, maxTime: 0 },
+      networkPassphrase: network_passphrase,
+    });
+    console.log('getting balance for token: ', token_id, 'for user: ', address.toString());
+    tx_builder.addOperation(new Contract(token_id).call('balance', address.toScVal()));
+    const result: SorobanRpc.SimulateTransactionResponse = await stellar_rpc.simulateTransaction(
+      tx_builder.build()
+    );
+    const scval_result = result;
+    console.log();
+    if (scval_result == undefined) {
+      console.error('unable to fetch balance for token: ', token_id);
+      return BigInt(0);
+    }
+    if (SorobanRpc.isSimulationSuccess(result)) {
+      const val = scvalToBigInt(result.result.retval);
+      console.log('balance for token: ', token_id, 'for user: ', address.toString(), 'is: ', val);
+      return val;
+    } else {
+      console.error('unable to fetch balance for token: ', token_id);
+      return BigInt(0);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (e: any) {
+    console.error(e, 'unable to fetch balance for token: ', token_id);
+    return BigInt(0);
   }
 }

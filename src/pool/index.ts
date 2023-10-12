@@ -1,10 +1,12 @@
 import { xdr, Address } from 'soroban-client';
-import { u32, u64, u128, i128 } from '../index.js';
+import { u32, u64, i128, u128 } from '../index.js';
 import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter.js';
 
 export * from './pool_client.js';
 export * from './pool_config.js';
 export * from './reserve.js';
+export * from './user_positions.js';
+export * from './user_emissions.js';
 
 export enum PoolError {
   NotAuthorized = 1,
