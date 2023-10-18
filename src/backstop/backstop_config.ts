@@ -60,7 +60,6 @@ export class BackstopConfig {
         case xdr.ScValType.scvLedgerKeyContractInstance():
           key = xdr.ScVal.scvSymbol('BackstopConfig');
       }
-      console.log(key.sym().toString());
 
       switch (key.sym().toString()) {
         case 'LPTknVal': {
