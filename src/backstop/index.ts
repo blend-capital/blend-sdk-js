@@ -4,6 +4,9 @@ import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter.j
 
 export * from './backstop_client.js';
 export * from './Q4W.js';
+export * from './backstop_config.js';
+export * from './backstop_pool_data.js';
+export * from './backstop_user_data.js';
 
 export enum BackstopError {
   BadRequest = 1,
@@ -71,31 +74,6 @@ export function BackstopEmissionsDataToXDR(
   return xdr.ScVal.scvMap(arr);
 }
 
-/**
- * The user emission data for the reserve b or d token
- */
-export interface UserEmissionData {
-  accrued: i128;
-  index: i128;
-}
-
-export function UserEmissionDataToXDR(userEmissionData?: UserEmissionData): xdr.ScVal {
-  if (!userEmissionData) {
-    return xdr.ScVal.scvVoid();
-  }
-  const arr = [
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('accrued'),
-      val: ((i) => bigintToI128(i))(userEmissionData.accrued),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('index'),
-      val: ((i) => bigintToI128(i))(userEmissionData.index),
-    }),
-  ];
-  return xdr.ScVal.scvMap(arr);
-}
-
 export interface PoolUserKey {
   pool: string;
   user: string;
@@ -118,167 +96,13 @@ export function PoolUserKeyToXDR(poolUserKey?: PoolUserKey): xdr.ScVal {
   return xdr.ScVal.scvMap(arr);
 }
 
-interface Q4W {
+export interface Q4W {
   amount: bigint;
   exp: number;
 }
-
-export interface UserBalance {
-  shares: i128;
-  q4w: Q4W[];
-}
-
-export function UserBalanceFromXDR(xdr_string: string): UserBalance {
-  const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
-    .contractData()
-    .val()
-    .map();
-  if (data_entry_map == undefined) {
-    throw Error('contract data value is not a map');
-  }
-  let shares: bigint | undefined;
-  let q4w: Q4W[] | undefined;
-  for (const map_entry of data_entry_map) {
-    switch (map_entry?.key()?.sym()?.toString()) {
-      case 'shares':
-        shares = scvalToBigInt(map_entry.val());
-        break;
-      case 'q4w':
-        q4w = map_entry
-          .val()
-          .vec()
-          ?.map((entry) => {
-            const q4w_array = entry.map();
-            let amount: bigint | undefined;
-            let exp: number | undefined;
-            for (const q4w of q4w_array ?? []) {
-              switch (q4w.key().sym().toString()) {
-                case 'amount':
-                  amount = scvalToBigInt(q4w.val());
-                  break;
-                case 'exp':
-                  exp = scvalToNumber(q4w.val());
-                  break;
-                default:
-                  throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
-              }
-            }
-            if (!amount || !exp) {
-              throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
-            }
-            return { amount, exp };
-          });
-        break;
-      default:
-        throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
-    }
-  }
-  if (!shares || !q4w) {
-    throw Error('scvMap value malformed');
-  }
-  return {
-    shares,
-    q4w,
-  };
-}
-
-export function Q4WFromXDR(xdr_string: string): UserBalance {
-  const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
-    .contractData()
-    .val()
-    .map();
-  if (data_entry_map == undefined) {
-    throw Error('contract data value is not a map');
-  }
-  let shares: bigint | undefined;
-  let q4w: Q4W[] | undefined;
-  for (const map_entry of data_entry_map) {
-    switch (map_entry?.key()?.sym()?.toString()) {
-      case 'shares':
-        shares = scvalToBigInt(map_entry.val());
-        break;
-      case 'q4w':
-        q4w = map_entry
-          .val()
-          .vec()
-          ?.map((entry) => {
-            const q4w_array = entry.map();
-            let amount: bigint | undefined;
-            let exp: number | undefined;
-            for (const q4w of q4w_array ?? []) {
-              switch (q4w.key().sym().toString()) {
-                case 'amount':
-                  amount = scvalToBigInt(q4w.val());
-                  break;
-                case 'exp':
-                  exp = scvalToNumber(q4w.val());
-                  break;
-                default:
-                  throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
-              }
-            }
-            if (!amount || !exp) {
-              throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
-            }
-            return { amount, exp };
-          });
-        break;
-      default:
-        throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
-    }
-  }
-
-  if (!shares || !q4w) {
-    throw Error('scvMap value malformed');
-  }
-  return {
-    shares,
-    q4w,
-  };
-}
-
-export interface PoolBalance {
-  shares: i128;
-  tokens: i128;
-  q4w: i128;
-}
-
-export function PoolBalanceFromXDR(xdr_string: string): PoolBalance {
-  const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
-    .contractData()
-    .val()
-    .map();
-  if (data_entry_map == undefined) {
-    throw Error('contract data value is not a map');
-  }
-  let shares: bigint | undefined;
-  let tokens: bigint | undefined;
-  let q4w: bigint | undefined;
-
-  for (const map_entry of data_entry_map) {
-    switch (map_entry?.key()?.sym()?.toString()) {
-      case 'shares':
-        shares = scvalToBigInt(map_entry.val());
-        break;
-      case 'tokens':
-        tokens = scvalToBigInt(map_entry.val());
-        break;
-      case 'q4w':
-        q4w = scvalToBigInt(map_entry.val());
-        break;
-      default:
-        throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
-    }
-  }
-
-  if (shares == undefined || tokens == undefined || q4w == undefined) {
-    throw Error(`scvMap value malformed`);
-  }
-  return {
-    shares,
-    tokens,
-    q4w,
-  };
+export interface LpTokenValue {
+  blndPerShare: i128;
+  usdcPerShare: i128;
 }
 
 /**
