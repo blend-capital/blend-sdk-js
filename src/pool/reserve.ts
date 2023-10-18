@@ -557,12 +557,7 @@ export function loadTokenConfig(xdr_string: string): TokenConfig {
             break;
 
           default:
-            throw new Error(
-              `Error: Token scvMap value malformed: should not contain ${entry
-                ?.key()
-                ?.sym()
-                ?.toString()}`
-            );
+            break;
         }
       });
     if (name == undefined || symbol == undefined || decimal == undefined) {
@@ -589,20 +584,17 @@ async function getTokenBalance(
       timebounds: { minTime: 0, maxTime: 0 },
       networkPassphrase: network_passphrase,
     });
-    console.log('getting balance for token: ', token_id, 'for user: ', address.toString());
     tx_builder.addOperation(new Contract(token_id).call('balance', address.toScVal()));
     const result: SorobanRpc.SimulateTransactionResponse = await stellar_rpc.simulateTransaction(
       tx_builder.build()
     );
     const scval_result = result;
-    console.log();
     if (scval_result == undefined) {
       console.error('unable to fetch balance for token: ', token_id);
       return BigInt(0);
     }
     if (SorobanRpc.isSimulationSuccess(result)) {
       const val = scvalToBigInt(result.result.retval);
-      console.log('balance for token: ', token_id, 'for user: ', address.toString(), 'is: ', val);
       return val;
     } else {
       console.error('unable to fetch balance for token: ', token_id);
