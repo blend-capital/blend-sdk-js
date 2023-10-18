@@ -1,6 +1,7 @@
 import { xdr, Address } from 'soroban-client';
 
 export * from './pool_factory_client.js';
+export * from './pool_factory_config.js';
 
 export enum PoolFactoryError {
   InvalidPoolInitArgs = 50,
