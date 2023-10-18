@@ -1,4 +1,4 @@
-import { Address, xdr, Server, scValToNative } from 'soroban-client';
+import { Address, xdr, Server } from 'soroban-client';
 import { Network } from '../index.js';
 
 export class EmitterConfig {

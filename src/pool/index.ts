@@ -1,6 +1,5 @@
-import { xdr, Address } from 'soroban-client';
-import { u32, u64, i128, u128 } from '../index.js';
-import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter.js';
+import { xdr, Address, nativeToScVal } from 'soroban-client';
+import { u32, u64, i128 } from '../index.js';
 
 export * from './pool_client.js';
 export * from './pool_config.js';
@@ -192,7 +191,7 @@ export function LiquidationMetadataToXDR(liquidationMetadata?: LiquidationMetada
           Array.from(i.entries()).map(([key, value]) => {
             return new xdr.ScMapEntry({
               key: ((i) => Address.fromString(i).toScVal())(key),
-              val: ((i) => bigintToI128(i))(value),
+              val: ((i) => nativeToScVal(i, { type: 'i128' }))(value),
             });
           })
         ))(liquidationMetadata.collateral),
@@ -204,7 +203,7 @@ export function LiquidationMetadataToXDR(liquidationMetadata?: LiquidationMetada
           Array.from(i.entries()).map(([key, value]) => {
             return new xdr.ScMapEntry({
               key: ((i) => Address.fromString(i).toScVal())(key),
-              val: ((i) => bigintToI128(i))(value),
+              val: ((i) => nativeToScVal(i, { type: 'i128' }))(value),
             });
           })
         ))(liquidationMetadata.liability),
@@ -274,7 +273,7 @@ export function AuctionDataToXDR(auctionData?: AuctionData): xdr.ScVal {
           Array.from(i.entries()).map(([key, value]) => {
             return new xdr.ScMapEntry({
               key: ((i) => xdr.ScVal.scvU32(i))(key),
-              val: ((i) => bigintToI128(i))(value),
+              val: ((i) => nativeToScVal(i, { type: 'i128' }))(value),
             });
           })
         ))(auctionData.bid),
@@ -290,7 +289,7 @@ export function AuctionDataToXDR(auctionData?: AuctionData): xdr.ScVal {
           Array.from(i.entries()).map(([key, value]) => {
             return new xdr.ScMapEntry({
               key: ((i) => xdr.ScVal.scvU32(i))(key),
-              val: ((i) => bigintToI128(i))(value),
+              val: ((i) => nativeToScVal(i, { type: 'i128' }))(value),
             });
           })
         ))(auctionData.lot),

@@ -8,7 +8,6 @@ import {
   scValToNative,
   xdr,
 } from 'soroban-client';
-import { scvalToBigInt, scvalToNumber } from '../scval_converter.js';
 import { Network, i128, u32, u64 } from '../index.js';
 
 export type EstReserveData = {
@@ -248,34 +247,34 @@ export class ReserveConfig {
     for (const map_entry of data_entry_map) {
       switch (map_entry?.key()?.sym()?.toString()) {
         case 'index':
-          index = scvalToNumber(map_entry.val());
+          index = scValToNative(map_entry.val());
           break;
         case 'decimals':
-          decimals = scvalToNumber(map_entry.val());
+          decimals = scValToNative(map_entry.val());
           break;
         case 'c_factor':
-          c_factor = scvalToNumber(map_entry.val());
+          c_factor = scValToNative(map_entry.val());
           break;
         case 'l_factor':
-          l_factor = scvalToNumber(map_entry.val());
+          l_factor = scValToNative(map_entry.val());
           break;
         case 'util':
-          util = scvalToNumber(map_entry.val());
+          util = scValToNative(map_entry.val());
           break;
         case 'max_util':
-          max_util = scvalToNumber(map_entry.val());
+          max_util = scValToNative(map_entry.val());
           break;
         case 'r_one':
-          r_one = scvalToNumber(map_entry.val());
+          r_one = scValToNative(map_entry.val());
           break;
         case 'r_two':
-          r_two = scvalToNumber(map_entry.val());
+          r_two = scValToNative(map_entry.val());
           break;
         case 'r_three':
-          r_three = scvalToNumber(map_entry.val());
+          r_three = scValToNative(map_entry.val());
           break;
         case 'reactivity':
-          reactivity = scvalToNumber(map_entry.val());
+          reactivity = scValToNative(map_entry.val());
           break;
         default:
           throw Error('Error: ReserveConfig scvMap value malformed');
@@ -355,25 +354,25 @@ export class ReserveData {
     for (const map_entry of data_entry_map) {
       switch (map_entry?.key()?.sym()?.toString()) {
         case 'd_rate':
-          d_rate = scvalToBigInt(map_entry.val());
+          d_rate = scValToNative(map_entry.val());
           break;
         case 'b_rate':
-          b_rate = scvalToBigInt(map_entry.val());
+          b_rate = scValToNative(map_entry.val());
           break;
         case 'ir_mod':
-          ir_mod = scvalToBigInt(map_entry.val());
+          ir_mod = scValToNative(map_entry.val());
           break;
         case 'b_supply':
-          b_supply = scvalToBigInt(map_entry.val());
+          b_supply = scValToNative(map_entry.val());
           break;
         case 'd_supply':
-          d_supply = scvalToBigInt(map_entry.val());
+          d_supply = scValToNative(map_entry.val());
           break;
         case 'backstop_credit':
-          backstop_credit = scvalToBigInt(map_entry.val());
+          backstop_credit = scValToNative(map_entry.val());
           break;
         case 'last_time':
-          last_time = scvalToNumber(map_entry.val());
+          last_time = scValToNative(map_entry.val());
           break;
         default:
           throw Error(
@@ -480,10 +479,10 @@ export class ReserveEmissionData {
     for (const map_entry of data_entry_map) {
       switch (map_entry?.key()?.sym()?.toString()) {
         case 'index':
-          index = scvalToBigInt(map_entry.val());
+          index = scValToNative(map_entry.val());
           break;
         case 'last_time':
-          last_time = scvalToNumber(map_entry.val());
+          last_time = scValToNative(map_entry.val());
           break;
         default:
           throw new Error(
@@ -594,7 +593,7 @@ async function getTokenBalance(
       return BigInt(0);
     }
     if (SorobanRpc.isSimulationSuccess(result)) {
-      const val = scvalToBigInt(result.result.retval);
+      const val = scValToNative(result.result.retval);
       return val;
     } else {
       console.error('unable to fetch balance for token: ', token_id);

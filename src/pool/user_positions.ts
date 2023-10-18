@@ -1,5 +1,4 @@
-import { Address, Server, xdr } from 'soroban-client';
-import { scvalToBigInt } from '../scval_converter.js';
+import { Address, Server, scValToNative, xdr } from 'soroban-client';
 import { Network, i128, u32 } from '../index.js';
 
 export class UserPositions {
@@ -68,7 +67,7 @@ export class UserPositions {
           const liabilities = map_entry.val().map();
           if (liabilities) {
             for (const liability of liabilities) {
-              liability_map.set(liability.key().u32(), scvalToBigInt(liability.val()));
+              liability_map.set(liability.key().u32(), scValToNative(liability.val()));
             }
           }
           break;
@@ -78,7 +77,7 @@ export class UserPositions {
           const collaterals = map_entry.val().map();
           if (collaterals) {
             for (const collateral of collaterals) {
-              collateral_map.set(collateral.key().u32(), scvalToBigInt(collateral.val()));
+              collateral_map.set(collateral.key().u32(), scValToNative(collateral.val()));
             }
           }
 
@@ -89,7 +88,7 @@ export class UserPositions {
           const supplies = map_entry.val().map();
           if (supplies) {
             for (const supply of supplies) {
-              supply_map.set(supply.key().u32(), scvalToBigInt(supply.val()));
+              supply_map.set(supply.key().u32(), scValToNative(supply.val()));
             }
           }
           break;

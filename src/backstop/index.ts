@@ -1,6 +1,5 @@
-import { xdr, Address } from 'soroban-client';
+import { xdr, Address, nativeToScVal } from 'soroban-client';
 import { u64, i128 } from '../index.js';
-import { bigintToI128, scvalToBigInt, scvalToNumber } from '../scval_converter.js';
 
 export * from './backstop_client.js';
 export * from './Q4W.js';
@@ -62,7 +61,7 @@ export function BackstopEmissionsDataToXDR(
   const arr = [
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('index'),
-      val: ((i) => bigintToI128(i))(backstopEmissionsData.index),
+      val: ((i) => nativeToScVal(i, { type: 'i128' }))(backstopEmissionsData.index),
     }),
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('last_time'),
