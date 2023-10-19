@@ -1,5 +1,4 @@
-import { xdr } from 'soroban-client';
-import { scvalToBigInt, scvalToNumber } from '../scval_converter.js';
+import { scValToNative, xdr } from 'soroban-client';
 
 export class Q4W {
   amount: bigint;
@@ -31,7 +30,7 @@ export class Q4W {
       if (scv_map.length !== 2 || amount == undefined || exp == undefined) {
         throw Error('scvMap value malformed');
       }
-      q4w.push(new Q4W(scvalToBigInt(amount), scvalToNumber(exp)));
+      q4w.push(new Q4W(scValToNative(amount), scValToNative(exp)));
     });
     return q4w;
   }
