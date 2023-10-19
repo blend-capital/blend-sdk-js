@@ -1,6 +1,7 @@
 import { Address, xdr, Server, scValToNative } from 'soroban-client';
 import { Network } from '../index.js';
 import { LpTokenValue } from './index.js';
+import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export class BackstopConfig {
   constructor(
@@ -52,16 +53,8 @@ export class BackstopConfig {
       ).entries ?? [];
     for (const entry of backstopConfigEntries) {
       const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64').contractData();
-      let key: xdr.ScVal;
-      switch (ledgerData.key().switch()) {
-        case xdr.ScValType.scvVec():
-          key = ledgerData.key().vec().at(0);
-          break;
-        case xdr.ScValType.scvLedgerKeyContractInstance():
-          key = xdr.ScVal.scvSymbol('BackstopConfig');
-      }
-
-      switch (key.sym().toString()) {
+      const key = decodeEntryKey(ledgerData.key());
+      switch (key) {
         case 'LPTknVal': {
           const lpTknVector = ledgerData.val().vec();
           if (lpTknVector.at(0) != undefined && lpTknVector.at(0) != undefined) {
@@ -74,13 +67,14 @@ export class BackstopConfig {
           }
           break;
         }
-        case 'BackstopConfig':
+        case 'ContractInstance':
           ledgerData
             .val()
             .instance()
             .storage()
             ?.map((entry) => {
-              switch (entry.key().sym().toString()) {
+              const instanceKey = decodeEntryKey(entry.key());
+              switch (instanceKey) {
                 case 'BLNDTkn':
                   blndTkn = Address.fromScVal(entry.val()).toString();
                   break;
@@ -93,6 +87,10 @@ export class BackstopConfig {
                 case 'PoolFact':
                   poolFactory = Address.fromScVal(entry.val()).toString();
                   break;
+                default:
+                  throw Error(
+                    `Invalid backstop instance storage key: should not contain ${instanceKey}`
+                  );
               }
             });
           break;
@@ -104,6 +102,9 @@ export class BackstopConfig {
             .map((address) => {
               rewardZone.push(Address.fromScVal(address).toString());
             });
+          break;
+        default:
+          throw Error(`Invalid backstop config key: should not contain ${key}`);
       }
     }
 

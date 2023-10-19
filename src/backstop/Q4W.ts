@@ -1,4 +1,5 @@
 import { scValToNative, xdr } from 'soroban-client';
+import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export class Q4W {
   amount: bigint;
@@ -24,9 +25,9 @@ export class Q4W {
         throw Error('contract data array value is not a map');
       }
       const amount = scv_map
-        .find((map_entry) => map_entry?.key()?.sym()?.toString() == 'amount')
+        .find((map_entry) => decodeEntryKey(map_entry.key()) == 'amount')
         ?.val();
-      const exp = scv_map.find((map_entry) => map_entry?.key()?.sym()?.toString() == 'exp')?.val();
+      const exp = scv_map.find((map_entry) => decodeEntryKey(map_entry.key()) == 'exp')?.val();
       if (scv_map.length !== 2 || amount == undefined || exp == undefined) {
         throw Error('scvMap value malformed');
       }

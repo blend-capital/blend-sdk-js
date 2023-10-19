@@ -9,6 +9,8 @@ import {
 } from './index.js';
 import { invokeOperation } from '../tx.js';
 
+// @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
+
 export interface SubmitArgs {
   from: Address | string;
   spender: Address | string;

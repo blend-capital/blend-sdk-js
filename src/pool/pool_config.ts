@@ -1,5 +1,6 @@
 import { Address, xdr, Server, scValToNative } from 'soroban-client';
 import { Network } from '../index.js';
+import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export class PoolConfig {
   constructor(
@@ -16,7 +17,7 @@ export class PoolConfig {
 
   static async load(network: Network, poolId: string) {
     const SorobanRpc = new Server(network.rpc, network.opts);
-    const contractInstanceXDR = xdr.LedgerKey.contractData(
+    const contractInstanceKey = xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(poolId).toScAddress(),
         key: xdr.ScVal.scvLedgerKeyContractInstance(),
@@ -41,30 +42,20 @@ export class PoolConfig {
     let reserveList: string[] | undefined;
 
     const poolConfigEntries =
-      (await SorobanRpc.getLedgerEntries(contractInstanceXDR, reserveListDataKey)).entries ?? [];
+      (await SorobanRpc.getLedgerEntries(contractInstanceKey, reserveListDataKey)).entries ?? [];
 
     for (const entry of poolConfigEntries) {
       const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64').contractData();
-      let key: xdr.ScVal;
-      switch (ledgerData.key().switch()) {
-        case xdr.ScValType.scvVec():
-          key = ledgerData.key().vec().at(0);
-          break;
-        case xdr.ScValType.scvSymbol():
-          key = ledgerData.key();
-          break;
-        case xdr.ScValType.scvLedgerKeyContractInstance():
-          key = xdr.ScVal.scvSymbol('PoolInstance');
-          break;
-      }
-      switch (key.sym().toString()) {
-        case 'PoolInstance': {
-          const instanceEntry = ledgerData
+      const key = decodeEntryKey(ledgerData.key());
+      switch (key) {
+        case 'ContractInstance': {
+          ledgerData
             .val()
             .instance()
             .storage()
             ?.map((entry) => {
-              switch (entry.key().sym().toString()) {
+              const instanceKey = decodeEntryKey(entry.key());
+              switch (instanceKey) {
                 case 'Admin':
                   admin = Address.fromScVal(entry.val()).toString();
                   return;
@@ -82,7 +73,8 @@ export class PoolConfig {
                     .val()
                     .map()
                     ?.map((config_entry) => {
-                      switch (config_entry.key().sym().toString()) {
+                      const poolConfigKey = decodeEntryKey(config_entry.key());
+                      switch (poolConfigKey) {
                         case 'bstop_rate':
                           backstopRate = Number(config_entry.val().u64().toString());
                           return;
@@ -92,6 +84,10 @@ export class PoolConfig {
                         case 'status':
                           status = scValToNative(config_entry.val());
                           return;
+                        default:
+                          throw Error(
+                            `Invalid pool config key: should not contain ${poolConfigKey}`
+                          );
                       }
                     });
                   if (backstopRate == undefined || oracle == undefined || status == undefined) {
@@ -101,19 +97,35 @@ export class PoolConfig {
                 case 'Name':
                   name = entry.val().sym().toString();
                   return;
+                default:
+                  throw Error(
+                    `Invalid pool instance storage key: should not contain ${instanceKey}`
+                  );
               }
             });
-          if (instanceEntry == undefined) {
-            throw Error('unable to load pool instance');
-          }
           break;
         }
         case 'ResList':
           reserveList = scValToNative(ledgerData.val());
           break;
+        default:
+          throw Error(`Invalid PoolConfig key: should not contain ${key}`);
       }
     }
-
+    if (
+      admin == undefined ||
+      name == undefined ||
+      blndTkn == undefined ||
+      usdcTkn == undefined ||
+      backstop == undefined ||
+      backstopRate == undefined ||
+      oracle == undefined ||
+      status == undefined ||
+      reserveList == undefined ||
+      poolConfigEntries.length == 0
+    ) {
+      throw Error('Unable to load pool config');
+    }
     return new PoolConfig(
       admin,
       name,

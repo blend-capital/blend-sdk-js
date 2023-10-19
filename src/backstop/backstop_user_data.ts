@@ -1,6 +1,7 @@
 import { Address, Server, scValToNative, xdr } from 'soroban-client';
 import { Network, i128 } from '../index.js';
 import { Q4W } from './index.js';
+import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export class BackstopUserData {
   constructor(public userBalance: UserBalance, public userEmissions: UserEmissionData) {}
@@ -16,15 +17,8 @@ export class BackstopUserData {
     let userEmissions: UserEmissionData | undefined;
     for (const entry of backstopUserDataEntries) {
       const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64').contractData();
-      let key: xdr.ScVal;
-      switch (ledgerData.key().switch()) {
-        case xdr.ScValType.scvVec():
-          key = ledgerData.key().vec()?.at(0) ?? xdr.ScVal.scvSymbol('Void');
-          break;
-        default:
-          key = xdr.ScVal.scvSymbol('Void');
-      }
-      switch (key.sym().toString()) {
+      const key = decodeEntryKey(ledgerData.key());
+      switch (key) {
         case 'UserBalance': {
           userBalance = UserBalance.fromContractDataXDR(entry.xdr);
           break;
@@ -33,7 +27,7 @@ export class BackstopUserData {
           userEmissions = UserEmissionData.fromContractDataXDR(entry.xdr);
           break;
         default:
-          throw new Error('invalid scMap entry on backstop user data');
+          throw new Error(`Invalid BackstopUserData key: should not contain ${key}`);
       }
     }
     return new BackstopUserData(userBalance, userEmissions);
@@ -70,7 +64,8 @@ export class UserBalance {
     let shares: bigint | undefined;
     let q4w: Q4W[] | undefined;
     for (const map_entry of ledgerData.val().map() ?? []) {
-      switch (map_entry?.key()?.sym()?.toString()) {
+      const key = decodeEntryKey(map_entry.key());
+      switch (key) {
         case 'shares':
           shares = scValToNative(map_entry.val());
           break;
@@ -83,7 +78,8 @@ export class UserBalance {
               let amount: bigint | undefined;
               let exp: number | undefined;
               for (const q4w of q4w_array ?? []) {
-                switch (q4w.key().sym().toString()) {
+                const q4wKey = q4w.key().sym().toString();
+                switch (q4wKey) {
                   case 'amount':
                     amount = scValToNative(q4w.val());
                     break;
@@ -91,25 +87,21 @@ export class UserBalance {
                     exp = scValToNative(q4w.val());
                     break;
                   default:
-                    throw Error(
-                      `q4w scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`
-                    );
+                    throw Error(`Invalid q4w key: should not contain ${q4wKey}`);
                 }
               }
               if (!amount || !exp) {
-                throw Error(`q4w scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+                throw Error(`Malformed Q4W scvMap`);
               }
               return { amount, exp };
             });
           break;
         default:
-          throw Error(
-            `backstop user balance scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`
-          );
+          throw Error(`Invalid backstop UserBalance key: should not contain ${key}`);
       }
     }
     if (!shares || !q4w) {
-      throw Error('backstop user balance scvMap value malformed');
+      throw Error('Malformed backstop UserBalance scvMap');
     }
     return new UserBalance(shares, q4w);
   }
@@ -144,9 +136,9 @@ export class UserEmissionData {
     const ledgerData = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64').contractData();
     let index: i128 | undefined;
     let accrued: i128 | undefined;
-
     for (const map_entry of ledgerData.val().map() ?? []) {
-      switch (map_entry?.key()?.sym()?.toString()) {
+      const key = decodeEntryKey(map_entry.key());
+      switch (key) {
         case 'index':
           index = scValToNative(map_entry.val());
           break;
@@ -154,15 +146,12 @@ export class UserEmissionData {
           accrued = scValToNative(map_entry.val());
           break;
         default:
-          throw Error(
-            `user emission data scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`
-          );
+          throw Error(`Invalid UserEmissionData key: should not contain ${key}`);
       }
     }
     if (index == undefined || accrued == undefined) {
-      throw Error(`user emission data scvMap value malformed`);
+      throw Error(`Malformed UserEmissionData scvMap`);
     }
-
     return new UserEmissionData(accrued, index);
   }
 }

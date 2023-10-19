@@ -1,5 +1,6 @@
 import { Address, Server, xdr, scValToNative } from 'soroban-client';
 import { Network, i128 } from '../index.js';
+import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export class UserEmissions {
   constructor(public emissions: Map<number, UserEmissionData>) {}
@@ -14,19 +15,27 @@ export class UserEmissions {
     });
     const emissionDataLedgerEntries = await SorobanRpc.getLedgerEntries(...emissionDataKeys);
     for (const emissionDataEntry of emissionDataLedgerEntries.entries) {
-      let reserveIndex: number;
+      let reserveIndex: number | undefined;
       xdr.LedgerEntryData.fromXDR(emissionDataEntry.xdr, 'base64')
         .contractData()
         .key()
         .vec()
-        .at(1)
-        .map()
-        .map((entry) => {
-          if (entry.key().sym() == 'reserve_id') {
-            reserveIndex = entry.val().u32();
+        .map((vecEntry) => {
+          switch (vecEntry.switch()) {
+            case xdr.ScValType.scvMap():
+              vecEntry.map().map((mapEntry) => {
+                const key = decodeEntryKey(mapEntry.key());
+                if (key == 'reserve_id') {
+                  reserveIndex = mapEntry.val().u32();
+                }
+              });
           }
         });
+
       const emissionData = UserEmissionData.fromContractDataXDR(emissionDataEntry.xdr);
+      if (emissionData == undefined || reserveIndex == undefined) {
+        throw Error('Malformed UserEmissionData scVal');
+      }
       emissions.set(reserveIndex, emissionData);
     }
 
@@ -66,13 +75,14 @@ export class UserEmissionData {
       .val()
       .map();
     if (data_entry_map == undefined) {
-      throw Error('contract data value is not a map');
+      throw Error('UserEmissionData contract data value is not a map');
     }
 
     let accrued: bigint | undefined;
     let index: bigint | undefined;
     for (const map_entry of data_entry_map) {
-      switch (map_entry?.key()?.sym()?.toString()) {
+      const key = decodeEntryKey(map_entry.key());
+      switch (key) {
         case 'accrued':
           accrued = scValToNative(map_entry.val());
           break;
@@ -80,7 +90,7 @@ export class UserEmissionData {
           index = scValToNative(map_entry.val());
           break;
         default:
-          throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+          throw Error(`Invalid UserEmissionData key: should not contain ${key}`);
       }
     }
 

@@ -9,6 +9,7 @@ import {
   xdr,
 } from 'soroban-client';
 import { Network, i128, u32, u64 } from '../index.js';
+import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export type EstReserveData = {
   bRate: number;
@@ -55,23 +56,20 @@ export class Reserve {
 
     for (const entry of reserveLedgerEntries.entries) {
       const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64').contractData();
-      let key: xdr.ScVal;
-      switch (ledgerData.key().switch()) {
-        case xdr.ScValType.scvVec():
-          key = ledgerData.key().vec().at(0);
-          break;
-        case xdr.ScValType.scvLedgerKeyContractInstance():
-          key = xdr.ScVal.scvSymbol('TokenConfig');
-      }
-      switch (key.sym().toString()) {
+      const key = decodeEntryKey(ledgerData.key());
+      switch (key) {
         case 'ResConfig':
           reserveConfig = ReserveConfig.fromContractDataXDR(entry.xdr);
           break;
         case 'ResData':
           reserveData = ReserveData.fromContractDataXDR(entry.xdr);
           break;
-        case 'TokenConfig':
+        // @dev this case is for the TokenConfig
+        case 'ContractInstance':
           tokenConfig = loadTokenConfig(entry.xdr);
+          break;
+        default:
+          throw Error(`Invalid reserve key: should not contain ${key}`);
       }
     }
     const poolTokens = await getTokenBalance(
@@ -80,40 +78,53 @@ export class Reserve {
       assetId,
       Address.fromString(poolId)
     );
-    const supplyEmissionConfigXDR = ReserveEmissionConfig.contractDataKey(
+    const supplyEmissionConfigKey = ReserveEmissionConfig.contractDataKey(
       poolId,
       reserveConfig.index * 2 + 1
     );
 
-    const supplyEmissionDataXDR = ReserveEmissionData.contractDataKey(
+    const supplyEmissionDataKey = ReserveEmissionData.contractDataKey(
       poolId,
       reserveConfig.index * 2 + 1
     );
-    const borrowEmissionConfigXDR = ReserveEmissionConfig.contractDataKey(
+    const borrowEmissionConfigKey = ReserveEmissionConfig.contractDataKey(
       poolId,
       reserveConfig.index * 2
     );
 
-    const borrowEmissionDataXDR = ReserveEmissionData.contractDataKey(
+    const borrowEmissionDataKey = ReserveEmissionData.contractDataKey(
       poolId,
       reserveConfig.index * 2
     );
     const emissionLedgerEntries = await SorobanRpc.getLedgerEntries(
-      supplyEmissionConfigXDR,
-      supplyEmissionDataXDR,
-      borrowEmissionConfigXDR,
-      borrowEmissionDataXDR
+      supplyEmissionConfigKey,
+      supplyEmissionDataKey,
+      borrowEmissionConfigKey,
+      borrowEmissionDataKey
     );
     for (const entry of emissionLedgerEntries.entries) {
-      const entryKey = xdr.LedgerKey.fromXDR(entry.key, 'base64').contractData().key().vec().at(0);
-      switch (entryKey.sym().toString()) {
+      const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64').contractData();
+      const key = decodeEntryKey(ledgerData.key());
+      switch (key) {
         case 'EmisConfig':
           emissionConfig = ReserveEmissionConfig.fromContractDataXDR(entry.xdr);
           break;
         case 'EmisData':
           emissionData = ReserveEmissionData.fromContractDataXDR(entry.xdr);
           break;
+        default:
+          throw Error(`Invalid reserve emission key: should not contain ${key}`);
       }
+    }
+
+    if (
+      assetId == undefined ||
+      tokenConfig == undefined ||
+      poolTokens == undefined ||
+      reserveConfig == undefined ||
+      reserveData == undefined
+    ) {
+      throw Error('Unable to load reserve');
     }
     return new Reserve(
       assetId,
@@ -238,7 +249,7 @@ export class ReserveConfig {
       .val()
       .map();
     if (data_entry_map == undefined) {
-      throw Error('Error: ReserveConfig contract data value is not a map');
+      throw Error('ReserveConfig contract data value is not a map');
     }
 
     let index: number | undefined;
@@ -252,7 +263,8 @@ export class ReserveConfig {
     let r_three: number | undefined;
     let reactivity: number | undefined;
     for (const map_entry of data_entry_map) {
-      switch (map_entry?.key()?.sym()?.toString()) {
+      const key = decodeEntryKey(map_entry.key());
+      switch (key) {
         case 'index':
           index = scValToNative(map_entry.val());
           break;
@@ -284,7 +296,7 @@ export class ReserveConfig {
           reactivity = scValToNative(map_entry.val());
           break;
         default:
-          throw Error('Error: ReserveConfig scvMap value malformed');
+          throw Error(`Invalid ReserveConfig key should not contain ${key}`);
       }
     }
 
@@ -301,9 +313,8 @@ export class ReserveConfig {
       reactivity == undefined ||
       util == undefined
     ) {
-      throw Error('Error: ReserveConfig scvMap value malformed');
+      throw Error('ReserveConfig scvMap value malformed');
     }
-
     return new ReserveConfig(
       index,
       decimals,
@@ -348,7 +359,7 @@ export class ReserveData {
       .val()
       .map();
     if (data_entry_map == undefined) {
-      throw Error('Error: ReserveData contract data value is not a map');
+      throw Error('ReserveData contract data value is not a map');
     }
 
     let d_rate: bigint | undefined;
@@ -359,7 +370,8 @@ export class ReserveData {
     let backstop_credit: bigint | undefined;
     let last_time: number | undefined;
     for (const map_entry of data_entry_map) {
-      switch (map_entry?.key()?.sym()?.toString()) {
+      const key = decodeEntryKey(map_entry.key());
+      switch (key) {
         case 'd_rate':
           d_rate = scValToNative(map_entry.val());
           break;
@@ -382,12 +394,7 @@ export class ReserveData {
           last_time = scValToNative(map_entry.val());
           break;
         default:
-          throw Error(
-            `Error: ReserveData scvMap value malformed: should not contain ${map_entry
-              ?.key()
-              ?.sym()
-              ?.toString()}`
-          );
+          throw Error(`Invalid ReserveData key should not contain ${key}`);
       }
     }
 
@@ -427,12 +434,14 @@ export class ReserveEmissionConfig {
       .val()
       .map();
     if (data_entry_map == undefined) {
-      return undefined;
+      throw Error('ReserveEmissionConfig contract data value is not a map');
     }
     let expiration: number | undefined;
     let eps: number | undefined;
     for (const map_entry of data_entry_map) {
-      switch (map_entry?.key()?.sym()?.toString()) {
+      const key = decodeEntryKey(map_entry.key());
+
+      switch (key) {
         case 'expiration':
           expiration = scValToNative(map_entry.val());
           break;
@@ -440,16 +449,11 @@ export class ReserveEmissionConfig {
           eps = scValToNative(map_entry.val());
           break;
         default:
-          throw Error(
-            `Error: ReserveData scvMap value malformed: should not contain ${map_entry
-              ?.key()
-              ?.sym()
-              ?.toString()}`
-          );
+          throw Error(`Invalid ReserveData key: should not contain ${key}`);
       }
     }
     if (eps == undefined || expiration == undefined) {
-      throw Error('Error: ReserveEmissionConfig scvMap value malformed');
+      throw Error('ReserveEmissionConfig scvMap value malformed');
     }
     return new ReserveEmissionConfig(BigInt(eps), BigInt(expiration));
   }
@@ -478,13 +482,14 @@ export class ReserveEmissionData {
       .val()
       .map();
     if (data_entry_map == undefined) {
-      return undefined;
+      throw Error('ReserveEmissionData contract data value is not a map');
     }
 
     let index: bigint | undefined;
     let last_time: number | undefined;
     for (const map_entry of data_entry_map) {
-      switch (map_entry?.key()?.sym()?.toString()) {
+      const key = decodeEntryKey(map_entry.key());
+      switch (key) {
         case 'index':
           index = scValToNative(map_entry.val());
           break;
@@ -492,17 +497,12 @@ export class ReserveEmissionData {
           last_time = scValToNative(map_entry.val());
           break;
         default:
-          throw new Error(
-            `Error: ReserveEmissionData scvMap value malformed: should not contain ${map_entry
-              ?.key()
-              ?.sym()
-              ?.toString()}`
-          );
+          throw new Error(`Invalid ReserveEmissionData key: should not contain ${key}`);
       }
     }
 
     if (index == undefined || last_time == undefined) {
-      throw new Error(`Error: ReserveEmissionData scvMap value malformed`);
+      throw new Error(`ReserveEmissionData scvMap value malformed`);
     }
 
     return {
@@ -519,59 +519,47 @@ interface TokenConfig {
 }
 
 export function loadTokenConfig(xdr_string: string): TokenConfig {
-  try {
-    let name: string | undefined;
-    let symbol: string | undefined;
-    let decimal: number | undefined;
+  let name: string | undefined;
+  let symbol: string | undefined;
+  let decimal: number | undefined;
 
-    xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
-      .contractData()
-      .val()
-      .instance()
-      .storage()
-      ?.map((entry) => {
-        switch (entry.key().switch()) {
-          case xdr.ScValType.scvSymbol():
-            switch (entry.key().sym().toString()) {
-              case 'METADATA':
-                entry
-                  .val()
-                  .map()
-                  ?.map((meta_entry) => {
-                    switch (meta_entry.key().sym().toString()) {
-                      case 'name':
-                        name = scValToNative(meta_entry.val());
-                        return;
-                      case 'symbol':
-                        symbol = scValToNative(meta_entry.val());
-                        return;
-                      case 'decimal':
-                        decimal = scValToNative(meta_entry.val());
-                        return;
-                      default:
-                        throw new Error(
-                          `Error: Token scvMap value malformed: should not contain ${meta_entry
-                            ?.key()
-                            ?.sym()
-                            ?.toString()}`
-                        );
-                    }
-                  });
-            }
-            break;
-
-          default:
-            break;
-        }
-      });
-    if (name == undefined || symbol == undefined || decimal == undefined) {
-      throw Error('Error: token config malformed');
-    }
-    return { name, symbol, decimal };
-  } catch (e) {
-    console.error(e);
-    return { name: 'NULL', symbol: 'NULL', decimal: -1 };
+  xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
+    .contractData()
+    .val()
+    .instance()
+    .storage()
+    ?.map((entry) => {
+      const key = decodeEntryKey(entry.key());
+      switch (key) {
+        case 'METADATA':
+          entry
+            .val()
+            .map()
+            ?.map((meta_entry) => {
+              const metadataKey = decodeEntryKey(meta_entry.key());
+              switch (metadataKey) {
+                case 'name':
+                  name = scValToNative(meta_entry.val());
+                  return;
+                case 'symbol':
+                  symbol = scValToNative(meta_entry.val());
+                  return;
+                case 'decimal':
+                  decimal = scValToNative(meta_entry.val());
+                  return;
+                default:
+                  throw new Error(`Invalid token metadata key: should not contain ${metadataKey}`);
+              }
+            });
+          break;
+        default:
+          break;
+      }
+    });
+  if (name == undefined || symbol == undefined || decimal == undefined) {
+    throw Error('Token config malformed');
   }
+  return { name, symbol, decimal };
 }
 
 async function getTokenBalance(
@@ -580,33 +568,25 @@ async function getTokenBalance(
   token_id: string,
   address: Address
 ): Promise<bigint> {
-  try {
-    // account does not get validated during simulateTx
-    const account = new Account('GANXGJV2RNOFMOSQ2DTI3RKDBAVERXUVFC27KW3RLVQCLB3RYNO3AAI4', '123');
-    const tx_builder = new TransactionBuilder(account, {
-      fee: '1000',
-      timebounds: { minTime: 0, maxTime: 0 },
-      networkPassphrase: network_passphrase,
-    });
-    tx_builder.addOperation(new Contract(token_id).call('balance', address.toScVal()));
-    const result: SorobanRpc.SimulateTransactionResponse = await stellar_rpc.simulateTransaction(
-      tx_builder.build()
-    );
-    const scval_result = result;
-    if (scval_result == undefined) {
-      console.error('unable to fetch balance for token: ', token_id);
-      return BigInt(0);
-    }
-    if (SorobanRpc.isSimulationSuccess(result)) {
-      const val = scValToNative(result.result.retval);
-      return val;
-    } else {
-      console.error('unable to fetch balance for token: ', token_id);
-      return BigInt(0);
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (e: any) {
-    console.error(e, 'unable to fetch balance for token: ', token_id);
-    return BigInt(0);
+  // account does not get validated during simulateTx
+  const account = new Account('GANXGJV2RNOFMOSQ2DTI3RKDBAVERXUVFC27KW3RLVQCLB3RYNO3AAI4', '123');
+  const tx_builder = new TransactionBuilder(account, {
+    fee: '1000',
+    timebounds: { minTime: 0, maxTime: 0 },
+    networkPassphrase: network_passphrase,
+  });
+  tx_builder.addOperation(new Contract(token_id).call('balance', address.toScVal()));
+  const result: SorobanRpc.SimulateTransactionResponse = await stellar_rpc.simulateTransaction(
+    tx_builder.build()
+  );
+  const scval_result = result;
+  if (scval_result == undefined) {
+    throw Error(`unable to fetch balance for token: ${token_id}`);
+  }
+  if (SorobanRpc.isSimulationSuccess(result)) {
+    const val = scValToNative(result.result.retval);
+    return val;
+  } else {
+    throw Error(`unable to fetch balance for token: ${token_id}`);
   }
 }

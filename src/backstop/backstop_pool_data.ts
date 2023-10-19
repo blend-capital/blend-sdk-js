@@ -1,5 +1,6 @@
 import { Address, Server, scValToNative, xdr } from 'soroban-client';
 import { Network, i128, u64 } from '../index.js';
+import { decodeEntryKey } from '../ledger_entry_helper.js';
 export class BackstopPoolData {
   constructor(
     public poolBalance: PoolBalance,
@@ -40,15 +41,8 @@ export class BackstopPoolData {
 
     for (const entry of backstopPoolDataEntries) {
       const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64').contractData();
-      let key: xdr.ScVal;
-      switch (ledgerData.key().switch()) {
-        case xdr.ScValType.scvVec():
-          key = ledgerData.key().vec()?.at(0) ?? xdr.ScVal.scvSymbol('Void');
-          break;
-        default:
-          key = xdr.ScVal.scvSymbol('Void');
-      }
-      switch (key.sym().toString()) {
+      const key = decodeEntryKey(ledgerData.key());
+      switch (key) {
         case 'PoolBalance': {
           poolBalance = PoolBalance.fromContractDataXDR(entry.xdr);
           break;
@@ -65,10 +59,10 @@ export class BackstopPoolData {
           break;
         }
         default:
-          throw new Error('Error: invalid scMap entry on backstop pool data');
+          throw new Error(`Invalid backstop pool key: should not contain ${key}`);
       }
     }
-    if (poolBalance == undefined || poolEps == undefined) {
+    if (poolBalance == undefined || poolEps == undefined || backstopPoolDataEntries.length == 0) {
       throw new Error('Error: Unable to load backstop pool data');
     }
     return new BackstopPoolData(poolBalance, poolEps, emissionConfig, emissionData);
@@ -98,7 +92,8 @@ export class PoolBalance {
     let q4w: bigint | undefined;
 
     for (const map_entry of ledgerData.val().map() ?? []) {
-      switch (map_entry?.key()?.sym()?.toString()) {
+      const key = decodeEntryKey(map_entry.key());
+      switch (key) {
         case 'shares':
           shares = scValToNative(map_entry.val());
           break;
@@ -109,12 +104,12 @@ export class PoolBalance {
           q4w = scValToNative(map_entry.val());
           break;
         default:
-          throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+          throw Error(`Invalid PoolBalance key: should not contain ${key}`);
       }
     }
 
     if (shares == undefined || tokens == undefined || q4w == undefined) {
-      throw Error(`scvMap value malformed`);
+      throw Error(`Malformed PoolBalance scvMap `);
     }
     return new PoolBalance(shares, tokens, q4w);
   }
@@ -142,7 +137,8 @@ export class BackstopEmissionConfig {
     let eps: u64 | undefined;
 
     for (const map_entry of ledgerData.val().map() ?? []) {
-      switch (map_entry?.key()?.sym()?.toString()) {
+      const key = decodeEntryKey(map_entry.key());
+      switch (key) {
         case 'expiration':
           expiration = scValToNative(map_entry.val());
           break;
@@ -150,12 +146,12 @@ export class BackstopEmissionConfig {
           eps = scValToNative(map_entry.val());
           break;
         default:
-          throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+          throw Error(`Invalid BackstopEmissionConfig key: should not contain ${key}`);
       }
     }
 
     if (expiration == undefined || eps == undefined) {
-      throw Error(`scvMap value malformed`);
+      throw Error(`Malformed BackstopEmissionConfig scvMap`);
     }
     return new BackstopEmissionConfig(expiration, eps);
   }
@@ -183,7 +179,8 @@ export class BackstopEmissionData {
     let lastTime: u64 | undefined;
 
     for (const map_entry of ledgerData.val().map() ?? []) {
-      switch (map_entry?.key()?.sym()?.toString()) {
+      const key = decodeEntryKey(map_entry.key());
+      switch (key) {
         case 'index':
           index = scValToNative(map_entry.val());
           break;
@@ -191,12 +188,12 @@ export class BackstopEmissionData {
           lastTime = scValToNative(map_entry.val());
           break;
         default:
-          throw Error(`scvMap value malformed ${map_entry?.key()?.sym()?.toString()}`);
+          throw Error(`Invalid BackstopEmissionData key: should not contain ${key}`);
       }
     }
 
     if (index == undefined || lastTime == undefined) {
-      throw Error(`scvMap value malformed`);
+      throw Error(`Malformed BackstopEmissionData scvMap`);
     }
     return new BackstopEmissionData(index, lastTime);
   }
