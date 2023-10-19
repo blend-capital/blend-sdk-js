@@ -49,7 +49,7 @@ export function BackstopEmissionConfigToXDR(
 
 export interface BackstopEmissionsData {
   index: i128;
-  last_time: u64;
+  lastTime: u64;
 }
 
 export function BackstopEmissionsDataToXDR(
@@ -66,7 +66,7 @@ export function BackstopEmissionsDataToXDR(
     new xdr.ScMapEntry({
       key: ((i) => xdr.ScVal.scvSymbol(i))('last_time'),
       val: ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(
-        backstopEmissionsData.last_time
+        backstopEmissionsData.lastTime
       ),
     }),
   ];
@@ -109,7 +109,7 @@ export interface LpTokenValue {
  */
 export interface PoolBackstopData {
   blnd: i128;
-  q4w_pct: i128;
+  q4wPercent: i128;
   tokens: i128;
   usdc: i128;
 }

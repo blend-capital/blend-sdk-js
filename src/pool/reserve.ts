@@ -11,18 +11,18 @@ import {
 import { Network, i128, u32, u64 } from '../index.js';
 
 export type EstReserveData = {
-  b_rate: number;
-  d_rate: number;
-  total_supply: number;
-  total_liabilities: number;
-  cur_apy: number;
-  cur_util: number;
+  bRate: number;
+  dRate: number;
+  totalSupply: number;
+  totalLiabilities: number;
+  currentApy: number;
+  currentUtil: number;
 };
 
 // TODO: add emission config and data
 export class Reserve {
   constructor(
-    public AssetId: string,
+    public assetId: string,
     public symbol: string,
     public poolTokens: bigint,
     public config: ReserveConfig,
@@ -30,13 +30,13 @@ export class Reserve {
     public emissionConfig: ReserveEmissionConfig | undefined,
     public emissionData: ReserveEmissionData | undefined
   ) {}
-  static async load(network: Network, poolId: string, AssetId: string) {
+  static async load(network: Network, poolId: string, assetId: string) {
     const SorobanRpc = new Server(network.rpc, network.opts);
-    const reserveConfigKey = ReserveConfig.contractDataKey(poolId, AssetId);
-    const reserveDataKey = ReserveData.contractDataKey(poolId, AssetId);
+    const reserveConfigKey = ReserveConfig.contractDataKey(poolId, assetId);
+    const reserveDataKey = ReserveData.contractDataKey(poolId, assetId);
     const tokenConfigKey = xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
-        contract: Address.fromString(AssetId).toScAddress(),
+        contract: Address.fromString(assetId).toScAddress(),
         key: xdr.ScVal.scvLedgerKeyContractInstance(),
         durability: xdr.ContractDataDurability.persistent(),
       })
@@ -77,7 +77,7 @@ export class Reserve {
     const poolTokens = await getTokenBalance(
       SorobanRpc,
       network.passphrase,
-      AssetId,
+      assetId,
       Address.fromString(poolId)
     );
     const supplyEmissionConfigXDR = ReserveEmissionConfig.contractDataKey(
@@ -116,7 +116,7 @@ export class Reserve {
       }
     }
     return new Reserve(
-      AssetId,
+      assetId,
       tokenConfig.symbol,
       poolTokens,
       reserveConfig,
@@ -138,37 +138,37 @@ export class Reserve {
   public estimateData(backstop_take_rate: number, timestamp: number | undefined): EstReserveData {
     const base_rate = 0.01; // base rate
     const scaler = 10 ** this.config.decimals;
-    let d_rate = Number(this.data.d_rate) / 1e9;
-    let total_liabilities = (Number(this.data.d_supply) / scaler) * d_rate;
+    let d_rate = Number(this.data.dRate) / 1e9;
+    let total_liabilities = (Number(this.data.dSupply) / scaler) * d_rate;
     let b_rate =
-      this.data.b_supply == BigInt(0)
+      this.data.bSupply == BigInt(0)
         ? 1
         : (total_liabilities + Number(this.poolTokens) / scaler) /
-          (Number(this.data.b_supply) / scaler);
-    let total_supply = (Number(this.data.b_supply) / scaler) * b_rate;
+          (Number(this.data.bSupply) / scaler);
+    let total_supply = (Number(this.data.bSupply) / scaler) * b_rate;
 
     if (total_supply != 0) {
       let cur_apy: number;
-      const cur_ir_mod = Number(this.data.ir_mod) / 1e9;
+      const cur_ir_mod = Number(this.data.interestRateModifier) / 1e9;
       const cur_util = total_liabilities / total_supply;
       const target_util = this.config.util / 1e7;
       if (cur_util <= target_util) {
-        cur_apy = (cur_util / target_util) * (this.config.r_one / 1e7) + base_rate;
+        cur_apy = (cur_util / target_util) * (this.config.rateOne / 1e7) + base_rate;
         cur_apy *= cur_ir_mod;
       } else if (target_util < cur_util && cur_util <= 0.95) {
         cur_apy =
-          ((cur_util - target_util) / (0.95 - target_util)) * (this.config.r_two / 1e7) +
-          this.config.r_one / 1e7 +
+          ((cur_util - target_util) / (0.95 - target_util)) * (this.config.rateTwo / 1e7) +
+          this.config.rateOne / 1e7 +
           base_rate;
         cur_apy *= cur_ir_mod;
       } else {
         cur_apy =
-          ((cur_util - 0.95) / 0.05) * (this.config.r_three / 1e7) +
-          cur_ir_mod * (this.config.r_two / 1e7 + this.config.r_one / 1e7 + base_rate);
+          ((cur_util - 0.95) / 0.05) * (this.config.rateThree / 1e7) +
+          cur_ir_mod * (this.config.rateTwo / 1e7 + this.config.rateOne / 1e7 + base_rate);
       }
 
       const accrual =
-        ((timestamp != undefined ? timestamp - this.data.last_time : 0) / 31536000) * cur_apy + 1;
+        ((timestamp != undefined ? timestamp - this.data.lastTime : 0) / 31536000) * cur_apy + 1;
       if (backstop_take_rate > 0) {
         const b_accrual = (accrual - 1) * cur_util;
         total_supply *= b_accrual * backstop_take_rate + 1;
@@ -181,16 +181,23 @@ export class Reserve {
       total_liabilities *= accrual;
       d_rate *= accrual;
       return {
-        b_rate,
-        d_rate,
-        total_supply,
-        total_liabilities,
-        cur_apy,
-        cur_util,
+        bRate: b_rate,
+        dRate: d_rate,
+        totalSupply: total_supply,
+        totalLiabilities: total_liabilities,
+        currentApy: cur_apy,
+        currentUtil: cur_util,
       };
     } else {
       // total supply is zero, can't perform estimation
-      return { b_rate, d_rate, total_supply, total_liabilities, cur_apy: base_rate, cur_util: 0 };
+      return {
+        bRate: b_rate,
+        dRate: d_rate,
+        totalSupply: total_supply,
+        totalLiabilities: total_liabilities,
+        currentApy: base_rate,
+        currentUtil: 0,
+      };
     }
   }
 }
@@ -201,13 +208,13 @@ export class ReserveConfig {
   constructor(
     public index: number,
     public decimals: number,
-    public c_factor: number,
-    public l_factor: number,
+    public collateralFactor: number,
+    public liabilityFactor: number,
     public util: number,
-    public max_util: number,
-    public r_one: number,
-    public r_two: number,
-    public r_three: number,
+    public maxUtil: number,
+    public rateOne: number,
+    public rateTwo: number,
+    public rateThree: number,
     public reactivity: number
   ) {}
 
@@ -314,18 +321,18 @@ export class ReserveConfig {
 
 export class ReserveData {
   constructor(
-    public d_rate: bigint,
-    public b_rate: bigint,
-    public ir_mod: bigint,
-    public b_supply: bigint,
-    public d_supply: bigint,
-    public backstop_credit: bigint,
-    public last_time: number
+    public dRate: bigint,
+    public bRate: bigint,
+    public interestRateModifier: bigint,
+    public bSupply: bigint,
+    public dSupply: bigint,
+    public backstopCredit: bigint,
+    public lastTime: number
   ) {}
-  static contractDataKey(poolId: string, AssetId: string): xdr.LedgerKey {
+  static contractDataKey(poolId: string, assetId: string): xdr.LedgerKey {
     const res: xdr.ScVal[] = [
       xdr.ScVal.scvSymbol('ResData'),
-      Address.fromString(AssetId).toScVal(),
+      Address.fromString(assetId).toScVal(),
     ];
     return xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
@@ -452,7 +459,7 @@ export class ReserveEmissionConfig {
  * The emission data for the reserve b or d token
  */
 export class ReserveEmissionData {
-  constructor(public index: i128, public last_time: u64) {}
+  constructor(public index: i128, public lastTime: u64) {}
 
   static contractDataKey(poolId: string, reserveIndex: u32) {
     const res: xdr.ScVal[] = [xdr.ScVal.scvSymbol('EmisData'), xdr.ScVal.scvU32(reserveIndex)];
@@ -500,12 +507,10 @@ export class ReserveEmissionData {
 
     return {
       index,
-      last_time: BigInt(last_time),
+      lastTime: BigInt(last_time),
     };
   }
 }
-
-// Token things (Not sure where to put)
 
 interface TokenConfig {
   name: string;

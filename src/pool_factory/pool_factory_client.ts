@@ -3,6 +3,8 @@ import { PoolInitMeta } from './index.js';
 import { ContractResult, Network, TxOptions, u64 } from '../index.js';
 import { invokeOperation } from '../tx.js';
 
+// @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
+
 export interface DeployArgs {
   admin: Address | string;
   name: string;

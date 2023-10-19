@@ -3,6 +3,8 @@ import { ContractResult, Network, TxOptions, i128 } from '../index.js';
 import { Q4W } from './Q4W.js';
 import { invokeOperation } from '../tx.js';
 
+// @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
+
 export interface InitializeArgs {
   backstop_token: Address | string;
   usdc_token: Address | string;

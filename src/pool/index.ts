@@ -29,6 +29,20 @@ export enum PoolError {
   InvalidBidTooSmall = 108,
 }
 
+//@dev This interface exists for matching the attribute names to the rust contract names
+export interface ReserveConfig {
+  index: number;
+  decimals: number;
+  c_factor: number;
+  l_factor: number;
+  util: number;
+  max_util: number;
+  r_one: number;
+  r_two: number;
+  r_three: number;
+  reactivity: number;
+}
+
 /**
  * Metadata for a pool's reserve emission configuration
  */
