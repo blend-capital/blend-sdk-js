@@ -1,4 +1,4 @@
-import { xdr, Address, nativeToScVal } from 'soroban-client';
+import { xdr, Address } from 'soroban-client';
 import { u32, u64, i128 } from '../index.js';
 
 export * from './pool_client.js';
@@ -97,6 +97,12 @@ function AuctionKeyToXDR(auctionKey?: AuctionKey): xdr.ScVal {
   return xdr.ScVal.scvMap(arr);
 }
 
+export interface AuctionData {
+  bid: Map<u32, i128>;
+  block: u32;
+  lot: Map<u32, i128>;
+}
+
 export type PoolDataKey =
   | { tag: 'Admin' }
   | { tag: 'Name' }
@@ -172,128 +178,4 @@ export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
       break;
   }
   return xdr.ScVal.scvVec(res);
-}
-
-export interface LiquidationMetadata {
-  collateral: Map<string, i128>;
-  liability: Map<string, i128>;
-}
-
-export function LiquidationMetadataToXDR(liquidationMetadata?: LiquidationMetadata): xdr.ScVal {
-  if (!liquidationMetadata) {
-    return xdr.ScVal.scvVoid();
-  }
-  const arr = [
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('collateral'),
-      val: ((i) =>
-        xdr.ScVal.scvMap(
-          Array.from(i.entries()).map(([key, value]) => {
-            return new xdr.ScMapEntry({
-              key: ((i) => Address.fromString(i).toScVal())(key),
-              val: ((i) => nativeToScVal(i, { type: 'i128' }))(value),
-            });
-          })
-        ))(liquidationMetadata.collateral),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('liability'),
-      val: ((i) =>
-        xdr.ScVal.scvMap(
-          Array.from(i.entries()).map(([key, value]) => {
-            return new xdr.ScMapEntry({
-              key: ((i) => Address.fromString(i).toScVal())(key),
-              val: ((i) => nativeToScVal(i, { type: 'i128' }))(value),
-            });
-          })
-        ))(liquidationMetadata.liability),
-    }),
-  ];
-  return xdr.ScVal.scvMap(arr);
-}
-
-export interface AuctionQuote {
-  bid: Array<[string, i128]>;
-  block: u32;
-  lot: Array<[string, i128]>;
-}
-
-export function AuctionQuoteToXDR(auctionQuote?: AuctionQuote): xdr.ScVal {
-  if (!auctionQuote) {
-    return xdr.ScVal.scvVoid();
-  }
-  const arr = [
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('bid'),
-      val: ((i) =>
-        xdr.ScVal.scvVec(
-          i.map((j) =>
-            xdr.ScVal.scvVec([
-              ((k) => Address.fromString(k).toScVal())(j[0]),
-              ((k) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(k.toString(16), 'hex')))(j[1]),
-            ])
-          )
-        ))(auctionQuote.bid),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('block'),
-      val: ((i) => xdr.ScVal.scvU32(i))(auctionQuote.block),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('lot'),
-      val: ((i) =>
-        xdr.ScVal.scvVec(
-          i.map((j) =>
-            xdr.ScVal.scvVec([
-              ((k) => Address.fromString(k).toScVal())(j[0]),
-              ((k) => xdr.ScVal.scvI128(xdr.Int128Parts.fromXDR(k.toString(16), 'hex')))(j[1]),
-            ])
-          )
-        ))(auctionQuote.lot),
-    }),
-  ];
-  return xdr.ScVal.scvMap(arr);
-}
-
-export interface AuctionData {
-  bid: Map<u32, i128>;
-  block: u32;
-  lot: Map<u32, i128>;
-}
-
-export function AuctionDataToXDR(auctionData?: AuctionData): xdr.ScVal {
-  if (!auctionData) {
-    return xdr.ScVal.scvVoid();
-  }
-  const arr = [
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('bid'),
-      val: ((i) =>
-        xdr.ScVal.scvMap(
-          Array.from(i.entries()).map(([key, value]) => {
-            return new xdr.ScMapEntry({
-              key: ((i) => xdr.ScVal.scvU32(i))(key),
-              val: ((i) => nativeToScVal(i, { type: 'i128' }))(value),
-            });
-          })
-        ))(auctionData.bid),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('block'),
-      val: ((i) => xdr.ScVal.scvU32(i))(auctionData.block),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('lot'),
-      val: ((i) =>
-        xdr.ScVal.scvMap(
-          Array.from(i.entries()).map(([key, value]) => {
-            return new xdr.ScMapEntry({
-              key: ((i) => xdr.ScVal.scvU32(i))(key),
-              val: ((i) => nativeToScVal(i, { type: 'i128' }))(value),
-            });
-          })
-        ))(auctionData.lot),
-    }),
-  ];
-  return xdr.ScVal.scvMap(arr);
 }
