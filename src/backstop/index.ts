@@ -1,8 +1,7 @@
-import { xdr, Address, nativeToScVal } from 'soroban-client';
-import { u64, i128 } from '../index.js';
+import { xdr, Address } from 'soroban-client';
+import { i128, u64 } from '../index.js';
 
 export * from './backstop_client.js';
-export * from './Q4W.js';
 export * from './backstop_config.js';
 export * from './backstop_pool_data.js';
 export * from './backstop_user_data.js';
@@ -17,60 +16,6 @@ export enum BackstopError {
   AlreadyInitialized = 7,
   NotPool = 10,
   NegativeAmount = 11,
-}
-
-export interface BackstopEmissionConfig {
-  eps: u64;
-  expiration: u64;
-}
-
-export function BackstopEmissionConfigToXDR(
-  backstopEmissionConfig?: BackstopEmissionConfig
-): xdr.ScVal {
-  if (!backstopEmissionConfig) {
-    return xdr.ScVal.scvVoid();
-  }
-  const arr = [
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('eps'),
-      val: ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(
-        backstopEmissionConfig.eps
-      ),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('expiration'),
-      val: ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(
-        backstopEmissionConfig.expiration
-      ),
-    }),
-  ];
-  return xdr.ScVal.scvMap(arr);
-}
-
-export interface BackstopEmissionsData {
-  index: i128;
-  lastTime: u64;
-}
-
-export function BackstopEmissionsDataToXDR(
-  backstopEmissionsData?: BackstopEmissionsData
-): xdr.ScVal {
-  if (!backstopEmissionsData) {
-    return xdr.ScVal.scvVoid();
-  }
-  const arr = [
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('index'),
-      val: ((i) => nativeToScVal(i, { type: 'i128' }))(backstopEmissionsData.index),
-    }),
-    new xdr.ScMapEntry({
-      key: ((i) => xdr.ScVal.scvSymbol(i))('last_time'),
-      val: ((i) => xdr.ScVal.scvU64(xdr.Uint64.fromString(i.toString())))(
-        backstopEmissionsData.lastTime
-      ),
-    }),
-  ];
-  return xdr.ScVal.scvMap(arr);
 }
 
 export interface PoolUserKey {
@@ -95,10 +40,6 @@ export function PoolUserKeyToXDR(poolUserKey?: PoolUserKey): xdr.ScVal {
   return xdr.ScVal.scvMap(arr);
 }
 
-export interface Q4W {
-  amount: bigint;
-  exp: number;
-}
 export interface LpTokenValue {
   blndPerShare: i128;
   usdcPerShare: i128;
@@ -112,6 +53,11 @@ export interface PoolBackstopData {
   q4wPercent: i128;
   tokens: i128;
   usdc: i128;
+}
+
+export interface Q4W {
+  amount: i128;
+  exp: u64;
 }
 
 export type BackstopDataKey =

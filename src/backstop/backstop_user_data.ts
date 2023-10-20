@@ -76,7 +76,7 @@ export class UserBalance {
             ?.map((entry) => {
               const q4w_array = entry.map();
               let amount: bigint | undefined;
-              let exp: number | undefined;
+              let exp: bigint | undefined;
               for (const q4w of q4w_array ?? []) {
                 const q4wKey = q4w.key().sym().toString();
                 switch (q4wKey) {
@@ -87,7 +87,7 @@ export class UserBalance {
                     exp = scValToNative(q4w.val());
                     break;
                   default:
-                    throw Error(`Invalid q4w key: should not contain ${q4wKey}`);
+                    throw Error(`Invalid Q4W key: should not contain ${q4wKey}`);
                 }
               }
               if (!amount || !exp) {

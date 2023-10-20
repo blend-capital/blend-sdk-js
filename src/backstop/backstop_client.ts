@@ -1,6 +1,6 @@
 import { Address, Contract, ContractSpec, xdr } from 'soroban-client';
 import { ContractResult, Network, TxOptions, i128 } from '../index.js';
-import { Q4W } from './Q4W.js';
+import { Q4W } from './index.js';
 import { invokeOperation } from '../tx.js';
 
 // @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
