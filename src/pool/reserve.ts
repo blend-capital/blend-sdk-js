@@ -164,18 +164,18 @@ export class Reserve {
       const cur_util = total_liabilities / total_supply;
       const target_util = this.config.util / 1e7;
       if (cur_util <= target_util) {
-        cur_apy = (cur_util / target_util) * (this.config.rateOne / 1e7) + base_rate;
+        cur_apy = (cur_util / target_util) * (this.config.r_one / 1e7) + base_rate;
         cur_apy *= cur_ir_mod;
       } else if (target_util < cur_util && cur_util <= 0.95) {
         cur_apy =
-          ((cur_util - target_util) / (0.95 - target_util)) * (this.config.rateTwo / 1e7) +
-          this.config.rateOne / 1e7 +
+          ((cur_util - target_util) / (0.95 - target_util)) * (this.config.r_two / 1e7) +
+          this.config.r_one / 1e7 +
           base_rate;
         cur_apy *= cur_ir_mod;
       } else {
         cur_apy =
-          ((cur_util - 0.95) / 0.05) * (this.config.rateThree / 1e7) +
-          cur_ir_mod * (this.config.rateTwo / 1e7 + this.config.rateOne / 1e7 + base_rate);
+          ((cur_util - 0.95) / 0.05) * (this.config.r_three / 1e7) +
+          cur_ir_mod * (this.config.r_two / 1e7 + this.config.r_one / 1e7 + base_rate);
       }
 
       const accrual =
@@ -214,18 +214,17 @@ export class Reserve {
 }
 
 /********** LedgerDataEntry Helpers **********/
-
 export class ReserveConfig {
   constructor(
     public index: number,
     public decimals: number,
-    public collateralFactor: number,
-    public liabilityFactor: number,
+    public c_factor: number,
+    public l_factor: number,
     public util: number,
-    public maxUtil: number,
-    public rateOne: number,
-    public rateTwo: number,
-    public rateThree: number,
+    public max_util: number,
+    public r_one: number,
+    public r_two: number,
+    public r_three: number,
     public reactivity: number
   ) {}
 
