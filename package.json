@@ -4,7 +4,7 @@
   "description": "Javascript SDK for the Blend Protocol",
   "type": "module",
   "scripts": {
-    "build": "node ./scripts/build.mjs"
+    "build": "rm -rf dist/* && node ./scripts/build.mjs"
   },
   "exports": {
       "require": "./dist/cjs/index.js",

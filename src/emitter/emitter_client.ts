@@ -2,6 +2,8 @@ import { Address, Contract, ContractSpec, xdr } from 'soroban-client';
 import { ContractResult, Network, TxOptions, i128 } from '../index.js';
 import { invokeOperation } from '../tx.js';
 
+// @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
+
 export interface InitializeArgs {
   backstop: Address | string;
   blnd_token_id: Address | string;

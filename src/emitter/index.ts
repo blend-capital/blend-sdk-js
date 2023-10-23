@@ -1,6 +1,7 @@
 import { xdr } from 'soroban-client';
 
 export * from './emitter_client.js';
+export * from './emitter_config.js';
 
 export enum EmitterError {
   AlreadyInitialized = 10,

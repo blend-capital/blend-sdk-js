@@ -6,9 +6,6 @@ export * as Emitter from './emitter/index.js';
 export * as Pool from './pool/index.js';
 export * as PoolFactory from './pool_factory/index.js';
 
-export * as scval_converter from './scval_converter.js';
-export * as data_entry_converter from './data_entry_converter.js';
-
 export * from './contract_result.js';
 export * from './tx.js';
 
