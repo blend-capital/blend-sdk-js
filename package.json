@@ -1,16 +1,42 @@
 {
   "name": "@blend-capital/blend-sdk",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Javascript SDK for the Blend Protocol",
   "type": "module",
   "scripts": {
     "build": "rm -rf dist/* && node ./scripts/build.mjs"
   },
   "exports": {
+    ".": {
       "require": "./dist/cjs/index.js",
-      "import": "./dist/esm/index.js"
+      "import": "./dist/esm/index.js",
+      "types": "./dist/types/index.d.ts"
+    },
+    "./backstop": {
+      "require": "./dist/cjs/backstop/index.js",
+      "import": "./dist/esm/backstop/index.js",
+      "types": "./dist/types/backstop/index.d.ts"
+    },
+    "./pool": {
+      "require": "./dist/cjs/pool/index.js",
+      "import": "./dist/esm/pool/index.js",
+      "types": "./dist/types/pool/index.d.ts"
+    },
+    "./pool-factory": {
+      "require": "./dist/cjs/pool_factory/index.js",
+      "import": "./dist/esm/pool_factory/index.js",
+      "types": "./dist/types/pool_factory/index.d.ts"
+    },
+    "./emitter": {
+      "require": "./dist/cjs/emitter/index.js",
+      "import": "./dist/esm/emitter/index.js",
+      "types": "./dist/types/emitter/index.d.ts"
+    }
   },
   "typings": "dist/types/index.d.ts",
+  "files": [
+    "/dist"
+  ],
   "publishConfig": {
     "access": "public"
   },
