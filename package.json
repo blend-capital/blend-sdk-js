@@ -11,6 +11,9 @@
       "import": "./dist/esm/index.js"
   },
   "typings": "dist/types/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/blend-capital/blend-sdk-js.git"
