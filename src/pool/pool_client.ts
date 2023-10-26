@@ -18,7 +18,7 @@ export interface SubmitArgs {
   requests: Array<Request>;
 }
 
-export interface InitializeArgs {
+export interface PoolInitializeArgs {
   admin: Address | string;
   name: string;
   oracle: Address | string;
@@ -33,7 +33,7 @@ export interface UpdateReserveArgs {
   config: ReserveConfig;
 }
 
-export interface ClaimArgs {
+export interface PoolClaimArgs {
   from: Address | string;
   reserve_token_ids: Array<u32>;
   to: Address | string;
@@ -95,7 +95,7 @@ export class PoolClient {
     sign: (txXdr: string) => Promise<string>,
     network: Network,
     txOptions: TxOptions,
-    contractArgs: InitializeArgs
+    contractArgs: PoolInitializeArgs
   ): Promise<ContractResult<undefined>> {
     return await invokeOperation<undefined>(
       source,
@@ -290,7 +290,7 @@ export class PoolClient {
     sign: (txXdr: string) => Promise<string>,
     network: Network,
     txOptions: TxOptions,
-    contractArgs: ClaimArgs
+    contractArgs: PoolClaimArgs
   ): Promise<ContractResult<i128>> {
     return await invokeOperation<i128>(
       source,

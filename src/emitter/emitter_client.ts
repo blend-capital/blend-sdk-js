@@ -4,7 +4,7 @@ import { invokeOperation } from '../tx.js';
 
 // @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
 
-export interface InitializeArgs {
+export interface EmitterInitializeArgs {
   backstop: Address | string;
   blnd_token_id: Address | string;
 }
@@ -34,7 +34,7 @@ export class EmitterClient {
     sign: (txXdr: string) => Promise<string>,
     network: Network,
     txOptions: TxOptions,
-    contractArgs: InitializeArgs
+    contractArgs: EmitterInitializeArgs
   ): Promise<ContractResult<undefined>> {
     return await invokeOperation<undefined>(
       source,
@@ -51,7 +51,7 @@ export class EmitterClient {
     sign: (txXdr: string) => Promise<string>,
     network: Network,
     txOptions: TxOptions,
-    contractArgs: InitializeArgs
+    contractArgs: EmitterInitializeArgs
   ): Promise<ContractResult<i128>> {
     return await invokeOperation<i128>(
       source,

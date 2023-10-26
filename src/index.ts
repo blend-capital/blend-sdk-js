@@ -1,10 +1,10 @@
 import { Server, SorobanRpc, TransactionBuilder } from 'soroban-client';
 import { Buffer } from 'buffer';
 
-import './backstop/index.js';
-import './emitter/index.js';
-import './pool/index.js';
-import './pool_factory/index.js';
+export * from './backstop/index.js';
+export * from './emitter/index.js';
+export * from './pool/index.js';
+export * from './pool_factory/index.js';
 
 export * from './contract_result.js';
 export * from './tx.js';

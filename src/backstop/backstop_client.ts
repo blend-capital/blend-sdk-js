@@ -5,7 +5,7 @@ import { invokeOperation } from '../tx.js';
 
 // @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
 
-export interface InitializeArgs {
+export interface BackstopInitializeArgs {
   backstop_token: Address | string;
   usdc_token: Address | string;
   blnd_token: Address | string;
@@ -24,7 +24,7 @@ export interface AddRewardArgs {
   to_remove: Address | string;
 }
 
-export interface ClaimArgs {
+export interface BackstopClaimArgs {
   from: Address | string;
   pool_addresses: Array<Address | string>;
   to: Address | string;
@@ -82,7 +82,7 @@ export class BackstopClient {
     sign: (txXdr: string) => Promise<string>,
     network: Network,
     txOptions: TxOptions,
-    contractArgs: InitializeArgs
+    contractArgs: BackstopInitializeArgs
   ): Promise<ContractResult<undefined>> {
     return await invokeOperation<undefined>(
       source,
@@ -224,7 +224,7 @@ export class BackstopClient {
     sign: (txXdr: string) => Promise<string>,
     network: Network,
     txOptions: TxOptions,
-    contractArgs: ClaimArgs
+    contractArgs: BackstopClaimArgs
   ): Promise<ContractResult<i128>> {
     return await invokeOperation<i128>(
       source,
