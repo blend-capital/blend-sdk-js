@@ -177,9 +177,10 @@ export class Reserve {
           ((cur_util - 0.95) / 0.05) * (this.config.r_three / 1e7) +
           cur_ir_mod * (this.config.r_two / 1e7 + this.config.r_one / 1e7 + base_rate);
       }
-
       const accrual =
-        ((timestamp != undefined ? timestamp - this.data.lastTime : 0) / 31536000) * cur_apy + 1;
+        ((timestamp != undefined ? timestamp - Number(this.data.lastTime) : 0) / 31536000) *
+          cur_apy +
+        1;
       if (backstop_take_rate > 0) {
         const b_accrual = (accrual - 1) * cur_util;
         total_supply *= b_accrual * backstop_take_rate + 1;
@@ -337,7 +338,7 @@ export class ReserveData {
     public bSupply: bigint,
     public dSupply: bigint,
     public backstopCredit: bigint,
-    public lastTime: number
+    public lastTime: bigint
   ) {}
   static contractDataKey(poolId: string, assetId: string): xdr.LedgerKey {
     const res: xdr.ScVal[] = [
@@ -367,7 +368,7 @@ export class ReserveData {
     let b_supply: bigint | undefined;
     let d_supply: bigint | undefined;
     let backstop_credit: bigint | undefined;
-    let last_time: number | undefined;
+    let last_time: bigint | undefined;
     for (const map_entry of data_entry_map) {
       const key = decodeEntryKey(map_entry.key());
       switch (key) {

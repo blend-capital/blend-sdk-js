@@ -4,17 +4,21 @@ import { Q4W } from './index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export class BackstopUserData {
-  constructor(public userBalance: UserBalance, public userEmissions: UserEmissionData) {}
+  constructor(public userBalance: UserBalance, public userEmissions: BackstopUserEmissionData) {}
 
   static async load(network: Network, backstopId: string, poolId: string, userId: string) {
     const SorobanRpc = new Server(network.rpc, network.opts);
     const userBalanceDataKey = UserBalance.contractDataKey(backstopId, poolId, userId);
-    const userEmissionsDataKey = UserEmissionData.contractDataKey(backstopId, poolId, userId);
+    const userEmissionsDataKey = BackstopUserEmissionData.contractDataKey(
+      backstopId,
+      poolId,
+      userId
+    );
     const backstopUserDataEntries =
       (await SorobanRpc.getLedgerEntries(userBalanceDataKey, userEmissionsDataKey)).entries ?? [];
 
     let userBalance: UserBalance | undefined;
-    let userEmissions: UserEmissionData | undefined;
+    let userEmissions: BackstopUserEmissionData | undefined;
     for (const entry of backstopUserDataEntries) {
       const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64').contractData();
       const key = decodeEntryKey(ledgerData.key());
@@ -24,7 +28,7 @@ export class BackstopUserData {
           break;
         }
         case 'UEmisData':
-          userEmissions = UserEmissionData.fromContractDataXDR(entry.xdr);
+          userEmissions = BackstopUserEmissionData.fromContractDataXDR(entry.xdr);
           break;
         default:
           throw new Error(`Invalid BackstopUserData key: should not contain ${key}`);
@@ -107,7 +111,7 @@ export class UserBalance {
   }
 }
 
-export class UserEmissionData {
+export class BackstopUserEmissionData {
   constructor(public accrued: i128, public index: i128) {}
 
   static contractDataKey(backstopId: string, poolId: string, userId: string): xdr.LedgerKey {
@@ -132,7 +136,7 @@ export class UserEmissionData {
     );
   }
 
-  static fromContractDataXDR(xdr_string: string): UserEmissionData {
+  static fromContractDataXDR(xdr_string: string): BackstopUserEmissionData {
     const ledgerData = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64').contractData();
     let index: i128 | undefined;
     let accrued: i128 | undefined;
@@ -152,6 +156,6 @@ export class UserEmissionData {
     if (index == undefined || accrued == undefined) {
       throw Error(`Malformed UserEmissionData scvMap`);
     }
-    return new UserEmissionData(accrued, index);
+    return new BackstopUserEmissionData(accrued, index);
   }
 }

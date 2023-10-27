@@ -2,16 +2,16 @@ import { Address, Server, xdr, scValToNative } from 'soroban-client';
 import { Network, i128 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
-export class UserEmissions {
-  constructor(public emissions: Map<number, UserEmissionData>) {}
+export class PoolUserEmissions {
+  constructor(public emissions: Map<number, PoolUserEmissionData>) {}
 
   static async load(network: Network, poolId: string, userId: string, reserveIndexs: number[]) {
     const SorobanRpc = new Server(network.rpc, network.opts);
-    const emissions: Map<number, UserEmissionData> = new Map();
+    const emissions: Map<number, PoolUserEmissionData> = new Map();
     const emissionDataKeys: xdr.LedgerKey[] = [];
     reserveIndexs.map((index) => {
-      emissionDataKeys.push(UserEmissionData.getContractDataKey(poolId, userId, index * 2));
-      emissionDataKeys.push(UserEmissionData.getContractDataKey(poolId, userId, index * 2 + 1));
+      emissionDataKeys.push(PoolUserEmissionData.getContractDataKey(poolId, userId, index * 2));
+      emissionDataKeys.push(PoolUserEmissionData.getContractDataKey(poolId, userId, index * 2 + 1));
     });
     const emissionDataLedgerEntries = await SorobanRpc.getLedgerEntries(...emissionDataKeys);
     for (const emissionDataEntry of emissionDataLedgerEntries.entries) {
@@ -32,18 +32,18 @@ export class UserEmissions {
           }
         });
 
-      const emissionData = UserEmissionData.fromContractDataXDR(emissionDataEntry.xdr);
+      const emissionData = PoolUserEmissionData.fromContractDataXDR(emissionDataEntry.xdr);
       if (emissionData == undefined || reserveIndex == undefined) {
         throw Error('Malformed UserEmissionData scVal');
       }
       emissions.set(reserveIndex, emissionData);
     }
 
-    return new UserEmissions(emissions);
+    return new PoolUserEmissions(emissions);
   }
 }
 
-export class UserEmissionData {
+export class PoolUserEmissionData {
   constructor(public index: i128, public accrued: i128) {}
 
   static getContractDataKey(poolId: string, userId: string, reserveTokenIndex: number) {
@@ -69,7 +69,7 @@ export class UserEmissionData {
     );
   }
 
-  static fromContractDataXDR(xdr_string: string): UserEmissionData {
+  static fromContractDataXDR(xdr_string: string): PoolUserEmissionData {
     const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
       .contractData()
       .val()
@@ -98,6 +98,6 @@ export class UserEmissionData {
       throw Error('scvMap value malformed');
     }
 
-    return new UserEmissionData(index, accrued);
+    return new PoolUserEmissionData(index, accrued);
   }
 }
