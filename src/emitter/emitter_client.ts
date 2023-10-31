@@ -1,5 +1,5 @@
-import { Address, Contract, ContractSpec, xdr } from 'soroban-client';
-import { ContractResult, Network, TxOptions, i128 } from '../index.js';
+import { Address, Contract, ContractSpec } from 'soroban-client';
+import { ContractResult, Network, TxOptions } from '../index.js';
 import { invokeOperation } from '../tx.js';
 
 // @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
@@ -50,21 +50,15 @@ export class EmitterClient {
     source: string,
     sign: (txXdr: string) => Promise<string>,
     network: Network,
-    txOptions: TxOptions,
-    contractArgs: EmitterInitializeArgs
-  ): Promise<ContractResult<i128>> {
-    return await invokeOperation<i128>(
+    txOptions: TxOptions
+  ): Promise<ContractResult<undefined>> {
+    return await invokeOperation<undefined>(
       source,
       sign,
       network,
       txOptions,
-      (value: string | xdr.ScVal | undefined): i128 | undefined => {
-        if (value == undefined) {
-          return undefined;
-        }
-        return this.spec.funcResToNative('distribute', value);
-      },
-      this.contract.call('distribute', ...this.spec.funcArgsToScVals('distribute', contractArgs))
+      () => undefined,
+      this.contract.call('distribute', ...this.spec.funcArgsToScVals('distribute', {}))
     );
   }
 
