@@ -1,15 +1,7 @@
-import {
-  Account,
-  Address,
-  Contract,
-  Server,
-  SorobanRpc,
-  TransactionBuilder,
-  scValToNative,
-  xdr,
-} from 'soroban-client';
+import { Address, Server, scValToNative, xdr } from 'soroban-client';
 import { Network, i128, u32, u64 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
+import { TokenMetadata, getTokenBalance } from '../token.js';
 
 export type EstReserveData = {
   bRate: number;
@@ -20,19 +12,26 @@ export type EstReserveData = {
   currentUtil: number;
 };
 
-// TODO: add emission config and data
 export class Reserve {
   constructor(
     public assetId: string,
-    public symbol: string,
+    public tokenMetadata: TokenMetadata,
     public poolTokens: bigint,
     public config: ReserveConfig,
     public data: ReserveData,
     public emissionConfig: ReserveEmissionConfig | undefined,
     public emissionData: ReserveEmissionData | undefined
   ) {}
+
+  /**
+   * Load a Reserve from asset `assetId` from the pool `poolId` on the network `network`
+   * @param network - The network configuration
+   * @param poolId - The contract address of the Pool
+   * @param assetId - The contract address of the Reserve asset
+   * @returns A Reserve object
+   */
   static async load(network: Network, poolId: string, assetId: string) {
-    const SorobanRpc = new Server(network.rpc, network.opts);
+    const sorobanRpc = new Server(network.rpc, network.opts);
     const reserveConfigKey = ReserveConfig.contractDataKey(poolId, assetId);
     const reserveDataKey = ReserveData.contractDataKey(poolId, assetId);
     const tokenConfigKey = xdr.LedgerKey.contractData(
@@ -42,7 +41,7 @@ export class Reserve {
         durability: xdr.ContractDataDurability.persistent(),
       })
     );
-    const reserveLedgerEntries = await SorobanRpc.getLedgerEntries(
+    const reserveLedgerEntries = await sorobanRpc.getLedgerEntries(
       tokenConfigKey,
       reserveConfigKey,
       reserveDataKey
@@ -50,13 +49,13 @@ export class Reserve {
 
     let reserveConfig: ReserveConfig;
     let reserveData: ReserveData;
-    let tokenConfig: TokenConfig;
+    let tokenMetadata: TokenMetadata;
     let emissionConfig: ReserveEmissionConfig | undefined;
     let emissionData: ReserveEmissionData | undefined;
 
     for (const entry of reserveLedgerEntries.entries) {
-      const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64').contractData();
-      const key = decodeEntryKey(ledgerData.key());
+      const ledgerEntry = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64');
+      const key = decodeEntryKey(ledgerEntry.contractData().key());
       switch (key) {
         case 'ResConfig':
           reserveConfig = ReserveConfig.fromContractDataXDR(entry.xdr);
@@ -64,20 +63,14 @@ export class Reserve {
         case 'ResData':
           reserveData = ReserveData.fromContractDataXDR(entry.xdr);
           break;
-        // @dev this case is for the TokenConfig
         case 'ContractInstance':
-          tokenConfig = loadTokenConfig(entry.xdr);
+          tokenMetadata = TokenMetadata.fromLedgerEntryData(ledgerEntry);
           break;
         default:
           throw Error(`Invalid reserve key: should not contain ${key}`);
       }
     }
-    const poolTokens = await getTokenBalance(
-      SorobanRpc,
-      network.passphrase,
-      assetId,
-      Address.fromString(poolId)
-    );
+    const poolTokens = await getTokenBalance(network, assetId, Address.fromString(poolId));
     const supplyEmissionConfigKey = ReserveEmissionConfig.contractDataKey(
       poolId,
       reserveConfig.index * 2 + 1
@@ -96,7 +89,7 @@ export class Reserve {
       poolId,
       reserveConfig.index * 2
     );
-    const emissionLedgerEntries = await SorobanRpc.getLedgerEntries(
+    const emissionLedgerEntries = await sorobanRpc.getLedgerEntries(
       supplyEmissionConfigKey,
       supplyEmissionDataKey,
       borrowEmissionConfigKey,
@@ -119,7 +112,7 @@ export class Reserve {
 
     if (
       assetId == undefined ||
-      tokenConfig == undefined ||
+      tokenMetadata == undefined ||
       poolTokens == undefined ||
       reserveConfig == undefined ||
       reserveData == undefined
@@ -128,7 +121,7 @@ export class Reserve {
     }
     return new Reserve(
       assetId,
-      tokenConfig.symbol,
+      tokenMetadata,
       poolTokens,
       reserveConfig,
       reserveData,
@@ -509,84 +502,5 @@ export class ReserveEmissionData {
       index,
       lastTime: BigInt(last_time),
     };
-  }
-}
-
-interface TokenConfig {
-  name: string;
-  symbol: string;
-  decimal: number;
-}
-
-export function loadTokenConfig(xdr_string: string): TokenConfig {
-  let name: string | undefined;
-  let symbol: string | undefined;
-  let decimal: number | undefined;
-
-  xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
-    .contractData()
-    .val()
-    .instance()
-    .storage()
-    ?.map((entry) => {
-      const key = decodeEntryKey(entry.key());
-      switch (key) {
-        case 'METADATA':
-          entry
-            .val()
-            .map()
-            ?.map((meta_entry) => {
-              const metadataKey = decodeEntryKey(meta_entry.key());
-              switch (metadataKey) {
-                case 'name':
-                  name = scValToNative(meta_entry.val());
-                  return;
-                case 'symbol':
-                  symbol = scValToNative(meta_entry.val());
-                  return;
-                case 'decimal':
-                  decimal = scValToNative(meta_entry.val());
-                  return;
-                default:
-                  throw new Error(`Invalid token metadata key: should not contain ${metadataKey}`);
-              }
-            });
-          break;
-        default:
-          break;
-      }
-    });
-  if (name == undefined || symbol == undefined || decimal == undefined) {
-    throw Error('Token config malformed');
-  }
-  return { name, symbol, decimal };
-}
-
-async function getTokenBalance(
-  stellar_rpc: Server,
-  network_passphrase: string,
-  token_id: string,
-  address: Address
-): Promise<bigint> {
-  // account does not get validated during simulateTx
-  const account = new Account('GANXGJV2RNOFMOSQ2DTI3RKDBAVERXUVFC27KW3RLVQCLB3RYNO3AAI4', '123');
-  const tx_builder = new TransactionBuilder(account, {
-    fee: '1000',
-    timebounds: { minTime: 0, maxTime: 0 },
-    networkPassphrase: network_passphrase,
-  });
-  tx_builder.addOperation(new Contract(token_id).call('balance', address.toScVal()));
-  const result: SorobanRpc.SimulateTransactionResponse = await stellar_rpc.simulateTransaction(
-    tx_builder.build()
-  );
-  const scval_result = result;
-  if (scval_result == undefined) {
-    throw Error(`unable to fetch balance for token: ${token_id}`);
-  }
-  if (SorobanRpc.isSimulationSuccess(result)) {
-    const val = scValToNative(result.result.retval);
-    return val;
-  } else {
-    throw Error(`unable to fetch balance for token: ${token_id}`);
   }
 }
