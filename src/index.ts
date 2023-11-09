@@ -8,6 +8,7 @@ export * from './pool_factory/index.js';
 
 export * from './contract_result.js';
 export * from './tx.js';
+export { TokenMetadata } from './token.js';
 
 export type u32 = number;
 export type i32 = number;
