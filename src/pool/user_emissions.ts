@@ -1,6 +1,7 @@
-import { Address, Server, xdr, scValToNative } from 'soroban-client';
-import { Network, i128 } from '../index.js';
+import { Address, Server, xdr } from 'soroban-client';
+import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
+import { UserEmissions } from '../emissions.js';
 
 export class PoolUserEmissions {
   constructor(public emissions: Map<number, PoolUserEmissionData>) {}
@@ -10,13 +11,14 @@ export class PoolUserEmissions {
     const emissions: Map<number, PoolUserEmissionData> = new Map();
     const emissionDataKeys: xdr.LedgerKey[] = [];
     reserveIndexs.map((index) => {
-      emissionDataKeys.push(PoolUserEmissionData.getContractDataKey(poolId, userId, index * 2));
-      emissionDataKeys.push(PoolUserEmissionData.getContractDataKey(poolId, userId, index * 2 + 1));
+      emissionDataKeys.push(PoolUserEmissionData.ledgerKey(poolId, userId, index * 2));
+      emissionDataKeys.push(PoolUserEmissionData.ledgerKey(poolId, userId, index * 2 + 1));
     });
     const emissionDataLedgerEntries = await SorobanRpc.getLedgerEntries(...emissionDataKeys);
     for (const emissionDataEntry of emissionDataLedgerEntries.entries) {
       let reserveIndex: number | undefined;
-      xdr.LedgerEntryData.fromXDR(emissionDataEntry.xdr, 'base64')
+      const ledgerEntry = xdr.LedgerEntryData.fromXDR(emissionDataEntry.xdr, 'base64');
+      ledgerEntry
         .contractData()
         .key()
         .vec()
@@ -32,10 +34,10 @@ export class PoolUserEmissions {
           }
         });
 
-      const emissionData = PoolUserEmissionData.fromContractDataXDR(emissionDataEntry.xdr);
-      if (emissionData == undefined || reserveIndex == undefined) {
-        throw Error('Malformed UserEmissionData scVal');
+      if (reserveIndex == undefined) {
+        throw new Error("Invalid userEmissionData: should contain 'reserve_id'");
       }
+      const emissionData = PoolUserEmissionData.fromLedgerEntryData(ledgerEntry);
       emissions.set(reserveIndex, emissionData);
     }
 
@@ -43,10 +45,8 @@ export class PoolUserEmissions {
   }
 }
 
-export class PoolUserEmissionData {
-  constructor(public index: i128, public accrued: i128) {}
-
-  static getContractDataKey(poolId: string, userId: string, reserveTokenIndex: number) {
+export class PoolUserEmissionData extends UserEmissions {
+  static ledgerKey(poolId: string, userId: string, reserveTokenIndex: number): xdr.LedgerKey {
     const res: xdr.ScVal[] = [
       xdr.ScVal.scvSymbol('UserEmis'),
       xdr.ScVal.scvMap([
@@ -67,37 +67,5 @@ export class PoolUserEmissionData {
         durability: xdr.ContractDataDurability.persistent(),
       })
     );
-  }
-
-  static fromContractDataXDR(xdr_string: string): PoolUserEmissionData {
-    const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
-      .contractData()
-      .val()
-      .map();
-    if (data_entry_map == undefined) {
-      throw Error('UserEmissionData contract data value is not a map');
-    }
-
-    let accrued: bigint | undefined;
-    let index: bigint | undefined;
-    for (const map_entry of data_entry_map) {
-      const key = decodeEntryKey(map_entry.key());
-      switch (key) {
-        case 'accrued':
-          accrued = scValToNative(map_entry.val());
-          break;
-        case 'index':
-          index = scValToNative(map_entry.val());
-          break;
-        default:
-          throw Error(`Invalid UserEmissionData key: should not contain ${key}`);
-      }
-    }
-
-    if (accrued == undefined || index == undefined) {
-      throw Error('scvMap value malformed');
-    }
-
-    return new PoolUserEmissionData(index, accrued);
   }
 }

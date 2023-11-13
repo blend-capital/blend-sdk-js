@@ -7,6 +7,7 @@ export * from './pool/index.js';
 export * from './pool_factory/index.js';
 
 export * from './contract_result.js';
+export { Emissions } from './emissions.js';
 export * from './tx.js';
 export { TokenMetadata } from './token.js';
 

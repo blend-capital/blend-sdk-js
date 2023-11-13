@@ -36,6 +36,21 @@ export class TokenMetadata {
   }
 
   /**
+   * Create the ledgerKey for the token contract instance
+   * @param assetId - The contractId for the asset
+   * @returns The ledgerKey for the contract instance
+   */
+  static ledgerKey(assetId: string): xdr.LedgerKey {
+    return xdr.LedgerKey.contractData(
+      new xdr.LedgerKeyContractData({
+        contract: Address.fromString(assetId).toScAddress(),
+        key: xdr.ScVal.scvLedgerKeyContractInstance(),
+        durability: xdr.ContractDataDurability.persistent(),
+      })
+    );
+  }
+
+  /**
    * Create a TokenMetadata object from the XDR LedgerEntryData
    * @param ledger_entry_data - A XDR LedgerEntryData object or it's base64 string representation
    */
