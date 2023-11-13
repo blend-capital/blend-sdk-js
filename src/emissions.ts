@@ -82,7 +82,7 @@ export class Emissions {
  * @property eps - The emission per second
  * @property expiration - The expiration time of the emission
  */
-export class EmissionConfig {
+export abstract class EmissionConfig {
   constructor(public eps: bigint, public expiration: bigint) {}
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): EmissionConfig {
@@ -115,7 +115,7 @@ export class EmissionConfig {
   }
 }
 
-export class EmissionData {
+export abstract class EmissionData {
   constructor(public index: i128, public lastTime: u64) {}
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): EmissionData {
