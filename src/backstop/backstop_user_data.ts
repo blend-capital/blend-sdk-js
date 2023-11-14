@@ -5,7 +5,10 @@ import { decodeEntryKey } from '../ledger_entry_helper.js';
 import { UserEmissions } from '../emissions.js';
 
 export class BackstopUserData {
-  constructor(public userBalance: UserBalance, public userEmissions: BackstopUserEmissionData) {}
+  constructor(
+    public userBalance: UserBalance,
+    public userEmissions: BackstopUserEmissionData | undefined
+  ) {}
 
   static async load(network: Network, backstopId: string, poolId: string, userId: string) {
     const SorobanRpc = new Server(network.rpc, network.opts);
@@ -15,7 +18,7 @@ export class BackstopUserData {
       userBalanceDataKey,
       userEmissionsDataKey
     );
-    let userBalance: UserBalance | undefined;
+    let userBalance = new UserBalance(BigInt(0), []);
     let userEmissions: BackstopUserEmissionData | undefined;
     for (const entry of backstopUserData.entries ?? []) {
       const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64');
@@ -72,7 +75,7 @@ export class UserBalance {
     }
 
     let shares: bigint | undefined;
-    let q4w: Q4W[] | undefined;
+    let q4w: Q4W[] = [];
     for (const map_entry of data_entry_map) {
       const key = decodeEntryKey(map_entry.key());
       switch (key) {
@@ -110,7 +113,7 @@ export class UserBalance {
           throw Error(`Invalid backstop UserBalance key: should not contain ${key}`);
       }
     }
-    if (!shares || !q4w) {
+    if (!shares) {
       throw Error('Malformed backstop UserBalance scvMap');
     }
     return new UserBalance(shares, q4w);

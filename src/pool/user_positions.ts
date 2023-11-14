@@ -8,7 +8,8 @@ export class UserPositions {
     public collateral: Map<u32, i128>,
     public supply: Map<u32, i128>
   ) {}
-  static contractDataKey(poolId: string, userId: string): xdr.LedgerKey {
+
+  static ledgerKey(poolId: string, userId: string): xdr.LedgerKey {
     const res: xdr.ScVal[] = [
       xdr.ScVal.scvSymbol('Positions'),
       Address.fromString(userId).toScVal(),
@@ -23,34 +24,38 @@ export class UserPositions {
   }
   static async load(network: Network, poolId: string, userId: string): Promise<UserPositions> {
     const SorobanRpc = new Server(network.rpc, network.opts);
-    const userPositionsKey = UserPositions.contractDataKey(poolId, userId);
-    const postitionLedgerEntries =
-      (await SorobanRpc.getLedgerEntries(userPositionsKey)).entries ?? [];
+    const userPositionsKey = UserPositions.ledgerKey(poolId, userId);
+    const positionResp = await SorobanRpc.getLedgerEntries(userPositionsKey);
+
+    // if entry does not exist assume empty
+    if (positionResp.entries == undefined || positionResp.entries.length == 0) {
+      return new UserPositions(new Map<u32, i128>(), new Map<u32, i128>(), new Map<u32, i128>());
+    }
 
     let userPositions: UserPositions | undefined = undefined;
-    for (const entry of postitionLedgerEntries) {
-      const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64').contractData();
-      const key = decodeEntryKey(ledgerData.key());
+    for (const entry of positionResp.entries ?? []) {
+      const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64');
+      const key = decodeEntryKey(ledgerData.contractData().key());
       switch (key) {
         case 'Positions':
-          userPositions = UserPositions.fromContractDataXDR(entry.xdr);
+          userPositions = UserPositions.fromLedgerEntryData(ledgerData);
           break;
         default:
-          throw Error(`Invalid user postions key: should not contain: ${key}`);
+          throw Error(`Invalid user positions key: should not contain: ${key}`);
       }
     }
-    if (userPositions == undefined || postitionLedgerEntries.length == 0) {
+    if (userPositions == undefined) {
       throw Error("Unable to load user's positions");
     }
     return userPositions;
   }
 
-  static fromContractDataXDR(xdr_string: string) {
-    const data_entry_map = xdr.LedgerEntryData.fromXDR(xdr_string, 'base64')
-      .contractData()
-      .val()
-      .map();
+  static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): UserPositions {
+    if (typeof ledger_entry_data == 'string') {
+      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+    }
 
+    const data_entry_map = ledger_entry_data.contractData().val().map();
     if (data_entry_map == undefined) {
       throw Error('UserPositions contract data value is not a map');
     }
@@ -79,7 +84,6 @@ export class UserPositions {
               collateral_map.set(collateral.key().u32(), scValToNative(collateral.val()));
             }
           }
-
           break;
         }
         case 'supply': {
