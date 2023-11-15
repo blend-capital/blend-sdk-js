@@ -21,11 +21,11 @@ export class BackstopUserData {
     let userBalance = new UserBalance(BigInt(0), []);
     let userEmissions: BackstopUserEmissionData | undefined;
     for (const entry of backstopUserData.entries ?? []) {
-      const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64');
+      const ledgerData = entry.val;
       const key = decodeEntryKey(ledgerData.contractData().key());
       switch (key) {
         case 'UserBalance': {
-          userBalance = UserBalance.fromLedgerEntryData(entry.xdr);
+          userBalance = UserBalance.fromLedgerEntryData(ledgerData);
           break;
         }
         case 'UEmisData':

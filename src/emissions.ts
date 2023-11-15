@@ -34,7 +34,7 @@ export class Emissions {
       let emissionConfig: ReserveEmissionConfig | undefined = undefined;
       let emissionData: ReserveEmissionData | undefined = undefined;
       for (const entry of entriesResponse.entries) {
-        const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64');
+        const ledgerData = entry.val;
         const key = decodeEntryKey(ledgerData.contractData().key());
         switch (key) {
           case 'EmisConfig':

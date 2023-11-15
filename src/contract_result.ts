@@ -148,7 +148,9 @@ export class ContractResult<T> {
       return ContractResult.error(
         hash,
         resources,
-        new Error(`Failed to send transaction: ${sendResult.errorResultXdr}`)
+        new Error(
+          `Failed to send transaction: ${sendResult.errorResult.toXDR().toString('base64')}`
+        )
       );
     }
 

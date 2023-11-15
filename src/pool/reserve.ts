@@ -50,7 +50,7 @@ export class Reserve {
     let reserveData: ReserveData;
     let tokenMetadata: TokenMetadata;
     for (const entry of reserveLedgerEntries.entries) {
-      const ledgerEntry = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64');
+      const ledgerEntry = entry.val;
       const key = decodeEntryKey(ledgerEntry.contractData().key());
       switch (key) {
         case 'ResConfig':

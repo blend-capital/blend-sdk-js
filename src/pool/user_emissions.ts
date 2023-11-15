@@ -17,7 +17,7 @@ export class PoolUserEmissions {
     const emissionDataLedgerEntries = await SorobanRpc.getLedgerEntries(...emissionDataKeys);
     for (const emissionDataEntry of emissionDataLedgerEntries.entries) {
       let reserveIndex: number | undefined;
-      const ledgerEntry = xdr.LedgerEntryData.fromXDR(emissionDataEntry.xdr, 'base64');
+      const ledgerEntry = emissionDataEntry.val;
       ledgerEntry
         .contractData()
         .key()

@@ -34,7 +34,7 @@ export class UserPositions {
 
     let userPositions: UserPositions | undefined = undefined;
     for (const entry of positionResp.entries ?? []) {
-      const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64');
+      const ledgerData = entry.val;
       const key = decodeEntryKey(ledgerData.contractData().key());
       switch (key) {
         case 'Positions':

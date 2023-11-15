@@ -38,15 +38,15 @@ export class BackstopPoolData {
     let poolBalance: PoolBalance | undefined;
     let poolEps: i128 | undefined;
     for (const entry of backstopPoolDataEntries.entries) {
-      const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64').contractData();
-      const key = decodeEntryKey(ledgerData.key());
+      const ledgerData = entry.val;
+      const key = decodeEntryKey(ledgerData.contractData().key());
       switch (key) {
         case 'PoolBalance': {
-          poolBalance = PoolBalance.fromLedgerEntryData(entry.xdr);
+          poolBalance = PoolBalance.fromLedgerEntryData(ledgerData);
           break;
         }
         case 'PoolEPS':
-          poolEps = scValToNative(ledgerData.val());
+          poolEps = scValToNative(ledgerData.contractData().val());
           break;
         default:
           throw new Error(`Invalid backstop pool key: should not contain ${key}`);

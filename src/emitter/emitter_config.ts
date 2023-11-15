@@ -20,7 +20,7 @@ export class EmitterConfig {
     const emitterConfigEntries =
       (await SorobanRpc.getLedgerEntries(contractInstanceKey)).entries ?? [];
     for (const entry of emitterConfigEntries) {
-      const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64').contractData();
+      const ledgerData = entry.val.contractData();
       const key = decodeEntryKey(ledgerData.key());
       switch (key) {
         case 'ContractInstance':

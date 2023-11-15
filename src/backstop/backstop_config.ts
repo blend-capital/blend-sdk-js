@@ -52,7 +52,7 @@ export class BackstopConfig {
         )
       ).entries ?? [];
     for (const entry of backstopConfigEntries) {
-      const ledgerData = xdr.LedgerEntryData.fromXDR(entry.xdr, 'base64').contractData();
+      const ledgerData = entry.val.contractData();
       const key = decodeEntryKey(ledgerData.key());
       switch (key) {
         case 'LPTknVal': {
