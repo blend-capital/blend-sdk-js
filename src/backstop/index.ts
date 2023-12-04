@@ -1,4 +1,4 @@
-import { xdr, Address } from 'soroban-client';
+import { xdr, Address } from 'stellar-sdk';
 import { i128, u64 } from '../index.js';
 
 export * from './backstop_client.js';

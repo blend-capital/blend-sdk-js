@@ -1,4 +1,4 @@
-import { xdr, Address } from 'soroban-client';
+import { xdr, Address } from 'stellar-sdk';
 import { u32, u64, i128 } from '../index.js';
 
 export * from './pool_client.js';

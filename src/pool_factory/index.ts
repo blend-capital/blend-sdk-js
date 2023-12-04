@@ -1,4 +1,4 @@
-import { xdr, Address } from 'soroban-client';
+import { xdr, Address } from 'stellar-sdk';
 
 export * from './pool_factory_client.js';
 export * from './pool_factory_config.js';

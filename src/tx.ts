@@ -1,11 +1,4 @@
-import {
-  Server,
-  SorobanRpc,
-  Transaction,
-  TransactionBuilder,
-  assembleTransaction,
-  xdr,
-} from 'soroban-client';
+import { SorobanRpc, Transaction, TransactionBuilder, xdr } from 'stellar-sdk';
 import { ContractResult, Network, Resources, SorobanResponse, TxOptions } from './index.js';
 
 /**
@@ -28,7 +21,7 @@ export async function invokeOperation<T>(
   operation: xdr.Operation
 ): Promise<ContractResult<T>> {
   // create TX
-  const rpc = new Server(network.rpc, network.opts);
+  const rpc = new SorobanRpc.Server(network.rpc, network.opts);
   const source_account = await rpc.getAccount(source);
   const tx_builder = new TransactionBuilder(source_account, txOptions.builderOptions);
   tx_builder.addOperation(operation);
@@ -36,7 +29,7 @@ export async function invokeOperation<T>(
 
   // simulate the TX
   const simulation_resp = await rpc.simulateTransaction(tx);
-  if (SorobanRpc.isSimulationError(simulation_resp)) {
+  if (SorobanRpc.Api.isSimulationError(simulation_resp)) {
     // No resource estimation available from a simulation error. Allow the response formatter
     // to fetch the error.
     const empty_resources = new Resources(0, 0, 0, 0, 0, 0, 0);
@@ -49,7 +42,7 @@ export async function invokeOperation<T>(
   } else if (txOptions.sim) {
     // Only simulate the TX. Assemble the TX to borrow the resource estimation algorithm in
     // `assembleTransaction` and return the simulation results.
-    const prepped_tx = assembleTransaction(tx, network.passphrase, simulation_resp).build();
+    const prepped_tx = SorobanRpc.assembleTransaction(tx, simulation_resp).build();
     const resources = Resources.fromTransaction(prepped_tx.toXDR());
     return ContractResult.fromResponse(
       prepped_tx.hash().toString('hex'),
@@ -60,8 +53,16 @@ export async function invokeOperation<T>(
   }
 
   // assemble and sign the TX
-  const prepped_tx = assembleTransaction(tx, network.passphrase, simulation_resp).build();
-  const prepped_tx_xdr = prepped_tx.toXDR();
+  // TODO: Patch this once simulation for brand new accounts is working
+  const txResources = simulation_resp.transactionData.build().resources();
+  simulation_resp.transactionData.setResources(
+    txResources.instructions() + 20000,
+    txResources.readBytes() + 500,
+    txResources.writeBytes() + 200
+  );
+  simulation_resp.cost.cpuInsns = (Number(simulation_resp.cost.cpuInsns) + 20000).toString();
+  simulation_resp.minResourceFee = (Number(simulation_resp.minResourceFee) + 100000).toString();
+  const prepped_tx_xdr = SorobanRpc.assembleTransaction(tx, simulation_resp).build().toXDR();
   const signed_xdr_string = await sign(prepped_tx_xdr);
   const signed_tx = new Transaction(signed_xdr_string, network.passphrase);
   const tx_hash = signed_tx.hash().toString('hex');

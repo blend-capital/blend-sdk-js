@@ -1,4 +1,4 @@
-import { Address, Server, scValToNative, xdr } from 'soroban-client';
+import { Address, SorobanRpc, scValToNative, xdr } from 'stellar-sdk';
 import { Network, i128 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 import { EmissionConfig, EmissionData, Emissions } from '../emissions.js';
@@ -11,7 +11,7 @@ export class BackstopPoolData {
   ) {}
 
   static async load(network: Network, backstopId: string, poolId: string) {
-    const SorobanRpc = new Server(network.rpc, network.opts);
+    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
     const poolBalanceDataKey = PoolBalance.ledgerKey(backstopId, poolId);
     const poolEpsDataKey = xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
@@ -24,7 +24,7 @@ export class BackstopPoolData {
       })
     );
 
-    const backstopPoolDataPromise = SorobanRpc.getLedgerEntries(poolBalanceDataKey, poolEpsDataKey);
+    const backstopPoolDataPromise = rpc.getLedgerEntries(poolBalanceDataKey, poolEpsDataKey);
     const backstopEmissionsPromise = Emissions.load(
       network,
       BackstopEmissionConfig.ledgerKey(backstopId, poolId),

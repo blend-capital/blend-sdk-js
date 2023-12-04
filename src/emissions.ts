@@ -1,6 +1,6 @@
 //! Base classes for emission data
 
-import { xdr, scValToNative, Server } from 'soroban-client';
+import { xdr, scValToNative, SorobanRpc } from 'stellar-sdk';
 import { u64, ReserveEmissionConfig, i128, Network, ReserveEmissionData } from './index.js';
 import { decodeEntryKey } from './ledger_entry_helper.js';
 
@@ -28,7 +28,7 @@ export class Emissions {
     configLedgerKey: xdr.LedgerKey,
     dataLedgerkey: xdr.LedgerKey
   ): Promise<Emissions | undefined> {
-    const sorobanRpc = new Server(newtork.rpc, newtork.opts);
+    const sorobanRpc = new SorobanRpc.Server(newtork.rpc, newtork.opts);
     const entriesResponse = await sorobanRpc.getLedgerEntries(configLedgerKey, dataLedgerkey);
     if (entriesResponse.entries.length == 2) {
       let emissionConfig: ReserveEmissionConfig | undefined = undefined;
