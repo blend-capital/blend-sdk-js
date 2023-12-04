@@ -1,4 +1,4 @@
-import { Server, SorobanRpc, TransactionBuilder } from 'soroban-client';
+import { SorobanRpc, TransactionBuilder, Horizon } from 'stellar-sdk';
 import { Buffer } from 'buffer';
 
 export * from './backstop/index.js';
@@ -20,14 +20,14 @@ export type i128 = bigint;
 export type Option<T> = T | undefined;
 
 export type SorobanResponse =
-  | SorobanRpc.SimulateTransactionResponse
-  | SorobanRpc.SendTransactionResponse
-  | SorobanRpc.GetTransactionResponse;
+  | SorobanRpc.Api.SimulateTransactionResponse
+  | SorobanRpc.Api.SendTransactionResponse
+  | SorobanRpc.Api.GetTransactionResponse;
 
 export interface Network {
   rpc: string;
   passphrase: string;
-  opts?: Server.Options;
+  opts?: Horizon.Server.Options;
 }
 
 export interface TxOptions {

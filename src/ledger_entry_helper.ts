@@ -1,4 +1,4 @@
-import { xdr } from 'soroban-client';
+import { xdr } from 'stellar-sdk';
 
 export function decodeEntryKey(entryKey: xdr.ScVal): string {
   let key: string | undefined;

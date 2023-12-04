@@ -1,4 +1,4 @@
-import { xdr } from 'soroban-client';
+import { xdr } from 'stellar-sdk';
 
 export * from './emitter_client.js';
 export * from './emitter_config.js';

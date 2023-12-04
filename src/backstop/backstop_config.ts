@@ -1,4 +1,4 @@
-import { Address, xdr, Server, scValToNative } from 'soroban-client';
+import { Address, xdr, SorobanRpc, scValToNative } from 'stellar-sdk';
 import { Network } from '../index.js';
 import { LpTokenValue } from './index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
@@ -14,7 +14,7 @@ export class BackstopConfig {
   ) {}
 
   static async load(network: Network, backstopId: string) {
-    const SorobanRpc = new Server(network.rpc, network.opts);
+    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
     const contractInstanceDataKey = xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(backstopId).toScAddress(),
@@ -44,13 +44,8 @@ export class BackstopConfig {
     let lpValue: LpTokenValue | undefined;
     let rewardZone: string[] | undefined;
     const backstopConfigEntries =
-      (
-        await SorobanRpc.getLedgerEntries(
-          contractInstanceDataKey,
-          lpValueDataKey,
-          rewardZoneDataKey
-        )
-      ).entries ?? [];
+      (await rpc.getLedgerEntries(contractInstanceDataKey, lpValueDataKey, rewardZoneDataKey))
+        .entries ?? [];
     for (const entry of backstopConfigEntries) {
       const ledgerData = entry.val.contractData();
       const key = decodeEntryKey(ledgerData.key());

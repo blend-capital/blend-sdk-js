@@ -1,4 +1,4 @@
-import { Address, Server, scValToNative, xdr } from 'soroban-client';
+import { Address, SorobanRpc, scValToNative, xdr } from 'stellar-sdk';
 import { Network, u32 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 import { TokenMetadata, getTokenBalance } from '../token.js';
@@ -32,7 +32,7 @@ export class Reserve {
    * @returns A Reserve object
    */
   static async load(network: Network, poolId: string, assetId: string) {
-    const sorobanRpc = new Server(network.rpc, network.opts);
+    const sorobanRpc = new SorobanRpc.Server(network.rpc, network.opts);
     const reserveConfigKey = ReserveConfig.ledgerKey(poolId, assetId);
     const reserveDataKey = ReserveData.ledgerKey(poolId, assetId);
     const tokenInstanceKey = TokenMetadata.ledgerKey(assetId);

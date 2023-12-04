@@ -1,4 +1,4 @@
-import { Contract, Address, xdr, ContractSpec } from 'soroban-client';
+import { Contract, Address, xdr, ContractSpec } from 'stellar-sdk';
 import { PoolInitMeta } from './index.js';
 import { ContractResult, Network, TxOptions, u64 } from '../index.js';
 import { invokeOperation } from '../tx.js';

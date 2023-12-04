@@ -1,4 +1,4 @@
-import { SorobanRpc, xdr } from 'soroban-client';
+import { SorobanRpc, xdr } from 'stellar-sdk';
 import { SorobanResponse } from './index.js';
 
 export class Resources {
@@ -114,11 +114,11 @@ export class ContractResult<T> {
   ): ContractResult<T> {
     // response is a SimulateTransactionResponse
     if ('id' in response) {
-      const simulated = response as SorobanRpc.SimulateTransactionResponse;
-      if (SorobanRpc.isSimulationSuccess(simulated)) {
+      const simulated = response as SorobanRpc.Api.SimulateTransactionResponse;
+      if (SorobanRpc.Api.isSimulationSuccess(simulated)) {
         const xdr_str = simulated.result?.retval.toXDR('base64');
         return ContractResult.success<T>(hash, resources, parse(xdr_str));
-      } else if (SorobanRpc.isSimulationError(simulated)) {
+      } else if (SorobanRpc.Api.isSimulationError(simulated)) {
         return ContractResult.error(hash, resources, new Error(simulated.error));
       } else {
         return ContractResult.error(
@@ -133,8 +133,8 @@ export class ContractResult<T> {
     if ('resultXdr' in response) {
       // if `sendTx` awaited the inclusion of the tx in the ledger, it used
       // `getTransaction`, which has a `resultXdr` field
-      const getResult = response as SorobanRpc.GetTransactionResponse;
-      if (getResult.status === SorobanRpc.GetTransactionStatus.SUCCESS) {
+      const getResult = response as SorobanRpc.Api.GetTransactionResponse;
+      if (getResult.status === SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
         const xdr_str = getResult.returnValue?.toXDR('base64');
         return ContractResult.success<T>(hash, resources, parse(xdr_str));
       } else {
@@ -144,7 +144,7 @@ export class ContractResult<T> {
 
     // otherwise, it returned the result of `sendTransaction`
     if ('errorResultXdr' in response) {
-      const sendResult = response as SorobanRpc.SendTransactionResponse;
+      const sendResult = response as SorobanRpc.Api.SendTransactionResponse;
       return ContractResult.error(
         hash,
         resources,
@@ -158,7 +158,7 @@ export class ContractResult<T> {
     return ContractResult.error(
       hash,
       resources,
-      new Error(`Unable to parse response: ${response}`)
+      new Error(`Unable to parse response: ${response.toString()}`)
     );
   }
 

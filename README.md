@@ -24,7 +24,7 @@ Operation builder classes currently return XDR strings that can be decoded by `x
 
 ```ts
 import { Pool } from 'blend-sdk';
-import { xdr } from 'soroban-client';
+import { xdr } from 'stellar-sdk';
 
 const asset: Address = // ... the Address of the asset to lend
 const user: Address = // ... some Address

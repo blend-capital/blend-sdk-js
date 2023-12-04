@@ -5,12 +5,11 @@ import {
   Address,
   Asset,
   Contract,
-  Server,
   SorobanRpc,
   TransactionBuilder,
   scValToNative,
   xdr,
-} from 'soroban-client';
+} from 'stellar-sdk';
 import { decodeEntryKey } from './ledger_entry_helper.js';
 import { Network } from './index.js';
 
@@ -128,15 +127,15 @@ export async function getTokenBalance(
     networkPassphrase: network.passphrase,
   });
   tx_builder.addOperation(new Contract(token_id).call('balance', address.toScVal()));
-  const rpc = new Server(network.rpc, network.opts);
-  const result: SorobanRpc.SimulateTransactionResponse = await rpc.simulateTransaction(
+  const rpc = new SorobanRpc.Server(network.rpc, network.opts);
+  const result: SorobanRpc.Api.SimulateTransactionResponse = await rpc.simulateTransaction(
     tx_builder.build()
   );
   const scval_result = result;
   if (scval_result == undefined) {
     throw Error(`unable to fetch balance for token: ${token_id}`);
   }
-  if (SorobanRpc.isSimulationSuccess(result)) {
+  if (SorobanRpc.Api.isSimulationSuccess(result)) {
     const val = scValToNative(result.result.retval);
     return val;
   } else {

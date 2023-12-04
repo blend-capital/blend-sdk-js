@@ -1,4 +1,4 @@
-import { Address, Contract, ContractSpec, xdr } from 'soroban-client';
+import { Address, Contract, ContractSpec, xdr } from 'stellar-sdk';
 import { ContractResult, Network, TxOptions, i128, u32, u64 } from '../index.js';
 import {
   ReserveEmissionMetadata,

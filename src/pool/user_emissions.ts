@@ -1,4 +1,4 @@
-import { Address, Server, xdr } from 'soroban-client';
+import { Address, SorobanRpc, xdr } from 'stellar-sdk';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 import { UserEmissions } from '../emissions.js';
@@ -7,14 +7,14 @@ export class PoolUserEmissions {
   constructor(public emissions: Map<number, PoolUserEmissionData>) {}
 
   static async load(network: Network, poolId: string, userId: string, reserveIndexs: number[]) {
-    const SorobanRpc = new Server(network.rpc, network.opts);
+    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
     const emissions: Map<number, PoolUserEmissionData> = new Map();
     const emissionDataKeys: xdr.LedgerKey[] = [];
     reserveIndexs.map((index) => {
       emissionDataKeys.push(PoolUserEmissionData.ledgerKey(poolId, userId, index * 2));
       emissionDataKeys.push(PoolUserEmissionData.ledgerKey(poolId, userId, index * 2 + 1));
     });
-    const emissionDataLedgerEntries = await SorobanRpc.getLedgerEntries(...emissionDataKeys);
+    const emissionDataLedgerEntries = await rpc.getLedgerEntries(...emissionDataKeys);
     for (const emissionDataEntry of emissionDataLedgerEntries.entries) {
       let reserveIndex: number | undefined;
       const ledgerEntry = emissionDataEntry.val;

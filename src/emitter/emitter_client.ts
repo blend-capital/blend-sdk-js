@@ -1,4 +1,4 @@
-import { Address, Contract, ContractSpec } from 'soroban-client';
+import { Address, Contract, ContractSpec } from 'stellar-sdk';
 import { ContractResult, Network, TxOptions } from '../index.js';
 import { invokeOperation } from '../tx.js';
 

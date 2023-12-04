@@ -1,4 +1,4 @@
-import { Address, xdr, Server, scValToNative } from 'soroban-client';
+import { Address, xdr, SorobanRpc, scValToNative } from 'stellar-sdk';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
@@ -16,7 +16,7 @@ export class PoolConfig {
   ) {}
 
   static async load(network: Network, poolId: string) {
-    const SorobanRpc = new Server(network.rpc, network.opts);
+    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
     const contractInstanceKey = xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(poolId).toScAddress(),
@@ -42,7 +42,7 @@ export class PoolConfig {
     let reserveList: string[] | undefined;
 
     const poolConfigEntries =
-      (await SorobanRpc.getLedgerEntries(contractInstanceKey, reserveListDataKey)).entries ?? [];
+      (await rpc.getLedgerEntries(contractInstanceKey, reserveListDataKey)).entries ?? [];
 
     for (const entry of poolConfigEntries) {
       const ledgerData = entry.val.contractData();
