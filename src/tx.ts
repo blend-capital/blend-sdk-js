@@ -55,14 +55,19 @@ export async function invokeOperation<T>(
   // assemble and sign the TX
   // TODO: Patch this once simulation for brand new accounts is working
   const txResources = simulation_resp.transactionData.build().resources();
-  simulation_resp.transactionData.setResources(
-    txResources.instructions() + 20000,
-    txResources.readBytes() + 500,
-    txResources.writeBytes() + 200
-  );
-  simulation_resp.cost.cpuInsns = (Number(simulation_resp.cost.cpuInsns) + 20000).toString();
   simulation_resp.minResourceFee = (Number(simulation_resp.minResourceFee) + 100000).toString();
-  const prepped_tx_xdr = SorobanRpc.assembleTransaction(tx, simulation_resp).build().toXDR();
+  const sim_tx_data = simulation_resp.transactionData
+    .setResources(
+      txResources.instructions() == 0 ? 0 : txResources.instructions() + 100000,
+      txResources.readBytes() + 500,
+      txResources.writeBytes() + 200
+    )
+    .build();
+  const assemble_tx = SorobanRpc.assembleTransaction(tx, simulation_resp);
+  sim_tx_data.resourceFee(
+    xdr.Int64.fromString((Number(sim_tx_data.resourceFee().toString()) + 50000).toString())
+  );
+  const prepped_tx_xdr = assemble_tx.setSorobanData(sim_tx_data).build().toXDR();
   const signed_xdr_string = await sign(prepped_tx_xdr);
   const signed_tx = new Transaction(signed_xdr_string, network.passphrase);
   const tx_hash = signed_tx.hash().toString('hex');
@@ -85,6 +90,9 @@ export async function invokeOperation<T>(
     // See if the transaction is complete
     response = await rpc.getTransaction(tx_hash);
     status = response.status;
+  }
+  if (status !== 'SUCCESS') {
+    console.log(JSON.stringify(response));
   }
   return ContractResult.fromResponse(tx_hash, resources, response, parse);
 }

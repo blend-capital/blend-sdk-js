@@ -5,8 +5,14 @@ import { invokeOperation } from '../tx.js';
 // @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
 
 export interface EmitterInitializeArgs {
+  blnd_token: Address | string;
   backstop: Address | string;
-  blnd_token_id: Address | string;
+  backstop_token: Address | string;
+}
+
+export interface QueueSwapBackstopArgs {
+  new_backstop: Address | string;
+  new_backstop_token: Address | string;
 }
 
 export class EmitterClient {
@@ -19,13 +25,18 @@ export class EmitterClient {
     this.contract = new Contract(address);
     // @dev: Generated from soroban-cli Typescript bindings
     this.spec = new ContractSpec([
-      'AAAAAAAAAAAAAAAKaW5pdGlhbGl6ZQAAAAAAAgAAAAAAAAAIYmFja3N0b3AAAAATAAAAAAAAAA1ibG5kX3Rva2VuX2lkAAAAAAAAEwAAAAA=',
+      'AAAAAQAAAAAAAAAAAAAABFN3YXAAAAADAAAAAAAAAAxuZXdfYmFja3N0b3AAAAATAAAAAAAAABJuZXdfYmFja3N0b3BfdG9rZW4AAAAAABMAAAAAAAAAC3VubG9ja190aW1lAAAAAAY=',
+      'AAAAAAAAAAAAAAAKaW5pdGlhbGl6ZQAAAAAAAwAAAAAAAAAKYmxuZF90b2tlbgAAAAAAEwAAAAAAAAAIYmFja3N0b3AAAAATAAAAAAAAAA5iYWNrc3RvcF90b2tlbgAAAAAAEwAAAAA=',
       'AAAAAAAAAAAAAAAKZGlzdHJpYnV0ZQAAAAAAAAAAAAEAAAAL',
+      'AAAAAAAAAAAAAAAPZ2V0X2xhc3RfZGlzdHJvAAAAAAEAAAAAAAAAC2JhY2tzdG9wX2lkAAAAABMAAAABAAAABg==',
       'AAAAAAAAAAAAAAAMZ2V0X2JhY2tzdG9wAAAAAAAAAAEAAAAT',
-      'AAAAAAAAAAAAAAANc3dhcF9iYWNrc3RvcAAAAAAAAAEAAAAAAAAAD25ld19iYWNrc3RvcF9pZAAAAAATAAAAAA==',
-      'AAAAAAAAAAAAAAAEZHJvcAAAAAAAAAAA',
-      'AAAABAAAAAAAAAAAAAAADEVtaXR0ZXJFcnJvcgAAAAQAAAAAAAAAEkFscmVhZHlJbml0aWFsaXplZAAAAAAACgAAAAAAAAANTm90QXV0aG9yaXplZAAAAAAAABQAAAAAAAAAGEluc3VmZmljaWVudEJhY2tzdG9wU2l6ZQAAAB4AAAAAAAAAB0JhZERyb3AAAAAAKA==',
-      'AAAAAgAAAAAAAAAAAAAADkVtaXR0ZXJEYXRhS2V5AAAAAAAGAAAAAAAAAAAAAAAIQmFja3N0b3AAAAAAAAAALlRPRE86IERlbGV0ZSBhZnRlciBhZGRyZXNzIDwtPiBieXRlc04gc3VwcG9ydCwAAAAAAAdCc3RvcElkAAAAAAAAAAAAAAAAB0JsZW5kSWQAAAAAAAAAAAAAAAAJQmxlbmRMUElkAAAAAAAAAAAAAAAAAAAKTGFzdERpc3RybwAAAAAAAAAAAAAAAAAKRHJvcFN0YXR1cwAA',
+      'AAAAAAAAAAAAAAATcXVldWVfc3dhcF9iYWNrc3RvcAAAAAACAAAAAAAAAAxuZXdfYmFja3N0b3AAAAATAAAAAAAAABJuZXdfYmFja3N0b3BfdG9rZW4AAAAAABMAAAAA',
+      'AAAAAAAAAAAAAAAPZ2V0X3F1ZXVlZF9zd2FwAAAAAAAAAAABAAAD6AAAB9AAAAAEU3dhcA==',
+      'AAAAAAAAAAAAAAAUY2FuY2VsX3N3YXBfYmFja3N0b3AAAAAAAAAAAA==',
+      'AAAAAAAAAAAAAAANc3dhcF9iYWNrc3RvcAAAAAAAAAAAAAAA',
+      'AAAAAAAAAAAAAAAEZHJvcAAAAAEAAAAAAAAABGxpc3QAAAPsAAAAEwAAAAsAAAAA',
+      'AAAABAAAAAAAAAAAAAAADEVtaXR0ZXJFcnJvcgAAAAgAAAAAAAAAEkFscmVhZHlJbml0aWFsaXplZAAAAAAACgAAAAAAAAANTm90QXV0aG9yaXplZAAAAAAAABQAAAAAAAAAGEluc3VmZmljaWVudEJhY2tzdG9wU2l6ZQAAAB4AAAAAAAAAB0JhZERyb3AAAAAAKAAAAAAAAAANU3dhcE5vdFF1ZXVlZAAAAAAAADIAAAAAAAAAEVN3YXBBbHJlYWR5RXhpc3RzAAAAAAAAPAAAAAAAAAAPU3dhcE5vdFVubG9ja2VkAAAAAEYAAAAAAAAAFFN3YXBDYW5ub3RCZUNhbmNlbGVkAAAAUA==',
+      'AAAAAgAAAAAAAAAAAAAADkVtaXR0ZXJEYXRhS2V5AAAAAAACAAAAAQAAAAAAAAAKTGFzdERpc3RybwAAAAAAAQAAABMAAAABAAAAAAAAAAdEcm9wcGVkAAAAAAEAAAAT',
     ]);
   }
 
@@ -62,12 +73,12 @@ export class EmitterClient {
     );
   }
 
-  async swapBackstop(
+  async queueSwapBackstop(
     source: string,
     sign: (txXdr: string) => Promise<string>,
     network: Network,
     txOptions: TxOptions,
-    new_backstop_id: Address | string
+    contractArgs: QueueSwapBackstopArgs
   ): Promise<ContractResult<undefined>> {
     return await invokeOperation<undefined>(
       source,
@@ -76,18 +87,17 @@ export class EmitterClient {
       txOptions,
       () => undefined,
       this.contract.call(
-        'swap_backstop',
-        ...this.spec.funcArgsToScVals('swap_backstop', { new_backstop_id })
+        'queue_swap_backstop',
+        ...this.spec.funcArgsToScVals('queue_swap_backstop', contractArgs)
       )
     );
   }
 
-  async drop(
+  async cancelSwapBackstop(
     source: string,
     sign: (txXdr: string) => Promise<string>,
     network: Network,
-    txOptions: TxOptions,
-    new_backstop_id: Address | string
+    txOptions: TxOptions
   ): Promise<ContractResult<undefined>> {
     return await invokeOperation<undefined>(
       source,
@@ -95,7 +105,26 @@ export class EmitterClient {
       network,
       txOptions,
       () => undefined,
-      this.contract.call('drop', ...this.spec.funcArgsToScVals('drop', { new_backstop_id }))
+      this.contract.call(
+        'cancel_swap_backstop',
+        ...this.spec.funcArgsToScVals('cancel_swap_backstop', {})
+      )
+    );
+  }
+
+  async swapBackstop(
+    source: string,
+    sign: (txXdr: string) => Promise<string>,
+    network: Network,
+    txOptions: TxOptions
+  ): Promise<ContractResult<undefined>> {
+    return await invokeOperation<undefined>(
+      source,
+      sign,
+      network,
+      txOptions,
+      () => undefined,
+      this.contract.call('swap_backstop', ...this.spec.funcArgsToScVals('swap_backstop', {}))
     );
   }
 }

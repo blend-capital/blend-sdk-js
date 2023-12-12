@@ -5,6 +5,7 @@ import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export class BackstopConfig {
   constructor(
+    public emitter: string,
     public blndTkn: string,
     public usdcTkn: string,
     public backstopTkn: string,
@@ -25,18 +26,19 @@ export class BackstopConfig {
     const lpValueDataKey = xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(backstopId).toScAddress(),
-        key: xdr.ScVal.scvVec([xdr.ScVal.scvSymbol('LPTknVal')]),
+        key: xdr.ScVal.scvSymbol('LPTknVal'),
         durability: xdr.ContractDataDurability.persistent(),
       })
     );
     const rewardZoneDataKey = xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(backstopId).toScAddress(),
-        key: xdr.ScVal.scvVec([xdr.ScVal.scvSymbol('RewardZone')]),
+        key: xdr.ScVal.scvSymbol('RZ'),
         durability: xdr.ContractDataDurability.persistent(),
       })
     );
 
+    let emitter: string | undefined;
     let blndTkn: string | undefined;
     let usdcTkn: string | undefined;
     let backstopTkn: string | undefined;
@@ -46,6 +48,7 @@ export class BackstopConfig {
     const backstopConfigEntries =
       (await rpc.getLedgerEntries(contractInstanceDataKey, lpValueDataKey, rewardZoneDataKey))
         .entries ?? [];
+    console.log(backstopConfigEntries);
     for (const entry of backstopConfigEntries) {
       const ledgerData = entry.val.contractData();
       const key = decodeEntryKey(ledgerData.key());
@@ -73,7 +76,7 @@ export class BackstopConfig {
                 case 'BLNDTkn':
                   blndTkn = Address.fromScVal(entry.val()).toString();
                   break;
-                case 'BckstpTkn':
+                case 'BToken':
                   backstopTkn = Address.fromScVal(entry.val()).toString();
                   break;
                 case 'USDCTkn':
@@ -82,6 +85,9 @@ export class BackstopConfig {
                 case 'PoolFact':
                   poolFactory = Address.fromScVal(entry.val()).toString();
                   break;
+                case 'Emitter':
+                  emitter = Address.fromScVal(entry.val()).toString();
+                  break;
                 default:
                   throw Error(
                     `Invalid backstop instance storage key: should not contain ${instanceKey}`
@@ -89,7 +95,7 @@ export class BackstopConfig {
               }
             });
           break;
-        case 'RewardZone':
+        case 'RZ':
           rewardZone = [];
           ledgerData
             .val()
@@ -104,17 +110,26 @@ export class BackstopConfig {
     }
 
     if (backstopConfigEntries.length == 0) {
-      throw Error('unable to load backstop config');
+      throw Error('unable to load backstop config no entries');
     }
     if (
+      emitter == undefined ||
       blndTkn == undefined ||
       usdcTkn == undefined ||
       backstopTkn == undefined ||
       poolFactory == undefined ||
       lpValue == undefined
     ) {
-      throw Error('unable to load backstop config');
+      throw Error('unable to load backstop config undefined values');
     }
-    return new BackstopConfig(blndTkn, usdcTkn, backstopTkn, poolFactory, rewardZone, lpValue);
+    return new BackstopConfig(
+      emitter,
+      blndTkn,
+      usdcTkn,
+      backstopTkn,
+      poolFactory,
+      rewardZone,
+      lpValue
+    );
   }
 }
