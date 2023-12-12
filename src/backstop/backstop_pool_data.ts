@@ -35,7 +35,6 @@ export class BackstopPoolData {
       backstopEmissionsPromise,
     ]);
 
-    console.log(backstopPoolDataEntries);
     let poolBalance: PoolBalance | undefined;
     let toGulpEmissions = BigInt(0);
     for (const entry of backstopPoolDataEntries.entries) {

@@ -91,8 +91,5 @@ export async function invokeOperation<T>(
     response = await rpc.getTransaction(tx_hash);
     status = response.status;
   }
-  if (status !== 'SUCCESS') {
-    console.log(JSON.stringify(response));
-  }
   return ContractResult.fromResponse(tx_hash, resources, response, parse);
 }

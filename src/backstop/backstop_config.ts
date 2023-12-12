@@ -48,7 +48,6 @@ export class BackstopConfig {
     const backstopConfigEntries =
       (await rpc.getLedgerEntries(contractInstanceDataKey, lpValueDataKey, rewardZoneDataKey))
         .entries ?? [];
-    console.log(backstopConfigEntries);
     for (const entry of backstopConfigEntries) {
       const ledgerData = entry.val.contractData();
       const key = decodeEntryKey(ledgerData.key());
