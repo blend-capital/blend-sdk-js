@@ -42,7 +42,7 @@ export class Resources {
     const footprint = sorobanResources.footprint();
 
     const fee = transaction.fee();
-    const refundableFee = Number(data.refundableFee().toString());
+    const refundableFee = Number(data.resourceFee().toString());
     const cpuInst = sorobanResources.instructions();
     const readBytes = sorobanResources.readBytes();
     const writeBytes = sorobanResources.writeBytes();

@@ -6,25 +6,25 @@ import { EmissionConfig, EmissionData, Emissions } from '../emissions.js';
 export class BackstopPoolData {
   constructor(
     public poolBalance: PoolBalance,
-    public poolEps: bigint,
+    public toGulpEmissions: bigint,
     public emissions: Emissions | undefined
   ) {}
 
   static async load(network: Network, backstopId: string, poolId: string) {
     const rpc = new SorobanRpc.Server(network.rpc, network.opts);
     const poolBalanceDataKey = PoolBalance.ledgerKey(backstopId, poolId);
-    const poolEpsDataKey = xdr.LedgerKey.contractData(
+    const poolEmisDataKey = xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(backstopId).toScAddress(),
         key: xdr.ScVal.scvVec([
-          xdr.ScVal.scvSymbol('PoolEPS'),
+          xdr.ScVal.scvSymbol('PoolEmis'),
           Address.fromString(poolId).toScVal(),
         ]),
         durability: xdr.ContractDataDurability.persistent(),
       })
     );
 
-    const backstopPoolDataPromise = rpc.getLedgerEntries(poolBalanceDataKey, poolEpsDataKey);
+    const backstopPoolDataPromise = rpc.getLedgerEntries(poolBalanceDataKey, poolEmisDataKey);
     const backstopEmissionsPromise = Emissions.load(
       network,
       BackstopEmissionConfig.ledgerKey(backstopId, poolId),
@@ -36,7 +36,7 @@ export class BackstopPoolData {
     ]);
 
     let poolBalance: PoolBalance | undefined;
-    let poolEps: i128 | undefined;
+    let toGulpEmissions = BigInt(0);
     for (const entry of backstopPoolDataEntries.entries) {
       const ledgerData = entry.val;
       const key = decodeEntryKey(ledgerData.contractData().key());
@@ -45,17 +45,17 @@ export class BackstopPoolData {
           poolBalance = PoolBalance.fromLedgerEntryData(ledgerData);
           break;
         }
-        case 'PoolEPS':
-          poolEps = scValToNative(ledgerData.contractData().val());
+        case 'PoolEmis':
+          toGulpEmissions = scValToNative(ledgerData.contractData().val());
           break;
         default:
           throw new Error(`Invalid backstop pool key: should not contain ${key}`);
       }
     }
-    if (poolBalance == undefined || poolEps == undefined) {
+    if (poolBalance == undefined) {
       throw new Error('Error: Unable to load backstop pool data');
     }
-    return new BackstopPoolData(poolBalance, poolEps, poolEmissions);
+    return new BackstopPoolData(poolBalance, toGulpEmissions, poolEmissions);
   }
 }
 

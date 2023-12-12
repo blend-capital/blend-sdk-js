@@ -65,11 +65,10 @@ export class PoolClient {
       'AAAAAAAAAAAAAAAIYmFkX2RlYnQAAAABAAAAAAAAAAR1c2VyAAAAEwAAAAA=',
       'AAAAAAAAAAAAAAANdXBkYXRlX3N0YXR1cwAAAAAAAAAAAAABAAAABA==',
       'AAAAAAAAAAAAAAAKc2V0X3N0YXR1cwAAAAAAAQAAAAAAAAALcG9vbF9zdGF0dXMAAAAABAAAAAA=',
-      'AAAAAAAAAAAAAAAQdXBkYXRlX2VtaXNzaW9ucwAAAAAAAAABAAAABg==',
+      'AAAAAAAAAAAAAAAOZ3VscF9lbWlzc2lvbnMAAAAAAAAAAAABAAAACw==',
       'AAAAAAAAAAAAAAAUc2V0X2VtaXNzaW9uc19jb25maWcAAAABAAAAAAAAABVyZXNfZW1pc3Npb25fbWV0YWRhdGEAAAAAAAPqAAAH0AAAABdSZXNlcnZlRW1pc3Npb25NZXRhZGF0YQAAAAAA',
       'AAAAAAAAAAAAAAAFY2xhaW0AAAAAAAADAAAAAAAAAARmcm9tAAAAEwAAAAAAAAARcmVzZXJ2ZV90b2tlbl9pZHMAAAAAAAPqAAAABAAAAAAAAAACdG8AAAAAABMAAAABAAAACw==',
       'AAAAAAAAAAAAAAAXbmV3X2xpcXVpZGF0aW9uX2F1Y3Rpb24AAAAAAgAAAAAAAAAEdXNlcgAAABMAAAAAAAAAEnBlcmNlbnRfbGlxdWlkYXRlZAAAAAAABgAAAAEAAAfQAAAAC0F1Y3Rpb25EYXRhAA==',
-      'AAAAAAAAAAAAAAAXZGVsX2xpcXVpZGF0aW9uX2F1Y3Rpb24AAAAAAQAAAAAAAAAEdXNlcgAAABMAAAAA',
       'AAAAAAAAAAAAAAALZ2V0X2F1Y3Rpb24AAAAAAgAAAAAAAAAMYXVjdGlvbl90eXBlAAAABAAAAAAAAAAEdXNlcgAAABMAAAABAAAH0AAAAAtBdWN0aW9uRGF0YQA=',
       'AAAAAAAAAAAAAAALbmV3X2F1Y3Rpb24AAAAAAQAAAAAAAAAMYXVjdGlvbl90eXBlAAAABAAAAAEAAAfQAAAAC0F1Y3Rpb25EYXRhAA==',
       'AAAAAQAAADRNZXRhZGF0YSBmb3IgYSBwb29sJ3MgcmVzZXJ2ZSBlbWlzc2lvbiBjb25maWd1cmF0aW9uAAAAAAAAABdSZXNlcnZlRW1pc3Npb25NZXRhZGF0YQAAAAADAAAAAAAAAAlyZXNfaW5kZXgAAAAAAAAEAAAAAAAAAAhyZXNfdHlwZQAAAAQAAAAAAAAABXNoYXJlAAAAAAAABg==',
@@ -263,24 +262,24 @@ export class PoolClient {
     );
   }
 
-  async updateEmissions(
+  async gulpEmissions(
     source: string,
     sign: (txXdr: string) => Promise<string>,
     network: Network,
     txOptions: TxOptions
-  ): Promise<ContractResult<u64>> {
-    return await invokeOperation<u64>(
+  ): Promise<ContractResult<i128>> {
+    return await invokeOperation<i128>(
       source,
       sign,
       network,
       txOptions,
-      (value: string | xdr.ScVal | undefined): u64 | undefined => {
+      (value: string | xdr.ScVal | undefined): i128 | undefined => {
         if (value == undefined) {
           return undefined;
         }
-        return this.spec.funcResToNative('update_emissions', value);
+        return this.spec.funcResToNative('gulp_emissions', value);
       },
-      this.contract.call('update_emissions', ...this.spec.funcArgsToScVals('update_emissions', {}))
+      this.contract.call('gulp_emissions', ...this.spec.funcArgsToScVals('gulp_emissions', {}))
     );
   }
 

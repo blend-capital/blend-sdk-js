@@ -91,7 +91,7 @@ export class TokenMetadata {
     let asset: Asset | undefined;
     if (
       instance_val.executable().toXDR().toString() ==
-        xdr.ContractExecutable.contractExecutableToken().toXDR().toString() &&
+        xdr.ContractExecutable.contractExecutableStellarAsset().toXDR().toString() &&
       name
     ) {
       if (name == 'native') {

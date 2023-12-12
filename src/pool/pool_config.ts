@@ -68,7 +68,7 @@ export class PoolConfig {
                 case 'USDCTkn':
                   usdcTkn = Address.fromScVal(entry.val()).toString();
                   return;
-                case 'PoolConfig':
+                case 'Config':
                   entry
                     .val()
                     .map()
