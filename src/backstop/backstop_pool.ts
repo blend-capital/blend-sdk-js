@@ -1,16 +1,26 @@
 import { Address, SorobanRpc, scValToNative, xdr } from 'stellar-sdk';
+import { EmissionConfig, EmissionData, Emissions } from '../emissions.js';
 import { Network, i128 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
-import { EmissionConfig, EmissionData, Emissions } from '../emissions.js';
+import { BackstopPoolEst } from './backstop_pool_est.js';
 
-export class BackstopPoolData {
+export class BackstopPool {
   constructor(
     public poolBalance: PoolBalance,
     public toGulpEmissions: bigint,
-    public emissions: Emissions | undefined
+    public emissions: Emissions | undefined,
+    public estimates: BackstopPoolEst,
+    public latestLedger: number
   ) {}
 
-  static async load(network: Network, backstopId: string, poolId: string) {
+  static async load(
+    network: Network,
+    backstopId: string,
+    poolId: string,
+    blndPerLpToken: number,
+    usdcPerLpToken: number,
+    lpTokenPrice: number
+  ) {
     const rpc = new SorobanRpc.Server(network.rpc, network.opts);
     const poolBalanceDataKey = PoolBalance.ledgerKey(backstopId, poolId);
     const poolEmisDataKey = xdr.LedgerKey.contractData(
@@ -23,18 +33,15 @@ export class BackstopPoolData {
         durability: xdr.ContractDataDurability.persistent(),
       })
     );
-
-    const backstopPoolDataPromise = rpc.getLedgerEntries(poolBalanceDataKey, poolEmisDataKey);
-    const backstopEmissionsPromise = Emissions.load(
-      network,
+    const backstopPoolDataEntries = await rpc.getLedgerEntries(
+      poolBalanceDataKey,
+      poolEmisDataKey,
       BackstopEmissionConfig.ledgerKey(backstopId, poolId),
       BackstopEmissionData.ledgerKey(backstopId, poolId)
     );
-    const [backstopPoolDataEntries, poolEmissions] = await Promise.all([
-      backstopPoolDataPromise,
-      backstopEmissionsPromise,
-    ]);
 
+    let emission_config: EmissionConfig | undefined;
+    let emission_data: EmissionData | undefined;
     let poolBalance: PoolBalance | undefined;
     let toGulpEmissions = BigInt(0);
     for (const entry of backstopPoolDataEntries.entries) {
@@ -48,14 +55,39 @@ export class BackstopPoolData {
         case 'PoolEmis':
           toGulpEmissions = scValToNative(ledgerData.contractData().val());
           break;
+        case 'BEmisCfg':
+          emission_config = EmissionConfig.fromLedgerEntryData(ledgerData);
+          break;
+        case 'BEmisData':
+          emission_data = EmissionData.fromLedgerEntryData(ledgerData);
+          break;
         default:
           throw new Error(`Invalid backstop pool key: should not contain ${key}`);
       }
     }
+
     if (poolBalance == undefined) {
       throw new Error('Error: Unable to load backstop pool data');
     }
-    return new BackstopPoolData(poolBalance, toGulpEmissions, poolEmissions);
+    let emissions: Emissions | undefined;
+    if (emission_config != undefined && emission_data != undefined) {
+      emissions = new Emissions(emission_config, emission_data);
+    }
+
+    const estimates = BackstopPoolEst.build(
+      poolBalance,
+      blndPerLpToken,
+      usdcPerLpToken,
+      lpTokenPrice
+    );
+
+    return new BackstopPool(
+      poolBalance,
+      toGulpEmissions,
+      emissions,
+      estimates,
+      backstopPoolDataEntries.latestLedger
+    );
   }
 }
 

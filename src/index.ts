@@ -1,5 +1,5 @@
-import { SorobanRpc, TransactionBuilder, Horizon } from 'stellar-sdk';
 import { Buffer } from 'buffer';
+import { Horizon, SorobanRpc, TransactionBuilder } from 'stellar-sdk';
 
 export * from './backstop/index.js';
 export * from './emitter/index.js';
@@ -8,8 +8,8 @@ export * from './pool_factory/index.js';
 
 export * from './contract_result.js';
 export { Emissions } from './emissions.js';
-export * from './tx.js';
 export { TokenMetadata } from './token.js';
+export * from './tx.js';
 
 export type u32 = number;
 export type i32 = number;
@@ -27,6 +27,7 @@ export type SorobanResponse =
 export interface Network {
   rpc: string;
   passphrase: string;
+  maxConcurrentRequests?: number;
   opts?: Horizon.Server.Options;
 }
 

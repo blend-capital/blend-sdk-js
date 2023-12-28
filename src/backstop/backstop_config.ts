@@ -1,7 +1,7 @@
-import { Address, xdr, SorobanRpc, scValToNative } from 'stellar-sdk';
+import { Address, SorobanRpc, scValToNative, xdr } from 'stellar-sdk';
 import { Network } from '../index.js';
-import { LpTokenValue } from './index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
+import { LpTokenValue } from './index.js';
 
 export class BackstopConfig {
   constructor(
@@ -11,7 +11,8 @@ export class BackstopConfig {
     public backstopTkn: string,
     public poolFactory: string,
     public rewardZone: string[],
-    public lpValue: LpTokenValue
+    public backstopLpValue: LpTokenValue,
+    public latestLedger: number
   ) {}
 
   static async load(network: Network, backstopId: string) {
@@ -45,10 +46,12 @@ export class BackstopConfig {
     let poolFactory: string | undefined;
     let lpValue: LpTokenValue | undefined;
     let rewardZone: string[] | undefined;
-    const backstopConfigEntries =
-      (await rpc.getLedgerEntries(contractInstanceDataKey, lpValueDataKey, rewardZoneDataKey))
-        .entries ?? [];
-    for (const entry of backstopConfigEntries) {
+    const backstopConfigEntries = await rpc.getLedgerEntries(
+      contractInstanceDataKey,
+      lpValueDataKey,
+      rewardZoneDataKey
+    );
+    for (const entry of backstopConfigEntries.entries) {
       const ledgerData = entry.val.contractData();
       const key = decodeEntryKey(ledgerData.key());
       switch (key) {
@@ -108,9 +111,6 @@ export class BackstopConfig {
       }
     }
 
-    if (backstopConfigEntries.length == 0) {
-      throw Error('unable to load backstop config no entries');
-    }
     if (
       emitter == undefined ||
       blndTkn == undefined ||
@@ -119,7 +119,7 @@ export class BackstopConfig {
       poolFactory == undefined ||
       lpValue == undefined
     ) {
-      throw Error('unable to load backstop config undefined values');
+      throw Error('Unable to load backstop config undefined values');
     }
     return new BackstopConfig(
       emitter,
@@ -128,7 +128,8 @@ export class BackstopConfig {
       backstopTkn,
       poolFactory,
       rewardZone,
-      lpValue
+      lpValue,
+      backstopConfigEntries.latestLedger
     );
   }
 }

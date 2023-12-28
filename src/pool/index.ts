@@ -1,11 +1,16 @@
-import { xdr, Address } from 'stellar-sdk';
-import { u32, u64, i128 } from '../index.js';
+import { Address, xdr } from 'stellar-sdk';
+import { i128, u32, u64 } from '../index.js';
 
+export * from './pool.js';
 export * from './pool_client.js';
 export * from './pool_config.js';
+export * from './pool_est.js';
+export * from './pool_user.js';
+export * from './pool_user_est.js';
+export * from './pool_user_types.js';
 export * from './reserve.js';
-export * from './user_positions.js';
-export * from './user_emissions.js';
+export * from './reserve_est.js';
+export * from './reserve_types.js';
 
 export enum PoolError {
   NotAuthorized = 1,

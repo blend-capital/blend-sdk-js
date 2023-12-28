@@ -1,4 +1,4 @@
-import { SorobanRpc, Transaction, TransactionBuilder, xdr } from 'stellar-sdk';
+import { Account, SorobanRpc, Transaction, TransactionBuilder, xdr } from 'stellar-sdk';
 import { ContractResult, Network, Resources, SorobanResponse, TxOptions } from './index.js';
 
 /**
@@ -22,7 +22,13 @@ export async function invokeOperation<T>(
 ): Promise<ContractResult<T>> {
   // create TX
   const rpc = new SorobanRpc.Server(network.rpc, network.opts);
-  const source_account = await rpc.getAccount(source);
+  let source_account: Account;
+  if (txOptions.sim) {
+    // no need to fetch the source account for a simulation, use a random sequence number
+    source_account = new Account(source, '123');
+  } else {
+    source_account = await rpc.getAccount(source);
+  }
   const tx_builder = new TransactionBuilder(source_account, txOptions.builderOptions);
   tx_builder.addOperation(operation);
   const tx = tx_builder.build();

@@ -1,8 +1,8 @@
 import { Address, SorobanRpc, scValToNative, xdr } from 'stellar-sdk';
-import { Network, i128 } from '../index.js';
-import { Q4W } from './index.js';
-import { decodeEntryKey } from '../ledger_entry_helper.js';
 import { UserEmissions } from '../emissions.js';
+import { Network, i128 } from '../index.js';
+import { decodeEntryKey } from '../ledger_entry_helper.js';
+import { Q4W } from './index.js';
 
 export class BackstopUserData {
   constructor(
@@ -139,4 +139,26 @@ export class BackstopUserEmissionData extends UserEmissions {
       })
     );
   }
+}
+
+export function getPoolFromBackstopLedgerData(
+  ledger_entry_data: xdr.LedgerEntryData | string
+): string {
+  if (typeof ledger_entry_data == 'string') {
+    ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+  }
+
+  const pool_address = ledger_entry_data
+    ?.contractData()
+    ?.key()
+    ?.vec()
+    ?.at(1)
+    ?.map()
+    ?.at(0)
+    ?.val()
+    ?.address();
+  if (pool_address == undefined) {
+    throw new Error("Invalid userEmissionData: should contain 'reserve_id'");
+  }
+  return Address.fromScAddress(pool_address).toString();
 }

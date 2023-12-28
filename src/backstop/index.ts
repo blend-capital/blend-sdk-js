@@ -1,10 +1,14 @@
-import { xdr, Address } from 'stellar-sdk';
+import { Address, xdr } from 'stellar-sdk';
 import { i128, u64 } from '../index.js';
 
+export * from './backstop.js';
 export * from './backstop_client.js';
 export * from './backstop_config.js';
-export * from './backstop_pool_data.js';
-export * from './backstop_user_data.js';
+export * from './backstop_pool.js';
+export * from './backstop_pool_est.js';
+export * from './backstop_user.js';
+export * from './backstop_user_est.js';
+export * from './backstop_user_types.js';
 
 export enum BackstopError {
   BadRequest = 1,

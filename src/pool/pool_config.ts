@@ -1,4 +1,4 @@
-import { Address, xdr, SorobanRpc, scValToNative } from 'stellar-sdk';
+import { Address, SorobanRpc, scValToNative, xdr } from 'stellar-sdk';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
@@ -12,7 +12,8 @@ export class PoolConfig {
     public backstopRate: number,
     public oracle: string,
     public status: number,
-    public reserveList: string[]
+    public reserveList: string[],
+    public latestLedger: number
   ) {}
 
   static async load(network: Network, poolId: string) {
@@ -41,10 +42,8 @@ export class PoolConfig {
     let status: number | undefined;
     let reserveList: string[] | undefined;
 
-    const poolConfigEntries =
-      (await rpc.getLedgerEntries(contractInstanceKey, reserveListDataKey)).entries ?? [];
-
-    for (const entry of poolConfigEntries) {
+    const poolConfigEntries = await rpc.getLedgerEntries(contractInstanceKey, reserveListDataKey);
+    for (const entry of poolConfigEntries.entries ?? []) {
       const ledgerData = entry.val.contractData();
       const key = decodeEntryKey(ledgerData.key());
       switch (key) {
@@ -122,7 +121,7 @@ export class PoolConfig {
       oracle == undefined ||
       status == undefined ||
       reserveList == undefined ||
-      poolConfigEntries.length == 0
+      poolConfigEntries.entries.length == 0
     ) {
       throw Error('Unable to load pool config');
     }
@@ -135,7 +134,8 @@ export class PoolConfig {
       backstopRate,
       oracle,
       status,
-      reserveList
+      reserveList,
+      poolConfigEntries.latestLedger
     );
   }
 }
