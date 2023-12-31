@@ -1,7 +1,7 @@
 //! Base classes for emission data
 
-import { xdr, scValToNative, SorobanRpc } from 'stellar-sdk';
-import { u64, ReserveEmissionConfig, i128, Network, ReserveEmissionData } from './index.js';
+import { SorobanRpc, scValToNative, xdr } from 'stellar-sdk';
+import { Network, ReserveEmissionConfig, ReserveEmissionData, i128, u64 } from './index.js';
 import { decodeEntryKey } from './ledger_entry_helper.js';
 
 /********** Emission Source **********/
@@ -58,19 +58,19 @@ export class Emissions {
   }
 
   /**
-   * Estimate the emission data to a given timestamp
+   * Estimate the emission index to a given timestamp
    *
    * @param timestamp - The timestamp to extrapolate to
    * @param supply - The total supply of the token being emitted to
    * @returns The estimated emission index
    */
-  public estimateData(timestamp: number, supply: bigint): number {
+  public estimateIndex(timestamp: number, supply: bigint, decimals: number): number {
     const time_diff = timestamp - Number(this.data.lastTime);
     if (time_diff < 0) {
       return Number(this.data.index);
     }
 
-    const scaled_supply = Number(supply) / 1e7;
+    const scaled_supply = Number(supply) / 10 ** decimals;
     const additional_index = (time_diff * Number(this.config.eps)) / scaled_supply;
     return Number(this.data.index) + additional_index;
   }
@@ -201,14 +201,21 @@ export class UserEmissions {
    * Estimate the accrued emission to a given timestamp
    * @param timestamp - The timestamp to extrapolate to
    * @param emissions - The emissions data for a token
-   * @param supply - The total supply of the token being emitted to (in stroops)
-   * @param balance - The balance of the user of the token being emitted to (in stroops)
-   * @returns The estimated accrued emissions
+   * @param decimals - The decimals of the token being emitted to
+   * @param supply - The total supply of the token being emitted to (as integer)
+   * @param balance - The balance of the user of the token being emitted to (in integer)
+   * @returns The estimated accrued emissions as a float
    */
-  estimateData(timestamp: number, emissions: Emissions, supply: bigint, balance: bigint): number {
-    const emission_index = emissions.estimateData(timestamp, supply);
+  estimateAccrual(
+    timestamp: number,
+    emissions: Emissions,
+    decimals: number,
+    supply: bigint,
+    balance: bigint
+  ): number {
+    const emission_index = emissions.estimateIndex(timestamp, supply, decimals);
     const additional_index = emission_index - Number(this.index);
-    const scaled_balance = Number(balance) / 1e7;
-    return (additional_index * scaled_balance + Number(this.accrued)) / 1e7;
+    // emissions are a Stellar Asset with 7 decimals
+    return ((additional_index * Number(balance)) / 10 ** decimals + Number(this.accrued)) / 1e7;
   }
 }

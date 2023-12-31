@@ -1,4 +1,5 @@
 import { Address, SorobanRpc, scValToNative, xdr } from 'stellar-sdk';
+import { UserEmissions } from '../emissions.js';
 import { Network, i128, u32 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
@@ -22,6 +23,7 @@ export class UserPositions {
       })
     );
   }
+
   static async load(network: Network, poolId: string, userId: string): Promise<UserPositions> {
     const rpc = new SorobanRpc.Server(network.rpc, network.opts);
     const userPositionsKey = UserPositions.ledgerKey(poolId, userId);
@@ -105,5 +107,51 @@ export class UserPositions {
       throw Error('User positions xdr_string is malformed');
     }
     return new UserPositions(liability_map, collateral_map, supply_map);
+  }
+}
+
+export class PoolUserEmissionData extends UserEmissions {
+  static ledgerKey(poolId: string, userId: string, reserveTokenIndex: number): xdr.LedgerKey {
+    const res: xdr.ScVal[] = [
+      xdr.ScVal.scvSymbol('UserEmis'),
+      xdr.ScVal.scvMap([
+        new xdr.ScMapEntry({
+          key: xdr.ScVal.scvSymbol('reserve_id'),
+          val: xdr.ScVal.scvU32(reserveTokenIndex),
+        }),
+        new xdr.ScMapEntry({
+          key: xdr.ScVal.scvSymbol('user'),
+          val: Address.fromString(userId).toScVal(),
+        }),
+      ]),
+    ];
+    return xdr.LedgerKey.contractData(
+      new xdr.LedgerKeyContractData({
+        contract: Address.fromString(poolId).toScAddress(),
+        key: xdr.ScVal.scvVec(res),
+        durability: xdr.ContractDataDurability.persistent(),
+      })
+    );
+  }
+
+  static getEmissionIndexFromLedgerEntryData(
+    ledger_entry_data: xdr.LedgerEntryData | string
+  ): number {
+    if (typeof ledger_entry_data == 'string') {
+      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+    }
+    const emission_index = ledger_entry_data
+      ?.contractData()
+      ?.key()
+      ?.vec()
+      ?.at(1)
+      ?.map()
+      ?.at(0)
+      ?.val()
+      ?.u32();
+    if (emission_index == undefined) {
+      throw new Error("Invalid userEmissionData: should contain 'reserve_id'");
+    }
+    return emission_index;
   }
 }
