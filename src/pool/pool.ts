@@ -53,10 +53,16 @@ export class Pool {
    *
    * This function is an estimate and is not guaranteed to be accurate to how the contract
    * will actually calculate these values at the given timestamp.
+   *
+   * @param timestamp - The timestamp to project the pool data to
    */
-  public estimate() {
+  public estimate(timestamp: number) {
+    if (this.timestamp < timestamp) {
+      throw Error(`Cannot estimate the pool data to an earlier timestamp.`);
+    }
+    this.timestamp = timestamp;
     for (const reserve of this.reserves.values()) {
-      reserve.estimate(this.config.backstopRate, this.timestamp);
+      reserve.estimate(this.config.backstopRate, timestamp);
     }
     this.estimates = PoolEstimate.build(this.reserves);
   }

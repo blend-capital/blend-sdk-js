@@ -24,7 +24,7 @@ export class Backstop {
    * @param pools - The set of pools to load backstop pool data for
    * @param includeRewardZone - Whether to load the pools in the reward zone.
    * @param timestamp - The timestamp to project the pool data to
-   * @returns - The pool object
+   * @returns - The backstop object
    */
   public static async load(
     network: Network,
