@@ -90,6 +90,9 @@ export class BackstopConfig {
                 case 'Emitter':
                   emitter = Address.fromScVal(entry.val()).toString();
                   break;
+                case 'IsInit':
+                  // do nothing
+                  break;
                 default:
                   throw Error(
                     `Invalid backstop instance storage key: should not contain ${instanceKey}`
