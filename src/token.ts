@@ -75,6 +75,9 @@ export class TokenMetadata {
                 return;
               case 'symbol':
                 symbol = scValToNative(meta_entry.val());
+                if (symbol == 'native') {
+                  symbol = 'XLM';
+                }
                 return;
               case 'decimal':
                 decimal = scValToNative(meta_entry.val());
