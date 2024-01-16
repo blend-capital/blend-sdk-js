@@ -41,6 +41,6 @@
   },
   "dependencies": {
     "buffer": "6.0.3",
-    "stellar-sdk": "^11.1.0"
+    "stellar-sdk": "^11.2.0"
   }
 }
