@@ -45,7 +45,7 @@ export class BackstopConfig {
     let backstopTkn: string | undefined;
     let poolFactory: string | undefined;
     let lpValue: LpTokenValue | undefined;
-    let rewardZone: string[] | undefined;
+    const rewardZone: string[] = [];
     const backstopConfigEntries = await rpc.getLedgerEntries(
       contractInstanceDataKey,
       lpValueDataKey,
@@ -101,7 +101,6 @@ export class BackstopConfig {
             });
           break;
         case 'RZ':
-          rewardZone = [];
           ledgerData
             .val()
             .vec()
