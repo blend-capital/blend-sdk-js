@@ -10,6 +10,7 @@ export class PoolConfig {
     public usdcTkn: string,
     public backstop: string,
     public backstopRate: number,
+    public maxPositions: number,
     public oracle: string,
     public status: number,
     public reserveList: string[],
@@ -40,6 +41,7 @@ export class PoolConfig {
     let backstopRate: number | undefined;
     let oracle: string | undefined;
     let status: number | undefined;
+    let maxPositions: number | undefined;
     let reserveList: string[] | undefined;
 
     const poolConfigEntries = await rpc.getLedgerEntries(contractInstanceKey, reserveListDataKey);
@@ -75,13 +77,16 @@ export class PoolConfig {
                       const poolConfigKey = decodeEntryKey(config_entry.key());
                       switch (poolConfigKey) {
                         case 'bstop_rate':
-                          backstopRate = Number(config_entry.val().u64().toString());
+                          backstopRate = Number(config_entry.val().u32().toString());
                           return;
                         case 'oracle':
                           oracle = Address.fromScVal(config_entry.val()).toString();
                           return;
                         case 'status':
                           status = scValToNative(config_entry.val());
+                          return;
+                        case 'max_positions':
+                          maxPositions = Number(config_entry.val().u32().toString());
                           return;
                         default:
                           throw Error(
@@ -96,6 +101,9 @@ export class PoolConfig {
                 case 'Name':
                   name = entry.val().sym().toString();
                   return;
+                case 'IsInit':
+                  // do nothing
+                  break;
                 default:
                   throw Error(
                     `Invalid pool instance storage key: should not contain ${instanceKey}`
@@ -132,6 +140,7 @@ export class PoolConfig {
       usdcTkn,
       backstop,
       backstopRate,
+      maxPositions,
       oracle,
       status,
       reserveList,

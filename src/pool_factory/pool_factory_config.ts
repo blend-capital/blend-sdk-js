@@ -1,4 +1,4 @@
-import { Address, xdr, SorobanRpc } from 'stellar-sdk';
+import { Address, SorobanRpc, xdr } from 'stellar-sdk';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
@@ -57,6 +57,9 @@ export class PoolFactoryConfig {
                           break;
                         case 'usdc_id':
                           usdcTkn = Address.fromScVal(mapEntry.val()).toString();
+                          break;
+                        case 'IsInit':
+                          // do nothing
                           break;
                         default:
                           throw Error(`Invalid PoolMeta key: should not contain ${poolMetaKey}`);

@@ -45,7 +45,7 @@ export class BackstopConfig {
     let backstopTkn: string | undefined;
     let poolFactory: string | undefined;
     let lpValue: LpTokenValue | undefined;
-    let rewardZone: string[] | undefined;
+    const rewardZone: string[] = [];
     const backstopConfigEntries = await rpc.getLedgerEntries(
       contractInstanceDataKey,
       lpValueDataKey,
@@ -90,6 +90,9 @@ export class BackstopConfig {
                 case 'Emitter':
                   emitter = Address.fromScVal(entry.val()).toString();
                   break;
+                case 'IsInit':
+                  // do nothing
+                  break;
                 default:
                   throw Error(
                     `Invalid backstop instance storage key: should not contain ${instanceKey}`
@@ -98,7 +101,6 @@ export class BackstopConfig {
             });
           break;
         case 'RZ':
-          rewardZone = [];
           ledgerData
             .val()
             .vec()

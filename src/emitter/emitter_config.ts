@@ -1,4 +1,4 @@
-import { Address, xdr, SorobanRpc } from 'stellar-sdk';
+import { Address, SorobanRpc, xdr } from 'stellar-sdk';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
@@ -36,6 +36,9 @@ export class EmitterConfig {
                 case 'Backstop':
                   backstop = Address.fromScVal(entry.val()).toString();
                   return;
+                case 'IsInit':
+                  // do nothing
+                  break;
                 default:
                   throw Error(
                     `invalid emitter instance storage key: should not contain ${instanceKey}`
