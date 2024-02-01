@@ -65,7 +65,10 @@ export class Emissions {
    * @returns The estimated emission index
    */
   public estimateIndex(timestamp: number, supply: bigint, decimals: number): number {
-    const time_diff = timestamp - Number(this.data.lastTime);
+    let time_diff =
+      timestamp > this.config.expiration
+        ? Number(this.config.expiration) - Number(this.data.lastTime)
+        : timestamp - Number(this.data.lastTime);
     if (time_diff < 0) {
       return Number(this.data.index);
     }
