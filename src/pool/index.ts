@@ -66,10 +66,26 @@ export function UserReserveKeyToXDR(userReserveKey?: UserReserveKey): xdr.ScVal 
 }
 
 /**
+ * RequestType for specifying submit action
+ */
+export enum RequestType {
+  Supply = 0,
+  Withdraw = 1,
+  SupplyCollateral = 2,
+  WithdrawCollateral = 3,
+  Borrow = 4,
+  Repay = 5,
+  FillUserLiquidationAuction = 6,
+  FillBadDebtAuction = 7,
+  FillInterestAuction = 8,
+  DeleteLiquidationAuction = 9,
+}
+
+/**
  * Request for submitting actions
  */
 export interface Request {
-  request_type: u32;
+  request_type: RequestType;
   address: string;
   amount: i128;
 }
