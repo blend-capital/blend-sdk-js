@@ -45,10 +45,24 @@ export enum BlendErrors {
   InvalidPoolFactoryInitArgs = 1300,
 }
 
-export function parseError(errorMessage: string) {
-  const match = errorMessage.match(/Error\(Contract, #(\d+)\)/);
-  if (!match) return;
-  let i = parseInt(match[1], 10);
-  let err = BlendErrors[i];
-  if (err) return err;
+export function parseError(errorResult: xdr.TransactionResultResult | string): Error {
+  if (typeof errorResult === 'string') {
+    const match = errorResult.match(/Error\(Contract, #(\d+)\)/);
+    // Transaction failed simulation
+    if (match) {
+      let i = parseInt(match[1], 10);
+      let err = BlendErrors[i];
+      if (err) return Error(`Simulation failed with: ${err}`);
+      else return Error('Simulation failed: unable to parse error');
+    }
+  } else {
+    const txError = errorResult.switch().name;
+    const invokeError = errorResult
+      .results()
+      .map((opResult) => {
+        return opResult.tr().invokeHostFunctionResult().switch().name;
+      })
+      .join(' ');
+    return Error(`Simulation passed but transaction failed with: ${txError} - ${invokeError}`);
+  }
 }

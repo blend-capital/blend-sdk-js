@@ -119,12 +119,16 @@ export class ContractResult<T> {
       if (SorobanRpc.Api.isSimulationSuccess(simulated)) {
         const xdr_str = simulated.result?.retval.toXDR('base64');
         return ContractResult.success<T>(hash, resources, parse(xdr_str));
-      } else if (SorobanRpc.Api.isSimulationError(simulated)) {
+      } else if (SorobanRpc.Api.isSimulationRestore(simulated)) {
         return ContractResult.error(
           hash,
           resources,
-          new Error(`Simulation failed with: ${parseError(simulated.error)}`)
+          // TODO: determine where the expired entry is located to have error message
+          // Error("Contract entry `entry` has expired. Please restore before sending transaction")
+          new Error(JSON.stringify(simulated.restorePreamble.transactionData, null, 2))
         );
+      } else if (SorobanRpc.Api.isSimulationError(simulated)) {
+        return ContractResult.error(hash, resources, parseError(simulated.error));
       } else {
         return ContractResult.error(
           hash,
@@ -144,11 +148,7 @@ export class ContractResult<T> {
         return ContractResult.success<T>(hash, resources, parse(xdr_str));
       } else {
         const getResult = response as SorobanRpc.Api.GetFailedTransactionResponse;
-        return ContractResult.error(
-          hash,
-          resources,
-          new Error(`Transaction failed: ${JSON.stringify(getResult.resultXdr.result())}`)
-        );
+        return ContractResult.error(hash, resources, parseError(getResult.resultXdr.result()));
       }
     }
 
