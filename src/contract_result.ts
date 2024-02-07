@@ -1,5 +1,6 @@
 import { SorobanRpc, xdr } from 'stellar-sdk';
 import { SorobanResponse } from './index.js';
+import { parseError } from './contract_error.js';
 
 export class Resources {
   fee: number;
@@ -119,7 +120,11 @@ export class ContractResult<T> {
         const xdr_str = simulated.result?.retval.toXDR('base64');
         return ContractResult.success<T>(hash, resources, parse(xdr_str));
       } else if (SorobanRpc.Api.isSimulationError(simulated)) {
-        return ContractResult.error(hash, resources, new Error(simulated.error));
+        return ContractResult.error(
+          hash,
+          resources,
+          new Error(`Simulation failed with: ${parseError(simulated.error)}`)
+        );
       } else {
         return ContractResult.error(
           hash,
@@ -138,7 +143,12 @@ export class ContractResult<T> {
         const xdr_str = getResult.returnValue?.toXDR('base64');
         return ContractResult.success<T>(hash, resources, parse(xdr_str));
       } else {
-        return ContractResult.error(hash, resources, new Error(`Transaction failed: ${getResult}`));
+        const getResult = response as SorobanRpc.Api.GetFailedTransactionResponse;
+        return ContractResult.error(
+          hash,
+          resources,
+          new Error(`Transaction failed: ${JSON.stringify(getResult.resultXdr.result())}`)
+        );
       }
     }
 
@@ -158,7 +168,7 @@ export class ContractResult<T> {
     return ContractResult.error(
       hash,
       resources,
-      new Error(`Unable to parse response: ${response.toString()}`)
+      new Error(`Unable to parse response: ${JSON.stringify(response)}`)
     );
   }
 
