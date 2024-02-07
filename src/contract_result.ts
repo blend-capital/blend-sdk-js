@@ -1,6 +1,6 @@
 import { SorobanRpc, xdr } from 'stellar-sdk';
 import { SorobanResponse } from './index.js';
-import { parseError } from './contract_error.js';
+import { ContractError, parseError } from './contract_error.js';
 
 export class Resources {
   fee: number;
@@ -67,9 +67,9 @@ export class ContractResult<T> {
   hash: string;
   resources: Resources;
   value?: T;
-  error?: Error;
+  error?: ContractError;
 
-  constructor(ok: boolean, hash: string, resources: Resources, value?: T, error?: Error) {
+  constructor(ok: boolean, hash: string, resources: Resources, value?: T, error?: ContractError) {
     this.hash = hash;
     this.resources = resources;
     this.ok = ok;
@@ -84,7 +84,7 @@ export class ContractResult<T> {
    * @param error - The error
    * @returns - Contract Result
    */
-  static error<T>(hash: string, resources: Resources, error: Error): ContractResult<T> {
+  static error<T>(hash: string, resources: Resources, error: ContractError): ContractResult<T> {
     return new ContractResult(false, hash, resources, undefined, error);
   }
 
@@ -123,9 +123,10 @@ export class ContractResult<T> {
         return ContractResult.error(
           hash,
           resources,
-          // TODO: determine where the expired entry is located to have error message
-          // Error("Contract entry `entry` has expired. Please restore before sending transaction")
-          new Error(JSON.stringify(simulated.restorePreamble.transactionData, null, 2))
+          new ContractError(
+            'ArchivedEntry',
+            JSON.stringify(simulated.restorePreamble.transactionData.getFootprint(), null, 2)
+          )
         );
       } else if (SorobanRpc.Api.isSimulationError(simulated)) {
         return ContractResult.error(hash, resources, parseError(simulated.error));
@@ -133,7 +134,7 @@ export class ContractResult<T> {
         return ContractResult.error(
           hash,
           resources,
-          new Error(`invalid simulation: no result in ${simulated}`)
+          new ContractError(undefined, `invalid simulation: no result in ${simulated}`)
         );
       }
     }
@@ -155,20 +156,14 @@ export class ContractResult<T> {
     // otherwise, it returned the result of `sendTransaction`
     if ('errorResultXdr' in response) {
       const sendResult = response as SorobanRpc.Api.SendTransactionResponse;
-      return ContractResult.error(
-        hash,
-        resources,
-        new Error(
-          `Failed to send transaction: ${sendResult.errorResult.toXDR().toString('base64')}`
-        )
-      );
+      return ContractResult.error(hash, resources, parseError(sendResult.errorResult.result()));
     }
 
     // if neither of these are present, something went wrong
     return ContractResult.error(
       hash,
       resources,
-      new Error(`Unable to parse response: ${JSON.stringify(response)}`)
+      new ContractError(undefined, `Unable to parse response: ${JSON.stringify(response)}`)
     );
   }
 

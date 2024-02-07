@@ -1,4 +1,12 @@
-import { SorobanRpc, xdr } from 'stellar-sdk';
+import { xdr } from 'stellar-sdk';
+
+export class ContractError extends Error {
+  public type?: string;
+  constructor(type: string, message: string) {
+    super(message);
+    this.type = type;
+  }
+}
 
 export enum BlendErrors {
   // Common Errors
@@ -17,6 +25,7 @@ export enum BlendErrors {
   InvalidRewardZoneEntry = 1002,
   InsufficientFunds = 1003,
   NotPool = 1004,
+
   // Pool Request Errors (start at 1200)
   PoolBadRequest = 1200,
   InvalidPoolInitArgs = 1201,
@@ -45,15 +54,15 @@ export enum BlendErrors {
   InvalidPoolFactoryInitArgs = 1300,
 }
 
-export function parseError(errorResult: xdr.TransactionResultResult | string): Error {
+export function parseError(errorResult: xdr.TransactionResultResult | string): ContractError {
   if (typeof errorResult === 'string') {
     const match = errorResult.match(/Error\(Contract, #(\d+)\)/);
     // Transaction failed simulation
     if (match) {
       let i = parseInt(match[1], 10);
-      let err = BlendErrors[i];
-      if (err) return Error(`Simulation failed with: ${err}`);
-      else return Error('Simulation failed: unable to parse error');
+      let errorType = BlendErrors[i];
+      if (errorType) return new ContractError(errorType, errorResult);
+      else return new ContractError(undefined, errorResult);
     }
   } else {
     const txError = errorResult.switch().name;
@@ -62,7 +71,7 @@ export function parseError(errorResult: xdr.TransactionResultResult | string): E
       .map((opResult) => {
         return opResult.tr().invokeHostFunctionResult().switch().name;
       })
-      .join(' ');
-    return Error(`Simulation passed but transaction failed with: ${txError} - ${invokeError}`);
+      .join('-');
+    return new ContractError(`${txError}-${invokeError}`, JSON.stringify(errorResult, null, 2));
   }
 }
