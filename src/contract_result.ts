@@ -1,6 +1,6 @@
 import { SorobanRpc, xdr } from 'stellar-sdk';
 import { SorobanResponse } from './index.js';
-import { ContractError, parseError } from './contract_error.js';
+import { ContractError, ContractErrorType, parseError } from './contract_error.js';
 
 export class Resources {
   fee: number;
@@ -124,17 +124,20 @@ export class ContractResult<T> {
           hash,
           resources,
           new ContractError(
-            'ArchivedEntry',
+            ContractErrorType.InvokeHostFunctionEntryArchived,
             JSON.stringify(simulated.restorePreamble.transactionData.getFootprint(), null, 2)
           )
         );
       } else if (SorobanRpc.Api.isSimulationError(simulated)) {
-        return ContractResult.error(hash, resources, parseError(simulated.error));
+        return ContractResult.error(hash, resources, parseError(simulated));
       } else {
         return ContractResult.error(
           hash,
           resources,
-          new ContractError(undefined, `invalid simulation: no result in ${simulated}`)
+          new ContractError(
+            ContractErrorType.UnknownError,
+            `invalid simulation: no result in ${simulated}`
+          )
         );
       }
     }
@@ -149,21 +152,21 @@ export class ContractResult<T> {
         return ContractResult.success<T>(hash, resources, parse(xdr_str));
       } else {
         const getResult = response as SorobanRpc.Api.GetFailedTransactionResponse;
-        return ContractResult.error(hash, resources, parseError(getResult.resultXdr.result()));
+        return ContractResult.error(hash, resources, parseError(getResult.resultXdr));
       }
     }
 
     // otherwise, it returned the result of `sendTransaction`
-    if ('errorResultXdr' in response) {
+    if ('errorResult' in response) {
       const sendResult = response as SorobanRpc.Api.SendTransactionResponse;
-      return ContractResult.error(hash, resources, parseError(sendResult.errorResult.result()));
+      return ContractResult.error(hash, resources, parseError(sendResult.errorResult));
     }
 
     // if neither of these are present, something went wrong
     return ContractResult.error(
       hash,
       resources,
-      new ContractError(undefined, `Unable to parse response: ${JSON.stringify(response)}`)
+      new ContractError(ContractErrorType.UnknownError, JSON.stringify(response, null, 2))
     );
   }
 
