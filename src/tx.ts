@@ -1,5 +1,13 @@
 import { Account, SorobanRpc, Transaction, TransactionBuilder, xdr } from 'stellar-sdk';
-import { ContractResult, Network, Resources, SorobanResponse, TxOptions } from './index.js';
+import {
+  ContractError,
+  ContractResult,
+  Network,
+  Resources,
+  SorobanResponse,
+  TxOptions,
+} from './index.js';
+import { ContractErrorType } from './contract_error.js';
 
 /**
  * Invoke a `InvokeHostFunction` operation against the Stellar network.
@@ -89,7 +97,10 @@ export async function invokeOperation<T>(
       return ContractResult.error(
         tx_hash,
         resources,
-        new Error(`Transaction timed out with status ${status}`)
+        new ContractError(
+          ContractErrorType.UnknownError,
+          `Transaction timed out with status ${status}`
+        )
       );
     }
     await new Promise((resolve) => setTimeout(resolve, txOptions.pollingInterval));
