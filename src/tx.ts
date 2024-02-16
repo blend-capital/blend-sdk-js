@@ -26,7 +26,7 @@ export async function invokeOperation<T>(
   network: Network,
   txOptions: TxOptions,
   parse: (value: string | xdr.ScVal | undefined) => T | undefined,
-  operation: xdr.Operation
+  operation: xdr.Operation | string
 ): Promise<ContractResult<T>> {
   // create TX
   const rpc = new SorobanRpc.Server(network.rpc, network.opts);
@@ -38,6 +38,9 @@ export async function invokeOperation<T>(
     source_account = await rpc.getAccount(source);
   }
   const tx_builder = new TransactionBuilder(source_account, txOptions.builderOptions);
+  if (typeof operation === 'string') {
+    operation = xdr.Operation.fromXDR(operation, 'base64');
+  }
   tx_builder.addOperation(operation);
   const tx = tx_builder.build();
 
