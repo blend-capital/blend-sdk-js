@@ -68,7 +68,7 @@ export class PoolUserEst {
         const base_e_collateral = asset_e_collateral * reserve.oraclePrice;
         totalSupplied += base_collateral;
         totalEffectiveCollateral += base_e_collateral;
-        supplyApy += base_collateral * reserve.estimates.apy;
+        supplyApy += base_collateral * reserve.estimates.apy * reserve.estimates.util;
         collateral.set(reserve.assetId, asset_collateral);
       } else {
         throw new Error(`Unable to find reserve for collateral balance: ${key}`);
