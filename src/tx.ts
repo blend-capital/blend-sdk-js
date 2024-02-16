@@ -67,25 +67,11 @@ export async function invokeOperation<T>(
   }
 
   // assemble and sign the TX
-  // TODO: Patch this once simulation for brand new accounts is working
-  const txResources = simulation_resp.transactionData.build().resources();
-  simulation_resp.minResourceFee = (Number(simulation_resp.minResourceFee) + 100000).toString();
-  const sim_tx_data = simulation_resp.transactionData
-    .setResources(
-      txResources.instructions() == 0 ? 0 : txResources.instructions() + 100000,
-      txResources.readBytes() + 500,
-      txResources.writeBytes() + 200
-    )
-    .build();
-  const assemble_tx = SorobanRpc.assembleTransaction(tx, simulation_resp);
-  sim_tx_data.resourceFee(
-    xdr.Int64.fromString((Number(sim_tx_data.resourceFee().toString()) + 50000).toString())
-  );
-  const prepped_tx_xdr = assemble_tx.setSorobanData(sim_tx_data).build().toXDR();
-  const signed_xdr_string = await sign(prepped_tx_xdr);
+  const assemble_tx = SorobanRpc.assembleTransaction(tx, simulation_resp).build();
+  const signed_xdr_string = await sign(assemble_tx.toXDR());
   const signed_tx = new Transaction(signed_xdr_string, network.passphrase);
   const tx_hash = signed_tx.hash().toString('hex');
-  const resources = Resources.fromTransaction(prepped_tx_xdr);
+  const resources = Resources.fromTransaction(assemble_tx.toEnvelope());
 
   // submit the TX
   let response: SorobanResponse = await rpc.sendTransaction(signed_tx);
