@@ -1,7 +1,6 @@
-import { Address, Contract, ContractSpec, xdr } from 'stellar-sdk';
-import { ContractResult, Network, TxOptions, i128 } from '../index.js';
-import { invokeOperation } from '../tx.js';
-import { Q4W } from './index.js';
+import { Address, Contract, ContractSpec } from 'stellar-sdk';
+import { i128 } from '../index.js';
+import { PoolBackstopData, Q4W, UserBalance } from './index.js';
 
 // @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
 
@@ -32,18 +31,16 @@ export interface BackstopClaimArgs {
 }
 
 export interface DrawArgs {
-  from: Address | string;
+  to: Address | string;
   pool_address: Address | string;
   amount: i128;
 }
 
 export class BackstopClient {
-  address: string;
-  private contract: Contract;
+  contract: Contract;
   spec: ContractSpec;
 
   constructor(address: string) {
-    this.address = address;
     this.contract = new Contract(address);
     // @dev: Generated from soroban-cli Typescript bindings
     this.spec = new ContractSpec([
@@ -66,8 +63,6 @@ export class BackstopClient {
       'AAAAAAAAAAAAAAAEZHJvcAAAAAAAAAAA',
       'AAAAAAAAAAAAAAAEZHJhdwAAAAMAAAAAAAAADHBvb2xfYWRkcmVzcwAAABMAAAAAAAAABmFtb3VudAAAAAAACwAAAAAAAAACdG8AAAAAABMAAAAA',
       'AAAAAAAAAAAAAAAGZG9uYXRlAAAAAAADAAAAAAAAAARmcm9tAAAAEwAAAAAAAAAMcG9vbF9hZGRyZXNzAAAAEwAAAAAAAAAGYW1vdW50AAAAAAALAAAAAA==',
-      'AAAAAAAAAAAAAAALZG9uYXRlX3VzZGMAAAAAAwAAAAAAAAAEZnJvbQAAABMAAAAAAAAADHBvb2xfYWRkcmVzcwAAABMAAAAAAAAABmFtb3VudAAAAAAACwAAAAA=',
-      'AAAAAAAAAAAAAAAJZ3VscF91c2RjAAAAAAAAAQAAAAAAAAAMcG9vbF9hZGRyZXNzAAAAEwAAAAA=',
       'AAAAAAAAAAAAAAAOdXBkYXRlX3Rrbl92YWwAAAAAAAAAAAABAAAD7QAAAAIAAAALAAAACw==',
       'AAAABAAAAKFFcnJvciBjb2RlcyBmb3IgdGhlIGJhY2tzdG9wIGNvbnRyYWN0LiBDb21tb24gZXJyb3JzIGFyZSBjb2RlcyB0aGF0IG1hdGNoIHVwIHdpdGggdGhlIGJ1aWx0LWluCmNvbnRyYWN0cyBlcnJvciByZXBvcnRpbmcuIEJhY2tzdG9wIHNwZWNpZmljIGVycm9ycyBzdGFydCBhdCAxMDAwLgAAAAAAAAAAAAANQmFja3N0b3BFcnJvcgAAAAAAAAsAAAAAAAAADUludGVybmFsRXJyb3IAAAAAAAABAAAAAAAAABdBbHJlYWR5SW5pdGlhbGl6ZWRFcnJvcgAAAAADAAAAAAAAABFVbmF1dGhvcml6ZWRFcnJvcgAAAAAAAAQAAAAAAAAAE05lZ2F0aXZlQW1vdW50RXJyb3IAAAAACAAAAAAAAAAMQmFsYW5jZUVycm9yAAAACgAAAAAAAAANT3ZlcmZsb3dFcnJvcgAAAAAAAAwAAAAAAAAACkJhZFJlcXVlc3QAAAAAA+gAAAAAAAAACk5vdEV4cGlyZWQAAAAAA+kAAAAAAAAAFkludmFsaWRSZXdhcmRab25lRW50cnkAAAAAA+oAAAAAAAAAEUluc3VmZmljaWVudEZ1bmRzAAAAAAAD6wAAAAAAAAAHTm90UG9vbAAAAAPs',
       'AAAAAQAAAAAAAAAAAAAAFkJhY2tzdG9wRW1pc3Npb25Db25maWcAAAAAAAIAAAAAAAAAA2VwcwAAAAAGAAAAAAAAAApleHBpcmF0aW9uAAAAAAAG',
@@ -78,264 +73,106 @@ export class BackstopClient {
     ]);
   }
 
-  async initialize(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    contractArgs: BackstopInitializeArgs
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call('initialize', ...this.spec.funcArgsToScVals('initialize', contractArgs))
-    );
+  readonly parsers = {
+    initialize: () => {},
+    deposit: (result: string): i128 => this.spec.funcResToNative('deposit', result),
+    queueWithdrawal: (result: string): Q4W => this.spec.funcResToNative('queue_withdrawal', result),
+    dequeueWithdrawal: () => {},
+    withdraw: (result: string): i128 => this.spec.funcResToNative('withdraw', result),
+    userBalance: (result: string): UserBalance => this.spec.funcResToNative('user_balance', result),
+    poolData: (result: string): PoolBackstopData => this.spec.funcResToNative('pool_data', result),
+    backstopToken: (result: string): string => this.spec.funcResToNative('backstop_token', result),
+    gulpEmissions: () => {},
+    addReward: () => {},
+    gulpPoolEmissions: (result: string): i128 =>
+      this.spec.funcResToNative('gulp_pool_emissions', result),
+    claim: (result: string): i128 => this.spec.funcResToNative('claim', result),
+    drop: () => {},
+    draw: () => {},
+    donate: () => {},
+    updateTknVal: (result: string): readonly [i128, i128] =>
+      this.spec.funcResToNative('update_tkn_val', result),
+  };
+
+  initialize(contractArgs: BackstopInitializeArgs): string {
+    return this.contract
+      .call('initialize', ...this.spec.funcArgsToScVals('initialize', contractArgs))
+      .toXDR('base64');
   }
 
-  async deposit(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    contractArgs: PoolBackstopActionArgs
-  ): Promise<ContractResult<i128>> {
-    return await invokeOperation<i128>(
-      source,
-      sign,
-      network,
-      txOptions,
-      (value: string | xdr.ScVal | undefined): i128 | undefined => {
-        if (value == undefined) {
-          return undefined;
-        }
-        return this.spec.funcResToNative('deposit', value);
-      },
-      this.contract.call('deposit', ...this.spec.funcArgsToScVals('deposit', contractArgs))
-    );
+  deposit(contractArgs: PoolBackstopActionArgs): string {
+    return this.contract
+      .call('deposit', ...this.spec.funcArgsToScVals('deposit', contractArgs))
+      .toXDR('base64');
   }
 
-  async queueWithdrawal(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    contractArgs: PoolBackstopActionArgs
-  ): Promise<ContractResult<Q4W>> {
-    return await invokeOperation<Q4W>(
-      source,
-      sign,
-      network,
-      txOptions,
-      (value: string | xdr.ScVal | undefined): Q4W | undefined => {
-        if (value == undefined) {
-          return undefined;
-        }
-        return this.spec.funcResToNative('queue_withdrawal', value);
-      },
-      this.contract.call(
-        'queue_withdrawal',
-        ...this.spec.funcArgsToScVals('queue_withdrawal', contractArgs)
-      )
-    );
+  queueWithdrawal(contractArgs: PoolBackstopActionArgs): string {
+    return this.contract
+      .call('queue_withdrawal', ...this.spec.funcArgsToScVals('queue_withdrawal', contractArgs))
+      .toXDR('base64');
   }
 
-  async dequeueWithdrawal(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    contractArgs: PoolBackstopActionArgs
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call(
-        'dequeue_withdrawal',
-        ...this.spec.funcArgsToScVals('dequeue_withdrawal', contractArgs)
-      )
-    );
+  dequeueWithdrawal(contractArgs: PoolBackstopActionArgs): string {
+    return this.contract
+      .call('dequeue_withdrawal', ...this.spec.funcArgsToScVals('dequeue_withdrawal', contractArgs))
+      .toXDR('base64');
   }
 
-  async withdraw(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    contractArgs: PoolBackstopActionArgs
-  ): Promise<ContractResult<i128>> {
-    return await invokeOperation<i128>(
-      source,
-      sign,
-      network,
-      txOptions,
-      (value: string | xdr.ScVal | undefined): i128 | undefined => {
-        if (value == undefined) {
-          return undefined;
-        }
-        return this.spec.funcResToNative('withdraw', value);
-      },
-      this.contract.call('withdraw', ...this.spec.funcArgsToScVals('withdraw', contractArgs))
-    );
+  withdraw(contractArgs: PoolBackstopActionArgs): string {
+    return this.contract
+      .call('withdraw', ...this.spec.funcArgsToScVals('withdraw', contractArgs))
+      .toXDR('base64');
   }
 
-  async gulpEmissions(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call('gulp_emissions', ...this.spec.funcArgsToScVals('gulp_emissions', {}))
-    );
+  gulpEmissions(): string {
+    return this.contract
+      .call('gulp_emissions', ...this.spec.funcArgsToScVals('gulp_emissions', {}))
+      .toXDR('base64');
   }
 
-  async addReward(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    contractArgs: AddRewardArgs
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call('add_reward', ...this.spec.funcArgsToScVals('add_reward', contractArgs))
-    );
+  addReward(contractArgs: AddRewardArgs): string {
+    return this.contract
+      .call('add_reward', ...this.spec.funcArgsToScVals('add_reward', contractArgs))
+      .toXDR('base64');
   }
 
-  async claim(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    contractArgs: BackstopClaimArgs
-  ): Promise<ContractResult<i128>> {
-    return await invokeOperation<i128>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call('claim', ...this.spec.funcArgsToScVals('claim', contractArgs))
-    );
+  claim(contractArgs: BackstopClaimArgs): string {
+    return this.contract
+      .call('claim', ...this.spec.funcArgsToScVals('claim', contractArgs))
+      .toXDR('base64');
   }
 
-  async draw(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    contractArgs: DrawArgs
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call('draw', ...this.spec.funcArgsToScVals('draw', contractArgs))
-    );
+  draw(contractArgs: DrawArgs): string {
+    return this.contract
+      .call('draw', ...this.spec.funcArgsToScVals('draw', contractArgs))
+      .toXDR('base64');
   }
 
-  async donate(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    contractArgs: PoolBackstopActionArgs
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call('donate', ...this.spec.funcArgsToScVals('donate', contractArgs))
-    );
+  donate(contractArgs: PoolBackstopActionArgs): string {
+    return this.contract
+      .call('donate', ...this.spec.funcArgsToScVals('donate', contractArgs))
+      .toXDR('base64');
   }
 
-  async donateUSDC(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    contractArgs: PoolBackstopActionArgs
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call('donate_usdc', ...this.spec.funcArgsToScVals('donate_usdc', contractArgs))
-    );
+  donateUSDC(contractArgs: PoolBackstopActionArgs): string {
+    return this.contract
+      .call('donate_usdc', ...this.spec.funcArgsToScVals('donate_usdc', contractArgs))
+      .toXDR('base64');
   }
 
-  async gulpUSDC(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    pool_address: Address | string
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call('gulp_usdc', ...this.spec.funcArgsToScVals('gulp_usdc', { pool_address }))
-    );
+  gulpUSDC(pool_address: Address | string): string {
+    return this.contract
+      .call('gulp_usdc', ...this.spec.funcArgsToScVals('gulp_usdc', { pool_address }))
+      .toXDR('base64');
   }
 
-  async updateTokenValue(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions
-  ): Promise<ContractResult<[i128, i128]>> {
-    return await invokeOperation<[i128, i128]>(
-      source,
-      sign,
-      network,
-      txOptions,
-      (value: string | xdr.ScVal | undefined): [i128, i128] | undefined => {
-        if (value == undefined) {
-          return undefined;
-        }
-        return this.spec.funcResToNative('update_tkn_val', value);
-      },
-      this.contract.call('update_tkn_val', ...this.spec.funcArgsToScVals('update_tkn_val', {}))
-    );
+  updateTokenValue(): string {
+    return this.contract
+      .call('update_tkn_val', ...this.spec.funcArgsToScVals('update_tkn_val', {}))
+      .toXDR('base64');
   }
 
-  async drop(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call('drop', ...this.spec.funcArgsToScVals('drop', {}))
-    );
+  drop(): string {
+    return this.contract.call('drop', ...this.spec.funcArgsToScVals('drop', {})).toXDR('base64');
   }
 }

@@ -1,6 +1,4 @@
 import { Address, Contract, ContractSpec, xdr } from 'stellar-sdk';
-import { ContractResult, Network, TxOptions } from '../index.js';
-import { invokeOperation } from '../tx.js';
 import { PoolInitMeta } from './index.js';
 
 // @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
@@ -15,12 +13,10 @@ export interface DeployArgs {
 }
 
 export class PoolFactoryClient {
-  address: string;
-  private contract: Contract;
+  contract: Contract;
   spec: ContractSpec;
 
   constructor(address: string) {
-    this.address = address;
     this.contract = new Contract(address);
     // @dev: Generated from soroban-cli Typescript bindings
     this.spec = new ContractSpec([
@@ -32,46 +28,21 @@ export class PoolFactoryClient {
       'AAAAAQAAAAAAAAAAAAAADFBvb2xJbml0TWV0YQAAAAQAAAAAAAAACGJhY2tzdG9wAAAAEwAAAAAAAAAHYmxuZF9pZAAAAAATAAAAAAAAAAlwb29sX2hhc2gAAAAAAAPuAAAAIAAAAAAAAAAHdXNkY19pZAAAAAAT',
     ]);
   }
+  readonly parsers = {
+    initialize: () => {},
+    deploy: (result: string): string => this.spec.funcResToNative('deploy', result),
+    isPool: (result: string): boolean => this.spec.funcResToNative('is_pool', result),
+  };
 
-  async initialize(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    pool_init_meta: PoolInitMeta
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call(
-        'initialize',
-        ...this.spec.funcArgsToScVals('initialize', { pool_init_meta })
-      )
-    );
+  initialize(pool_init_meta: PoolInitMeta): string {
+    return this.contract
+      .call('initialize', ...this.spec.funcArgsToScVals('initialize', { pool_init_meta }))
+      .toXDR('base64');
   }
 
-  async deploy(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    contractArgs: DeployArgs
-  ): Promise<ContractResult<Address>> {
-    return await invokeOperation<Address>(
-      source,
-      sign,
-      network,
-      txOptions,
-      (value: string | xdr.ScVal | undefined): Address | undefined => {
-        if (value == undefined) {
-          return undefined;
-        }
-        return this.spec.funcResToNative('deploy', value);
-      },
-      this.contract.call('deploy', ...this.spec.funcArgsToScVals('deploy', contractArgs))
-    );
+  deploy(contractArgs: DeployArgs): string {
+    return this.contract
+      .call('deploy', ...this.spec.funcArgsToScVals('deploy', contractArgs))
+      .toXDR('base64');
   }
 }
