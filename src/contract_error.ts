@@ -56,6 +56,8 @@ export enum ContractErrorType {
   InvalidRewardZoneEntry = 1002,
   InsufficientFunds = 1003,
   NotPool = 1004,
+  InvalidShareMintAmount = 1005,
+  InvalidTokenWithdrawAmount = 1006,
 
   // Pool Request Errors (start at 1200)
   PoolBadRequest = 1200,
