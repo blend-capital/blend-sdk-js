@@ -10,18 +10,6 @@ export * from './backstop_user.js';
 export * from './backstop_user_est.js';
 export * from './backstop_user_types.js';
 
-export enum BackstopError {
-  BadRequest = 1,
-  InvalidBalance = 2,
-  NotExpired = 3,
-  InvalidRewardZoneEntry = 4,
-  NotAuthorized = 5,
-  InsufficientFunds = 6,
-  AlreadyInitialized = 7,
-  NotPool = 10,
-  NegativeAmount = 11,
-}
-
 export interface PoolUserKey {
   pool: string;
   user: string;

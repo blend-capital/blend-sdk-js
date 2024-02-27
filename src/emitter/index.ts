@@ -1,14 +1,23 @@
 import { Address, xdr } from 'stellar-sdk';
+import { u64 } from '../index.js';
 
 export * from './emitter_client.js';
 export * from './emitter_config.js';
 
-export enum EmitterError {
-  AlreadyInitialized = 10,
-  NotAuthorized = 20,
-  InsufficientBackstopSize = 30,
+export interface Swap {
+  /**
+    
+    */
+  new_backstop: string;
+  /**
+    
+    */
+  new_backstop_token: string;
+  /**
+    
+    */
+  unlock_time: u64;
 }
-
 export type EmitterDataKey =
   | { tag: 'LastDistro'; values: readonly [string] }
   | { tag: 'Dropped'; values: readonly [string] };
