@@ -129,20 +129,12 @@ export class ContractResponse<T> {
       response.resources = new Resources(0, 0, 0, 0, 0, 0, 0);
     } else if (SorobanRpc.Api.isSimulationRestore(simulation)) {
       response.result = new Err(
-        new ContractError(
-          ContractErrorType.InvokeHostFunctionEntryArchived,
-          JSON.stringify(simulation.restorePreamble)
-        )
+        new ContractError(ContractErrorType.InvokeHostFunctionEntryArchived)
       );
       response.resources = Resources.fromTransaction(transaction.toEnvelope());
     } else {
       if (!simulation.result) {
-        response.result = new Err(
-          new ContractError(
-            ContractErrorType.UnknownError,
-            "Expected an invocation simulation, but got no 'result' field."
-          )
-        );
+        response.result = new Err(new ContractError(ContractErrorType.UnknownError));
         response.resources = new Resources(0, 0, 0, 0, 0, 0, 0);
       } else {
         response.result = new Ok(parser(simulation.result.retval!.toXDR('base64')));
@@ -175,9 +167,7 @@ export class ContractResponse<T> {
         response.result = new Ok(undefined as T);
       }
     } else if (txResponse.status === SorobanRpc.Api.GetTransactionStatus.NOT_FOUND) {
-      response.result = new Err(
-        new ContractError(ContractErrorType.UnknownError, 'Transaction failed! Unable to find tx.')
-      );
+      response.result = new Err(new ContractError(ContractErrorType.UnknownError));
     } else {
       response.result = new Err(parseError(txResponse.resultXdr));
     }

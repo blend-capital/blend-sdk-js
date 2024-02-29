@@ -6,8 +6,8 @@ export class ContractError extends Error {
    */
   public type: ContractErrorType;
 
-  constructor(type: ContractErrorType, message: string) {
-    super(message);
+  constructor(type: ContractErrorType) {
+    super();
     this.type = type;
   }
 }
@@ -98,9 +98,9 @@ export function parseError(
     if (match) {
       let errorValue = parseInt(match[1], 10);
       if (errorValue in ContractErrorType)
-        return new ContractError(errorValue as ContractErrorType, errorResult.error);
+        return new ContractError(errorValue as ContractErrorType);
     }
-    return new ContractError(ContractErrorType.UnknownError, errorResult.error);
+    return new ContractError(ContractErrorType.UnknownError);
   } else {
     // Transaction submission failed
     const txErrorName = errorResult.result().switch().name;
@@ -116,10 +116,7 @@ export function parseError(
           .invokeHostFunctionResult()
           .switch().value;
         if (hostFunctionError in ContractErrorType)
-          return new ContractError(
-            hostFunctionError as ContractErrorType,
-            JSON.stringify(errorResult, null, 2)
-          );
+          return new ContractError(hostFunctionError as ContractErrorType);
       }
     }
 
@@ -127,13 +124,10 @@ export function parseError(
     const txErrorValue = errorResult.result().switch().value - 7;
     // Use TransactionResultCode with more specific errors
     if (txErrorValue in ContractErrorType) {
-      return new ContractError(
-        txErrorValue as ContractErrorType,
-        JSON.stringify(errorResult, null, 2)
-      );
+      return new ContractError(txErrorValue as ContractErrorType);
     }
 
     // If the error is not recognized, return an unknown error
-    return new ContractError(ContractErrorType.UnknownError, JSON.stringify(errorResult, null, 2));
+    return new ContractError(ContractErrorType.UnknownError);
   }
 }
