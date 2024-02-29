@@ -82,7 +82,7 @@ export class PoolUserEst {
         const asset_supply = reserve.toAssetFromDToken(value);
         const base_supply = asset_supply * reserve.oraclePrice;
         totalSupplied += base_supply;
-        supplyApy += base_supply * reserve.estimates.apy;
+        supplyApy += base_supply * reserve.estimates.apy * reserve.estimates.util;
         supply.set(reserve.assetId, asset_supply);
       } else {
         throw new Error(`Unable to find reserve for supply balance: ${key}`);
