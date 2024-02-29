@@ -1,6 +1,6 @@
-import { Account, SorobanRpc, TransactionBuilder, xdr } from 'stellar-sdk';
+import { Account, SorobanRpc, TransactionBuilder, xdr, Contract } from 'stellar-sdk';
 import {
-  BackstopClient,
+  BackstopContract,
   BackstopUser,
   ContractResponse,
   Network,
@@ -43,8 +43,8 @@ export class Backstop {
   ): Promise<Backstop> {
     const config_promise = BackstopConfig.load(network, id);
     // @dev: Sim only to prevent submitting the transaction, use random public key
-    let backstopClient = new BackstopClient(id);
-    const op = backstopClient.updateTokenValue();
+    let backstopContract = new BackstopContract(id);
+    const op = backstopContract.updateTokenValue();
     let rpc = new SorobanRpc.Server(network.rpc, network.opts);
     let tx_builder = new TransactionBuilder(new Account('GABCD', '123'), { fee: '100' });
     tx_builder.addOperation(xdr.Operation.fromXDR(op, 'base64'));
@@ -56,7 +56,7 @@ export class Backstop {
       lp_value_sim,
       tx,
       network.passphrase,
-      backstopClient.parsers['updateTokenValue']
+      backstopContract.parsers['updateTokenValue']
     );
     if (lp_value_resp.result.isOk()) {
       const [blndPerShare, usdcPerShare] = lp_value_resp.result.unwrap();

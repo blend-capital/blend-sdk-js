@@ -49,7 +49,7 @@ export interface NewLiqudiationAuctionArgs {
   percent_liquidated: u64;
 }
 
-export class PoolClient {
+export class PoolContract {
   contract: Contract;
   spec: ContractSpec;
 

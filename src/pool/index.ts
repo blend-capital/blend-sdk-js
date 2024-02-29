@@ -2,7 +2,7 @@ import { Address, xdr } from 'stellar-sdk';
 import { i128, u32, u64 } from '../index.js';
 
 export * from './pool.js';
-export * from './pool_client.js';
+export * from './pool_contract.js';
 export * from './pool_config.js';
 export * from './pool_est.js';
 export * from './pool_user.js';

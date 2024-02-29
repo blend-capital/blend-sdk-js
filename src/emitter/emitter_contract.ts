@@ -14,7 +14,7 @@ export interface QueueSwapBackstopArgs {
   new_backstop_token: Address | string;
 }
 
-export class EmitterClient {
+export class EmitterContract {
   contract: Contract;
   spec: ContractSpec;
 

@@ -12,7 +12,7 @@ export interface DeployArgs {
   max_positions: number;
 }
 
-export class PoolFactoryClient {
+export class PoolFactoryContract {
   contract: Contract;
   spec: ContractSpec;
 

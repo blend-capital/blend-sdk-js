@@ -36,7 +36,7 @@ export interface DrawArgs {
   amount: i128;
 }
 
-export class BackstopClient {
+export class BackstopContract {
   contract: Contract;
   spec: ContractSpec;
 
