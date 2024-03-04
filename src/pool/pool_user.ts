@@ -2,15 +2,16 @@ import { SorobanRpc, xdr } from 'stellar-sdk';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 import { Pool } from './pool.js';
-import { PoolUserEst } from './pool_user_est.js';
+import { PositionEstimates } from './user_position_est.js';
 import { PoolUserEmissionData, UserPositions } from './pool_user_types.js';
-
+import { EmissionEstimates } from './emission_est.js';
 export class PoolUser {
   constructor(
     public user: string,
     public positions: UserPositions,
     public emissions: Map<number, PoolUserEmissionData>,
-    public estimates: PoolUserEst,
+    public positionEstimates: PositionEstimates,
+    public emissionEstimates: EmissionEstimates,
     public latestLedger: number
   ) {}
 
@@ -50,7 +51,15 @@ export class PoolUser {
       }
     }
 
-    const pool_user_est = PoolUserEst.build(pool, positions, emissions, pool.timestamp);
-    return new PoolUser(user, positions, emissions, pool_user_est, ledgerEntries.latestLedger);
+    const pool_user_est = PositionEstimates.build(pool, positions, pool.timestamp);
+    const emission_est = EmissionEstimates.build(pool, positions, emissions, pool.timestamp);
+    return new PoolUser(
+      user,
+      positions,
+      emissions,
+      pool_user_est,
+      emission_est,
+      ledgerEntries.latestLedger
+    );
   }
 }
