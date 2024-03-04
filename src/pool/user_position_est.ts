@@ -37,7 +37,7 @@ export class PositionEstimates {
     let borrowApy = 0;
 
     // translate ledger liabilities to floating point values
-    Array.from(positions.liabilities).forEach(([key, value]) => {
+    for (const [key, value] of positions.liabilities) {
       const reserve = pool.reserves.get(reserve_list[key]);
       if (reserve) {
         const asset_liability = reserve.toAssetFromDToken(value);
@@ -51,10 +51,10 @@ export class PositionEstimates {
       } else {
         throw new Error(`Unable to find reserve for liability balance: ${key}`);
       }
-    });
+    }
 
     // translate ledger collateral to floating point values
-    Array.from(positions.collateral).forEach(([key, value]) => {
+    for (const [key, value] of positions.collateral) {
       const reserve = pool.reserves.get(reserve_list[key]);
       if (reserve) {
         const asset_collateral = reserve.toAssetFromBToken(value);
@@ -68,13 +68,13 @@ export class PositionEstimates {
       } else {
         throw new Error(`Unable to find reserve for collateral balance: ${key}`);
       }
-    });
+    }
 
     // translate ledger supply to floating point values
-    Array.from(positions.supply).forEach(([key, value]) => {
+    for (const [key, value] of positions.supply) {
       const reserve = pool.reserves.get(reserve_list[key]);
       if (reserve) {
-        const asset_supply = reserve.toAssetFromDToken(value);
+        const asset_supply = reserve.toAssetFromBToken(value);
         const base_supply = asset_supply * reserve.oraclePrice;
         totalSupplied += base_supply;
         supplyApy += base_supply * reserve.estimates.apy * reserve.estimates.util;
@@ -82,7 +82,7 @@ export class PositionEstimates {
       } else {
         throw new Error(`Unable to find reserve for supply balance: ${key}`);
       }
-    });
+    }
 
     let borrowCap = totalEffectiveCollateral - totalEffectiveLiabilities;
     let borrowlimit = totalEffectiveLiabilities / totalEffectiveCollateral;
