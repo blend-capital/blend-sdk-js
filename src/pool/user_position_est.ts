@@ -18,12 +18,10 @@ export class PositionEstimates {
 
     public netApy: number,
     public supplyApy: number,
-    public borrowApy: number,
-
-    public timestamp: number
+    public borrowApy: number
   ) {}
 
-  public static build(pool: Pool, positions: UserPositions, timestamp: number): PositionEstimates {
+  public static build(pool: Pool, positions: UserPositions): PositionEstimates {
     const reserve_list = pool.config.reserveList;
 
     const liabilities = new Map<string, number>();
@@ -104,8 +102,7 @@ export class PositionEstimates {
 
       netApy,
       supplyApy,
-      borrowApy,
-      timestamp
+      borrowApy
     );
   }
 }

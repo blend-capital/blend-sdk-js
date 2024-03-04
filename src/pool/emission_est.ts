@@ -5,7 +5,11 @@ export class EmissionEstimates {
   /**
    * Emissions for a reserve where the value is [dTokenEmissions, bTokenEmissions]
    */
-  constructor(public emissions: Map<string, [number, number]>, public totalEmissions: number) {}
+  constructor(
+    public emissions: Map<string, [number, number]>,
+    public totalEmissions: number,
+    public timestamp: number
+  ) {}
 
   public static build(
     pool: Pool,
@@ -51,6 +55,6 @@ export class EmissionEstimates {
         throw new Error(`Unable to find reserve for emissions: ${Math.floor(key / 2)}`);
       }
     });
-    return new EmissionEstimates(accrued_emissions, totalEmissions);
+    return new EmissionEstimates(accrued_emissions, totalEmissions, timestamp);
   }
 }

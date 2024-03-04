@@ -51,7 +51,7 @@ export class PoolUser {
       }
     }
 
-    const pool_user_est = PositionEstimates.build(pool, positions, pool.timestamp);
+    const pool_user_est = PositionEstimates.build(pool, positions);
     const emission_est = EmissionEstimates.build(pool, positions, emissions, pool.timestamp);
     return new PoolUser(
       user,
