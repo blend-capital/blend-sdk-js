@@ -50,12 +50,14 @@ export class Backstop {
     let lp_value_promise = rpc.simulateTransaction(tx);
 
     const [config, lp_value_sim] = await Promise.all([config_promise, lp_value_promise]);
+    console.log(lp_value_sim);
     let lp_value_resp: ContractResponse<[i128, i128]> = ContractResponse.fromSimulationResponse(
       lp_value_sim,
-      tx,
+      tx.toXDR(),
       network.passphrase,
-      backstopContract.parsers['updateTokenValue']
+      backstopContract.parsers['updateTknVal']
     );
+    console.log(lp_value_resp);
     if (lp_value_resp.result.isOk()) {
       const [blndPerShare, usdcPerShare] = lp_value_resp.result.unwrap();
       const blndPerShareFloat = Number(blndPerShare) / 1e7;

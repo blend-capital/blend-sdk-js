@@ -90,7 +90,7 @@ export class BackstopContract {
     drop: () => {},
     draw: () => {},
     donate: () => {},
-    updateTknVal: (result: string): readonly [i128, i128] =>
+    updateTknVal: (result: string): [i128, i128] =>
       this.spec.funcResToNative('update_tkn_val', result),
   };
 
