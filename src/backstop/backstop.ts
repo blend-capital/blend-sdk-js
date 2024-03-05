@@ -52,9 +52,9 @@ export class Backstop {
     const [config, lp_value_sim] = await Promise.all([config_promise, lp_value_promise]);
     let lp_value_resp: ContractResponse<[i128, i128]> = ContractResponse.fromSimulationResponse(
       lp_value_sim,
-      tx,
+      tx.toXDR(),
       network.passphrase,
-      backstopContract.parsers['updateTokenValue']
+      backstopContract.parsers.updateTknVal
     );
     if (lp_value_resp.result.isOk()) {
       const [blndPerShare, usdcPerShare] = lp_value_resp.result.unwrap();
