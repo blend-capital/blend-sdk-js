@@ -1,6 +1,5 @@
 import { Address, Contract, ContractSpec } from 'stellar-sdk';
-import { ContractResult, Network, TxOptions } from '../index.js';
-import { invokeOperation } from '../tx.js';
+import { i128, u64, Option, Swap } from '../index.js';
 
 // @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
 
@@ -15,13 +14,11 @@ export interface QueueSwapBackstopArgs {
   new_backstop_token: Address | string;
 }
 
-export class EmitterClient {
-  address: string;
-  private contract: Contract;
+export class EmitterContract {
+  contract: Contract;
   spec: ContractSpec;
 
   constructor(address: string) {
-    this.address = address;
     this.contract = new Contract(address);
     // @dev: Generated from soroban-cli Typescript bindings
     this.spec = new ContractSpec([
@@ -40,91 +37,53 @@ export class EmitterClient {
     ]);
   }
 
-  async initialize(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    contractArgs: EmitterInitializeArgs
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call('initialize', ...this.spec.funcArgsToScVals('initialize', contractArgs))
-    );
+  readonly parsers = {
+    initialize: () => {},
+    distribute: (result: string): i128 => this.spec.funcResToNative('distribute', result),
+    getLastDistro: (result: string): u64 => this.spec.funcResToNative('get_last_distro', result),
+    getBackstop: (result: string): string => this.spec.funcResToNative('get_backstop', result),
+    queueSwapBackstop: () => {},
+    getQueuedSwap: (result: string): Option<Swap> =>
+      this.spec.funcResToNative('get_queued_swap', result),
+    cancelSwapBackstop: () => {},
+    swapBackstop: () => {},
+    drop: () => {},
+  };
+
+  initialize(contractArgs: EmitterInitializeArgs): string {
+    return this.contract
+      .call('initialize', ...this.spec.funcArgsToScVals('initialize', contractArgs))
+      .toXDR('base64');
   }
 
-  async distribute(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call('distribute', ...this.spec.funcArgsToScVals('distribute', {}))
-    );
+  distribute(): string {
+    return this.contract
+      .call('distribute', ...this.spec.funcArgsToScVals('distribute', {}))
+      .toXDR('base64');
   }
 
-  async queueSwapBackstop(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions,
-    contractArgs: QueueSwapBackstopArgs
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call(
+  queueSwapBackstop(contractArgs: QueueSwapBackstopArgs): string {
+    return this.contract
+      .call(
         'queue_swap_backstop',
         ...this.spec.funcArgsToScVals('queue_swap_backstop', contractArgs)
       )
-    );
+      .toXDR('base64');
   }
 
-  async cancelSwapBackstop(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call(
-        'cancel_swap_backstop',
-        ...this.spec.funcArgsToScVals('cancel_swap_backstop', {})
-      )
-    );
+  cancelSwapBackstop(): string {
+    return this.contract
+      .call('cancel_swap_backstop', ...this.spec.funcArgsToScVals('cancel_swap_backstop', {}))
+      .toXDR('base64');
   }
 
-  async swapBackstop(
-    source: string,
-    sign: (txXdr: string) => Promise<string>,
-    network: Network,
-    txOptions: TxOptions
-  ): Promise<ContractResult<undefined>> {
-    return await invokeOperation<undefined>(
-      source,
-      sign,
-      network,
-      txOptions,
-      () => undefined,
-      this.contract.call('swap_backstop', ...this.spec.funcArgsToScVals('swap_backstop', {}))
-    );
+  swapBackstop(): string {
+    return this.contract
+      .call('swap_backstop', ...this.spec.funcArgsToScVals('swap_backstop', {}))
+      .toXDR('base64');
+  }
+
+  drop(): string {
+    return this.contract.call('drop', ...this.spec.funcArgsToScVals('drop', {})).toXDR('base64');
   }
 }

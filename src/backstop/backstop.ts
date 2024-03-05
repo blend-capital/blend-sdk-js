@@ -1,4 +1,5 @@
-import { BackstopClient, BackstopUser, Network } from '../index.js';
+import { Account, SorobanRpc, TransactionBuilder, xdr, TimeoutInfinite } from 'stellar-sdk';
+import { BackstopContract, BackstopUser, ContractResponse, Network, i128 } from '../index.js';
 import { BackstopConfig } from './backstop_config.js';
 import { BackstopPool } from './backstop_pool.js';
 
@@ -35,33 +36,28 @@ export class Backstop {
   ): Promise<Backstop> {
     const config_promise = BackstopConfig.load(network, id);
     // @dev: Sim only to prevent submitting the transaction, use random public key
-    const lp_value_promise = new BackstopClient(id).updateTokenValue(
-      'GANXGJV2RNOFMOSQ2DTI3RKDBAVERXUVFC27KW3RLVQCLB3RYNO3AAI4',
-      (txXdr: string): Promise<string> => {
-        return new Promise(() => {
-          txXdr;
-        });
-      },
-      network,
-      {
-        sim: true,
-        pollingInterval: 2000,
-        timeout: 30000,
-        builderOptions: {
-          fee: '10000',
-          timebounds: {
-            minTime: 0,
-            maxTime: 0,
-          },
-          networkPassphrase: network.passphrase,
-        },
-      }
+    let backstopContract = new BackstopContract(id);
+    const op = backstopContract.updateTokenValue();
+    let rpc = new SorobanRpc.Server(network.rpc, network.opts);
+    let tx = new TransactionBuilder(
+      new Account('GANXGJV2RNOFMOSQ2DTI3RKDBAVERXUVFC27KW3RLVQCLB3RYNO3AAI4', '123'),
+      { fee: '100', networkPassphrase: network.passphrase }
+    )
+      .setTimeout(TimeoutInfinite)
+      .addOperation(xdr.Operation.fromXDR(op, 'base64'))
+      .build();
+
+    let lp_value_promise = rpc.simulateTransaction(tx);
+
+    const [config, lp_value_sim] = await Promise.all([config_promise, lp_value_promise]);
+    let lp_value_resp: ContractResponse<[i128, i128]> = ContractResponse.fromSimulationResponse(
+      lp_value_sim,
+      tx.toXDR(),
+      network.passphrase,
+      backstopContract.parsers.updateTknVal
     );
-
-    const [config, lp_value] = await Promise.all([config_promise, lp_value_promise]);
-
-    if (lp_value.ok) {
-      const [blndPerShare, usdcPerShare] = lp_value.unwrap();
+    if (lp_value_resp.result.isOk()) {
+      const [blndPerShare, usdcPerShare] = lp_value_resp.result.unwrap();
       const blndPerShareFloat = Number(blndPerShare) / 1e7;
       const usdcPerShareFloat = Number(usdcPerShare) / 1e7;
       const blndToUsdcLpRate = usdcPerShareFloat / 0.2 / (blndPerShareFloat / 0.8);

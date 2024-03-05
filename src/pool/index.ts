@@ -2,7 +2,7 @@ import { Address, xdr } from 'stellar-sdk';
 import { i128, u32, u64 } from '../index.js';
 
 export * from './pool.js';
-export * from './pool_client.js';
+export * from './pool_contract.js';
 export * from './pool_config.js';
 export * from './pool_est.js';
 export * from './pool_user.js';
@@ -11,28 +11,6 @@ export * from './pool_user_types.js';
 export * from './reserve.js';
 export * from './reserve_est.js';
 export * from './reserve_types.js';
-
-export enum PoolError {
-  NotAuthorized = 1,
-  BadRequest = 2,
-  AlreadyInitialized = 3,
-  NegativeAmount = 4,
-  InvalidPoolInitArgs = 5,
-  InvalidReserveMetadata = 6,
-  InvalidHf = 10,
-  InvalidPoolStatus = 11,
-  InvalidUtilRate = 12,
-  EmissionFailure = 20,
-  InvalidLiquidation = 100,
-  InvalidLot = 101,
-  InvalidBids = 102,
-  AuctionInProgress = 103,
-  InvalidAuctionType = 104,
-  InvalidLotTooLarge = 105,
-  InvalidLotTooSmall = 106,
-  InvalidBidTooLarge = 107,
-  InvalidBidTooSmall = 108,
-}
 
 /**
  * Metadata for a pool's reserve emission configuration

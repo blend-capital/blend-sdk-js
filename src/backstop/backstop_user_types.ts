@@ -100,7 +100,7 @@ export class UserBalance {
                     throw Error(`Invalid Q4W key: should not contain ${q4wKey}`);
                 }
               }
-              if (!amount || !exp) {
+              if (amount == undefined || exp == undefined) {
                 throw Error(`Malformed Q4W scvMap`);
               }
               return { amount, exp };
@@ -110,8 +110,8 @@ export class UserBalance {
           throw Error(`Invalid backstop UserBalance key: should not contain ${key}`);
       }
     }
-    if (!shares) {
-      throw Error('Malformed backstop UserBalance scvMap');
+    if (shares == undefined) {
+      throw Error("Invalid UserBalance: should contain 'shares'");
     }
     return new UserBalance(shares, q4w);
   }
