@@ -14,7 +14,7 @@ export class PositionEstimates {
     public totalEffectiveCollateral: number,
 
     public borrowCap: number,
-    public borrowlimit: number,
+    public borrowLimit: number,
 
     public netApy: number,
     public supplyApy: number,
@@ -83,7 +83,7 @@ export class PositionEstimates {
     }
 
     let borrowCap = totalEffectiveCollateral - totalEffectiveLiabilities;
-    let borrowlimit = totalEffectiveLiabilities / totalEffectiveCollateral;
+    let borrowLimit = totalEffectiveLiabilities / totalEffectiveCollateral;
     const netApy = (supplyApy - borrowApy) / (totalBorrowed + totalSupplied);
     supplyApy /= totalSupplied;
     borrowApy /= totalBorrowed;
@@ -98,7 +98,7 @@ export class PositionEstimates {
       totalEffectiveLiabilities,
       totalEffectiveCollateral,
       borrowCap,
-      borrowlimit,
+      borrowLimit,
 
       netApy,
       supplyApy,
