@@ -1,39 +1,32 @@
 import { Pool } from './pool.js';
 import { PoolUserEmissionData, UserPositions } from './pool_user_types.js';
+import { Reserve } from './reserve.js';
 
-export class PoolUserEst {
+export class PositionEstimates {
   constructor(
     public liabilities: Map<string, number>,
     public collateral: Map<string, number>,
     public supply: Map<string, number>,
-    /**
-     * Emissions for a reserve where the value is [dTokenEmissions, bTokenEmissions]
-     */
-    public emissions: Map<string, [number, number]>,
-    public totalEmissions: number,
+
     public totalBorrowed: number,
     public totalSupplied: number,
     public totalEffectiveLiabilities: number,
     public totalEffectiveCollateral: number,
-    public supplyApy: number,
-    public borrowApy: number,
+
+    public borrowCap: number,
+    public borrowLimit: number,
+
     public netApy: number,
-    public timestamp: number
+    public supplyApy: number,
+    public borrowApy: number
   ) {}
 
-  public static build(
-    pool: Pool,
-    positions: UserPositions,
-    emissions: Map<number, PoolUserEmissionData>,
-    timestamp: number
-  ): PoolUserEst {
+  public static build(pool: Pool, positions: UserPositions): PositionEstimates {
     const reserve_list = pool.config.reserveList;
 
     const liabilities = new Map<string, number>();
     const collateral = new Map<string, number>();
     const supply = new Map<string, number>();
-    const accrued_emissions = new Map<string, [number, number]>();
-    let totalEmissions = 0;
     let totalBorrowed = 0;
     let totalSupplied = 0;
     let totalEffectiveLiabilities = 0;
@@ -42,7 +35,7 @@ export class PoolUserEst {
     let borrowApy = 0;
 
     // translate ledger liabilities to floating point values
-    positions.liabilities.forEach((value, key) => {
+    for (const [key, value] of positions.liabilities) {
       const reserve = pool.reserves.get(reserve_list[key]);
       if (reserve) {
         const asset_liability = reserve.toAssetFromDToken(value);
@@ -56,10 +49,10 @@ export class PoolUserEst {
       } else {
         throw new Error(`Unable to find reserve for liability balance: ${key}`);
       }
-    });
+    }
 
     // translate ledger collateral to floating point values
-    positions.collateral.forEach((value, key) => {
+    for (const [key, value] of positions.collateral) {
       const reserve = pool.reserves.get(reserve_list[key]);
       if (reserve) {
         const asset_collateral = reserve.toAssetFromBToken(value);
@@ -73,13 +66,13 @@ export class PoolUserEst {
       } else {
         throw new Error(`Unable to find reserve for collateral balance: ${key}`);
       }
-    });
+    }
 
     // translate ledger supply to floating point values
-    positions.supply.forEach((value, key) => {
+    for (const [key, value] of positions.supply) {
       const reserve = pool.reserves.get(reserve_list[key]);
       if (reserve) {
-        const asset_supply = reserve.toAssetFromDToken(value);
+        const asset_supply = reserve.toAssetFromBToken(value);
         const base_supply = asset_supply * reserve.oraclePrice;
         totalSupplied += base_supply;
         supplyApy += base_supply * reserve.estimates.apy * reserve.estimates.util;
@@ -87,62 +80,29 @@ export class PoolUserEst {
       } else {
         throw new Error(`Unable to find reserve for supply balance: ${key}`);
       }
-    });
+    }
 
-    // accrue emission values
-    // TODO: Refactor such that we catch emissions that are not created yet (user position created before emissions)
-    emissions.forEach((value, key) => {
-      const reserve = pool.reserves.get(reserve_list[Math.floor(key / 2)]);
-      if (reserve) {
-        if (key % 2 == 0 && reserve.borrowEmissions) {
-          // dToken emission
-          const dTokenAccrual = value.estimateAccrual(
-            timestamp,
-            reserve.borrowEmissions,
-            reserve.config.decimals,
-            reserve.data.dSupply,
-            positions.liabilities.get(reserve.config.index) ?? BigInt(0)
-          );
-          totalEmissions += dTokenAccrual;
-          const cur_value = accrued_emissions.get(reserve.assetId);
-          accrued_emissions.set(reserve.assetId, [dTokenAccrual, cur_value ? cur_value[1] : 0]);
-        } else if (reserve.supplyEmissions) {
-          // bToken emission
-          const bTokenAccrual = value.estimateAccrual(
-            timestamp,
-            reserve.supplyEmissions,
-            reserve.config.decimals,
-            reserve.data.bSupply,
-            (positions.collateral.get(reserve.config.index) ?? BigInt(0)) +
-              (positions.supply.get(reserve.config.index) ?? BigInt(0))
-          );
-          totalEmissions += bTokenAccrual;
-          const cur_value = accrued_emissions.get(reserve.assetId);
-          accrued_emissions.set(reserve.assetId, [cur_value ? cur_value[0] : 0, bTokenAccrual]);
-        }
-      } else {
-        throw new Error(`Unable to find reserve for emissions: ${Math.floor(key / 2)}`);
-      }
-    });
-
+    let borrowCap = totalEffectiveCollateral - totalEffectiveLiabilities;
+    let borrowLimit = totalEffectiveLiabilities / totalEffectiveCollateral;
     const netApy = (supplyApy - borrowApy) / (totalBorrowed + totalSupplied);
     supplyApy /= totalSupplied;
     borrowApy /= totalBorrowed;
 
-    return new PoolUserEst(
+    return new PositionEstimates(
       liabilities,
       collateral,
       supply,
-      accrued_emissions,
-      totalEmissions,
+
       totalBorrowed,
       totalSupplied,
       totalEffectiveLiabilities,
       totalEffectiveCollateral,
-      supplyApy,
-      borrowApy,
+      borrowCap,
+      borrowLimit,
+
       netApy,
-      timestamp
+      supplyApy,
+      borrowApy
     );
   }
 }
