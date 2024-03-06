@@ -11,6 +11,7 @@ export class ReserveConfig {
     public l_factor: number,
     public util: number,
     public max_util: number,
+    public r_base: number,
     public r_one: number,
     public r_two: number,
     public r_three: number,
@@ -47,6 +48,7 @@ export class ReserveConfig {
     let l_factor: number | undefined;
     let util: number | undefined;
     let max_util: number | undefined;
+    let r_base: number | undefined;
     let r_one: number | undefined;
     let r_two: number | undefined;
     let r_three: number | undefined;
@@ -71,6 +73,9 @@ export class ReserveConfig {
           break;
         case 'max_util':
           max_util = scValToNative(map_entry.val());
+          break;
+        case 'r_base':
+          r_base = scValToNative(map_entry.val());
           break;
         case 'r_one':
           r_one = scValToNative(map_entry.val());
@@ -111,6 +116,7 @@ export class ReserveConfig {
       l_factor,
       util,
       max_util,
+      r_base,
       r_one,
       r_two,
       r_three,
