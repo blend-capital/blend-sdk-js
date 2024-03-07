@@ -12,12 +12,11 @@ export interface DeployArgs {
   max_positions: number;
 }
 
-export class PoolFactoryContract {
-  contract: Contract;
+export class PoolFactoryContract extends Contract {
   spec: ContractSpec;
 
   constructor(address: string) {
-    this.contract = new Contract(address);
+    super(address);
     // @dev: Generated from soroban-cli Typescript bindings
     this.spec = new ContractSpec([
       'AAAABAAAAKlFcnJvciBjb2RlcyBmb3IgdGhlIHBvb2wgZmFjdG9yeSBjb250cmFjdC4gQ29tbW9uIGVycm9ycyBhcmUgY29kZXMgdGhhdCBtYXRjaCB1cCB3aXRoIHRoZSBidWlsdC1pbgpjb250cmFjdHMgZXJyb3IgcmVwb3J0aW5nLiBQb29sIGZhY3Rvcnkgc3BlY2lmaWMgZXJyb3JzIHN0YXJ0IGF0IDEzMDAuAAAAAAAAAAAAABBQb29sRmFjdG9yeUVycm9yAAAAAwAAAAAAAAANSW50ZXJuYWxFcnJvcgAAAAAAAAEAAAAAAAAAF0FscmVhZHlJbml0aWFsaXplZEVycm9yAAAAAAMAAAAAAAAAE0ludmFsaWRQb29sSW5pdEFyZ3MAAAAFFA==',
@@ -35,14 +34,15 @@ export class PoolFactoryContract {
   };
 
   initialize(pool_init_meta: PoolInitMeta): string {
-    return this.contract
-      .call('initialize', ...this.spec.funcArgsToScVals('initialize', { pool_init_meta }))
-      .toXDR('base64');
+    return this.call(
+      'initialize',
+      ...this.spec.funcArgsToScVals('initialize', { pool_init_meta })
+    ).toXDR('base64');
   }
 
   deploy(contractArgs: DeployArgs): string {
-    return this.contract
-      .call('deploy', ...this.spec.funcArgsToScVals('deploy', contractArgs))
-      .toXDR('base64');
+    return this.call('deploy', ...this.spec.funcArgsToScVals('deploy', contractArgs)).toXDR(
+      'base64'
+    );
   }
 }

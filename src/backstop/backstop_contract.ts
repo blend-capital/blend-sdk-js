@@ -36,12 +36,11 @@ export interface DrawArgs {
   amount: i128;
 }
 
-export class BackstopContract {
-  contract: Contract;
+export class BackstopContract extends Contract {
   spec: ContractSpec;
 
   constructor(address: string) {
-    this.contract = new Contract(address);
+    super(address);
     // @dev: Generated from soroban-cli Typescript bindings
     this.spec = new ContractSpec([
       'AAAAAQAAABhUaGUgcG9vbCdzIGJhY2tzdG9wIGRhdGEAAAAAAAAAEFBvb2xCYWNrc3RvcERhdGEAAAAEAAAAAAAAAARibG5kAAAACwAAAAAAAAAHcTR3X3BjdAAAAAALAAAAAAAAAAZ0b2tlbnMAAAAAAAsAAAAAAAAABHVzZGMAAAAL',
@@ -95,84 +94,84 @@ export class BackstopContract {
   };
 
   initialize(contractArgs: BackstopInitializeArgs): string {
-    return this.contract
-      .call('initialize', ...this.spec.funcArgsToScVals('initialize', contractArgs))
-      .toXDR('base64');
+    return this.call('initialize', ...this.spec.funcArgsToScVals('initialize', contractArgs)).toXDR(
+      'base64'
+    );
   }
 
   deposit(contractArgs: PoolBackstopActionArgs): string {
-    return this.contract
-      .call('deposit', ...this.spec.funcArgsToScVals('deposit', contractArgs))
-      .toXDR('base64');
+    return this.call('deposit', ...this.spec.funcArgsToScVals('deposit', contractArgs)).toXDR(
+      'base64'
+    );
   }
 
   queueWithdrawal(contractArgs: PoolBackstopActionArgs): string {
-    return this.contract
-      .call('queue_withdrawal', ...this.spec.funcArgsToScVals('queue_withdrawal', contractArgs))
-      .toXDR('base64');
+    return this.call(
+      'queue_withdrawal',
+      ...this.spec.funcArgsToScVals('queue_withdrawal', contractArgs)
+    ).toXDR('base64');
   }
 
   dequeueWithdrawal(contractArgs: PoolBackstopActionArgs): string {
-    return this.contract
-      .call('dequeue_withdrawal', ...this.spec.funcArgsToScVals('dequeue_withdrawal', contractArgs))
-      .toXDR('base64');
+    return this.call(
+      'dequeue_withdrawal',
+      ...this.spec.funcArgsToScVals('dequeue_withdrawal', contractArgs)
+    ).toXDR('base64');
   }
 
   withdraw(contractArgs: PoolBackstopActionArgs): string {
-    return this.contract
-      .call('withdraw', ...this.spec.funcArgsToScVals('withdraw', contractArgs))
-      .toXDR('base64');
+    return this.call('withdraw', ...this.spec.funcArgsToScVals('withdraw', contractArgs)).toXDR(
+      'base64'
+    );
   }
 
   gulpEmissions(): string {
-    return this.contract
-      .call('gulp_emissions', ...this.spec.funcArgsToScVals('gulp_emissions', {}))
-      .toXDR('base64');
+    return this.call('gulp_emissions', ...this.spec.funcArgsToScVals('gulp_emissions', {})).toXDR(
+      'base64'
+    );
   }
 
   addReward(contractArgs: AddRewardArgs): string {
-    return this.contract
-      .call('add_reward', ...this.spec.funcArgsToScVals('add_reward', contractArgs))
-      .toXDR('base64');
+    return this.call('add_reward', ...this.spec.funcArgsToScVals('add_reward', contractArgs)).toXDR(
+      'base64'
+    );
   }
 
   claim(contractArgs: BackstopClaimArgs): string {
-    return this.contract
-      .call('claim', ...this.spec.funcArgsToScVals('claim', contractArgs))
-      .toXDR('base64');
+    return this.call('claim', ...this.spec.funcArgsToScVals('claim', contractArgs)).toXDR('base64');
   }
 
   draw(contractArgs: DrawArgs): string {
-    return this.contract
-      .call('draw', ...this.spec.funcArgsToScVals('draw', contractArgs))
-      .toXDR('base64');
+    return this.call('draw', ...this.spec.funcArgsToScVals('draw', contractArgs)).toXDR('base64');
   }
 
   donate(contractArgs: PoolBackstopActionArgs): string {
-    return this.contract
-      .call('donate', ...this.spec.funcArgsToScVals('donate', contractArgs))
-      .toXDR('base64');
+    return this.call('donate', ...this.spec.funcArgsToScVals('donate', contractArgs)).toXDR(
+      'base64'
+    );
   }
 
   donateUSDC(contractArgs: PoolBackstopActionArgs): string {
-    return this.contract
-      .call('donate_usdc', ...this.spec.funcArgsToScVals('donate_usdc', contractArgs))
-      .toXDR('base64');
+    return this.call(
+      'donate_usdc',
+      ...this.spec.funcArgsToScVals('donate_usdc', contractArgs)
+    ).toXDR('base64');
   }
 
   gulpUSDC(pool_address: Address | string): string {
-    return this.contract
-      .call('gulp_usdc', ...this.spec.funcArgsToScVals('gulp_usdc', { pool_address }))
-      .toXDR('base64');
+    return this.call(
+      'gulp_usdc',
+      ...this.spec.funcArgsToScVals('gulp_usdc', { pool_address })
+    ).toXDR('base64');
   }
 
   updateTokenValue(): string {
-    return this.contract
-      .call('update_tkn_val', ...this.spec.funcArgsToScVals('update_tkn_val', {}))
-      .toXDR('base64');
+    return this.call('update_tkn_val', ...this.spec.funcArgsToScVals('update_tkn_val', {})).toXDR(
+      'base64'
+    );
   }
 
   drop(): string {
-    return this.contract.call('drop', ...this.spec.funcArgsToScVals('drop', {})).toXDR('base64');
+    return this.call('drop', ...this.spec.funcArgsToScVals('drop', {})).toXDR('base64');
   }
 }
