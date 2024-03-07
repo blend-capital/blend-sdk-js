@@ -72,9 +72,9 @@ export class ContractResponse<T> {
       );
     } else {
       if (!simulation.result) {
-        response.result = new Err(new ContractError(ContractErrorType.UnknownError));
+        response.result = new Ok(undefined as T);
       } else {
-        response.result = new Ok(parser(simulation.result.retval!.toXDR('base64')));
+        response.result = new Ok(parser(simulation.result.retval.toXDR('base64')));
       }
     }
     return response;
