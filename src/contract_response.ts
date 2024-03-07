@@ -94,8 +94,8 @@ export class ContractResponse<T> {
 
     if (txResponse.status === SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
       // getTransactionResponse has a `returnValue` field unless it failed
-      if ('returnValue' in response) {
-        response.result = new Ok(parser(txResponse.returnValue!.toXDR('base64')));
+      if ('returnValue' in txResponse) {
+        response.result = new Ok(parser(txResponse.returnValue?.toXDR('base64')));
       }
       // if "returnValue" not present, the transaction failed; return without parsing the result
       else {
