@@ -49,12 +49,11 @@ export interface NewLiqudiationAuctionArgs {
   percent_liquidated: u64;
 }
 
-export class PoolContract {
-  contract: Contract;
+export class PoolContract extends Contract {
   spec: ContractSpec;
 
   constructor(address: string) {
-    this.contract = new Contract(address);
+    super(address);
     // @dev: Generated from soroban-cli Typescript bindings
     this.spec = new ContractSpec([
       'AAAAAQAAAAAAAAAAAAAAC0F1Y3Rpb25EYXRhAAAAAAMAAAAAAAAAA2JpZAAAAAPsAAAAEwAAAAsAAAAAAAAABWJsb2NrAAAAAAAABAAAAAAAAAADbG90AAAAA+wAAAATAAAACw==',
@@ -122,107 +121,104 @@ export class PoolContract {
   };
 
   initialize(contractArgs: PoolInitializeArgs): string {
-    return this.contract
-      .call('initialize', ...this.spec.funcArgsToScVals('initialize', contractArgs))
-      .toXDR('base64');
+    return this.call('initialize', ...this.spec.funcArgsToScVals('initialize', contractArgs)).toXDR(
+      'base64'
+    );
   }
 
   setAdmin(new_admin: Address | string): string {
-    return this.contract
-      .call('set_admin', ...this.spec.funcArgsToScVals('set_admin', { new_admin }))
-      .toXDR('base64');
+    return this.call('set_admin', ...this.spec.funcArgsToScVals('set_admin', { new_admin })).toXDR(
+      'base64'
+    );
   }
 
   updatePool(contractArgs: UpdatePoolArgs): string {
-    return this.contract
-      .call('update_pool', ...this.spec.funcArgsToScVals('update_pool', contractArgs))
-      .toXDR('base64');
+    return this.call(
+      'update_pool',
+      ...this.spec.funcArgsToScVals('update_pool', contractArgs)
+    ).toXDR('base64');
   }
 
   queueSetReserve(contractArgs: SetReserveArgs): string {
-    return this.contract
-      .call('queue_set_reserve', ...this.spec.funcArgsToScVals('queue_set_reserve', contractArgs))
-      .toXDR('base64');
+    return this.call(
+      'queue_set_reserve',
+      ...this.spec.funcArgsToScVals('queue_set_reserve', contractArgs)
+    ).toXDR('base64');
   }
 
   cancelSetReserve(asset: Address | string): string {
-    return this.contract
-      .call('cancel_set_reserve', ...this.spec.funcArgsToScVals('cancel_set_reserve', { asset }))
-      .toXDR('base64');
+    return this.call(
+      'cancel_set_reserve',
+      ...this.spec.funcArgsToScVals('cancel_set_reserve', { asset })
+    ).toXDR('base64');
   }
 
   setReserve(asset: Address | string): string {
-    return this.contract
-      .call('set_reserve', ...this.spec.funcArgsToScVals('set_reserve', { asset }))
-      .toXDR('base64');
+    return this.call('set_reserve', ...this.spec.funcArgsToScVals('set_reserve', { asset })).toXDR(
+      'base64'
+    );
   }
 
   submit(contractArgs: SubmitArgs): string {
-    return this.contract
-      .call('submit', ...this.spec.funcArgsToScVals('submit', contractArgs))
-      .toXDR('base64');
+    return this.call('submit', ...this.spec.funcArgsToScVals('submit', contractArgs)).toXDR(
+      'base64'
+    );
   }
 
   badDebt(user: Address | string): string {
-    return this.contract
-      .call('bad_debt', ...this.spec.funcArgsToScVals('bad_debt', { user }))
-      .toXDR('base64');
+    return this.call('bad_debt', ...this.spec.funcArgsToScVals('bad_debt', { user })).toXDR(
+      'base64'
+    );
   }
 
   updateStatus(): string {
-    return this.contract
-      .call('update_status', ...this.spec.funcArgsToScVals('update_status', {}))
-      .toXDR('base64');
+    return this.call('update_status', ...this.spec.funcArgsToScVals('update_status', {})).toXDR(
+      'base64'
+    );
   }
 
   setStatus(pool_status: u32): string {
-    return this.contract
-      .call('set_status', ...this.spec.funcArgsToScVals('set_status', { pool_status }))
-      .toXDR('base64');
+    return this.call(
+      'set_status',
+      ...this.spec.funcArgsToScVals('set_status', { pool_status })
+    ).toXDR('base64');
   }
 
   gulpEmissions(): string {
-    return this.contract
-      .call('gulp_emissions', ...this.spec.funcArgsToScVals('gulp_emissions', {}))
-      .toXDR('base64');
+    return this.call('gulp_emissions', ...this.spec.funcArgsToScVals('gulp_emissions', {})).toXDR(
+      'base64'
+    );
   }
 
   setEmissionsConfig(res_emission_metadata: Array<ReserveEmissionMetadata>): string {
-    return this.contract
-      .call(
-        'set_emissions_config',
-        ...this.spec.funcArgsToScVals('set_emissions_config', { res_emission_metadata })
-      )
-      .toXDR('base64');
+    return this.call(
+      'set_emissions_config',
+      ...this.spec.funcArgsToScVals('set_emissions_config', { res_emission_metadata })
+    ).toXDR('base64');
   }
 
   claim(contractArgs: PoolClaimArgs): string {
-    return this.contract
-      .call('claim', ...this.spec.funcArgsToScVals('claim', contractArgs))
-      .toXDR('base64');
+    return this.call('claim', ...this.spec.funcArgsToScVals('claim', contractArgs)).toXDR('base64');
   }
 
   newLiquidationAuction(contractArgs: NewLiqudiationAuctionArgs): string {
-    return this.contract
-      .call(
-        'new_liquidation_auction',
-        ...this.spec.funcArgsToScVals('new_liquidation_auction', contractArgs)
-      )
-      .toXDR('base64');
+    return this.call(
+      'new_liquidation_auction',
+      ...this.spec.funcArgsToScVals('new_liquidation_auction', contractArgs)
+    ).toXDR('base64');
   }
 
   newBadDebtAuction(): string {
-    return this.contract
-      .call('new_bad_debt_auction', ...this.spec.funcArgsToScVals('new_bad_debt_auction', {}))
-      .toXDR('base64');
+    return this.call(
+      'new_bad_debt_auction',
+      ...this.spec.funcArgsToScVals('new_bad_debt_auction', {})
+    ).toXDR('base64');
   }
 
   newInterestAuction(assets: Array<Address | string>): string {
-    return this.contract
-      .call(
-        'new_interest_auction',
-        ...this.spec.funcArgsToScVals('new_interest_auction', { assets })
-      )
-      .toXDR('base64');
+    return this.call(
+      'new_interest_auction',
+      ...this.spec.funcArgsToScVals('new_interest_auction', { assets })
+    ).toXDR('base64');
   }
 }

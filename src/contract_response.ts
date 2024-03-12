@@ -72,9 +72,9 @@ export class ContractResponse<T> {
       );
     } else {
       if (!simulation.result) {
-        response.result = new Err(new ContractError(ContractErrorType.UnknownError));
+        response.result = new Ok(undefined as T);
       } else {
-        response.result = new Ok(parser(simulation.result.retval!.toXDR('base64')));
+        response.result = new Ok(parser(simulation.result.retval.toXDR('base64')));
       }
     }
     return response;
@@ -94,8 +94,8 @@ export class ContractResponse<T> {
 
     if (txResponse.status === SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
       // getTransactionResponse has a `returnValue` field unless it failed
-      if ('returnValue' in response) {
-        response.result = new Ok(parser(txResponse.returnValue!.toXDR('base64')));
+      if ('returnValue' in txResponse) {
+        response.result = new Ok(parser(txResponse.returnValue?.toXDR('base64')));
       }
       // if "returnValue" not present, the transaction failed; return without parsing the result
       else {

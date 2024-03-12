@@ -14,12 +14,11 @@ export interface QueueSwapBackstopArgs {
   new_backstop_token: Address | string;
 }
 
-export class EmitterContract {
-  contract: Contract;
+export class EmitterContract extends Contract {
   spec: ContractSpec;
 
   constructor(address: string) {
-    this.contract = new Contract(address);
+    super(address);
     // @dev: Generated from soroban-cli Typescript bindings
     this.spec = new ContractSpec([
       'AAAAAQAAAAAAAAAAAAAABFN3YXAAAAADAAAAAAAAAAxuZXdfYmFja3N0b3AAAAATAAAAAAAAABJuZXdfYmFja3N0b3BfdG9rZW4AAAAAABMAAAAAAAAAC3VubG9ja190aW1lAAAAAAY=',
@@ -51,39 +50,36 @@ export class EmitterContract {
   };
 
   initialize(contractArgs: EmitterInitializeArgs): string {
-    return this.contract
-      .call('initialize', ...this.spec.funcArgsToScVals('initialize', contractArgs))
-      .toXDR('base64');
+    return this.call('initialize', ...this.spec.funcArgsToScVals('initialize', contractArgs)).toXDR(
+      'base64'
+    );
   }
 
   distribute(): string {
-    return this.contract
-      .call('distribute', ...this.spec.funcArgsToScVals('distribute', {}))
-      .toXDR('base64');
+    return this.call('distribute', ...this.spec.funcArgsToScVals('distribute', {})).toXDR('base64');
   }
 
   queueSwapBackstop(contractArgs: QueueSwapBackstopArgs): string {
-    return this.contract
-      .call(
-        'queue_swap_backstop',
-        ...this.spec.funcArgsToScVals('queue_swap_backstop', contractArgs)
-      )
-      .toXDR('base64');
+    return this.call(
+      'queue_swap_backstop',
+      ...this.spec.funcArgsToScVals('queue_swap_backstop', contractArgs)
+    ).toXDR('base64');
   }
 
   cancelSwapBackstop(): string {
-    return this.contract
-      .call('cancel_swap_backstop', ...this.spec.funcArgsToScVals('cancel_swap_backstop', {}))
-      .toXDR('base64');
+    return this.call(
+      'cancel_swap_backstop',
+      ...this.spec.funcArgsToScVals('cancel_swap_backstop', {})
+    ).toXDR('base64');
   }
 
   swapBackstop(): string {
-    return this.contract
-      .call('swap_backstop', ...this.spec.funcArgsToScVals('swap_backstop', {}))
-      .toXDR('base64');
+    return this.call('swap_backstop', ...this.spec.funcArgsToScVals('swap_backstop', {})).toXDR(
+      'base64'
+    );
   }
 
   drop(): string {
-    return this.contract.call('drop', ...this.spec.funcArgsToScVals('drop', {})).toXDR('base64');
+    return this.call('drop', ...this.spec.funcArgsToScVals('drop', {})).toXDR('base64');
   }
 }
