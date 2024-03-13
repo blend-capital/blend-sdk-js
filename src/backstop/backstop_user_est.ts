@@ -24,8 +24,8 @@ export class BackstopUserPoolEst {
     const blnd = tokens_float * backstop.blndPerLpToken;
     const usdc = tokens_float * backstop.usdcPerLpToken;
     const totalSpotValue = tokens_float * backstop.lpTokenPrice;
-    const total_q4w = user_balance.q4w.reduce((acc, cur) => acc + cur.amount, BigInt(0));
-    const notLockedShares = user_balance.shares - total_q4w;
+
+    const notLockedShares = user_balance.shares 
     let emissions = 0;
     if (pool.emissions && user_emissions) {
       emissions = user_emissions.estimateAccrual(
