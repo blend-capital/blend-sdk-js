@@ -1,6 +1,6 @@
 {
   "name": "@blend-capital/blend-sdk",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Javascript SDK for the Blend Protocol",
   "type": "module",
   "scripts": {
