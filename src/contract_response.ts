@@ -46,6 +46,8 @@ export class Err<E extends ContractError = ContractError> implements Result<any,
 export class ContractResponse<T> {
   result: Result<T, ContractError>;
   hash: string;
+  transaction?: Transaction<Memo<MemoType>, Operation[]>;
+  simulation?: SorobanRpc.Api.SimulateTransactionResponse;
 
   private constructor(result?: Result<T, ContractError>) {
     if (result) {
@@ -62,6 +64,7 @@ export class ContractResponse<T> {
     if (typeof transaction === 'string') {
       transaction = new Transaction(transaction, network_passphrase);
     }
+    response.simulation = simulation;
     response.hash = transaction.hash().toString('hex');
 
     if (SorobanRpc.Api.isSimulationError(simulation)) {
@@ -91,7 +94,7 @@ export class ContractResponse<T> {
       transaction = new Transaction(transaction, network_passphrase);
     }
     response.hash = transaction.hash().toString('hex');
-
+    response.transaction = transaction;
     if (txResponse.status === SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
       // getTransactionResponse has a `returnValue` field unless it failed
       if ('returnValue' in txResponse) {
