@@ -1,5 +1,6 @@
-import { Memo, MemoType, Operation, SorobanRpc, Transaction, xdr } from 'stellar-sdk';
+import { Memo, MemoType, Operation, SorobanRpc, Transaction } from 'stellar-sdk';
 import { ContractError, ContractErrorType, parseError } from './contract_error.js';
+
 export interface Result<T, E extends ContractError> {
   unwrap(): T;
   unwrapErr(): E;
@@ -58,7 +59,7 @@ export class ContractResponse<T> {
     network_passphrase: string,
     parser: (xdr: string) => T
   ): ContractResponse<T> {
-    let response = new ContractResponse<T>();
+    const response = new ContractResponse<T>();
     if (typeof transaction === 'string') {
       transaction = new Transaction(transaction, network_passphrase);
     }
@@ -86,7 +87,7 @@ export class ContractResponse<T> {
     network_passphrase: string,
     parser: (xdr: string) => T
   ): ContractResponse<T> {
-    let response = new ContractResponse<T>();
+    const response = new ContractResponse<T>();
     if (typeof transaction === 'string') {
       transaction = new Transaction(transaction, network_passphrase);
     }

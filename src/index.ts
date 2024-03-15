@@ -1,15 +1,15 @@
 import { Buffer } from 'buffer';
-import { Horizon, SorobanRpc, TransactionBuilder } from 'stellar-sdk';
+import { Horizon } from 'stellar-sdk';
 
 export * from './backstop/index.js';
 export * from './emitter/index.js';
 export * from './pool/index.js';
 export * from './pool_factory/index.js';
 
+export { ContractError, ContractErrorType } from './contract_error.js';
 export * from './contract_response.js';
 export { Emissions } from './emissions.js';
 export { TokenMetadata } from './token.js';
-export { ContractErrorType, ContractError } from './contract_error.js';
 
 export type u32 = number;
 export type i32 = number;

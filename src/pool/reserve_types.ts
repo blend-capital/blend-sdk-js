@@ -130,8 +130,8 @@ export class ReserveData {
     public dRate: bigint,
     public bRate: bigint,
     public interestRateModifier: bigint,
-    public bSupply: bigint,
     public dSupply: bigint,
+    public bSupply: bigint,
     public backstopCredit: bigint,
     public lastTime: bigint
   ) {}
@@ -164,8 +164,8 @@ export class ReserveData {
     let d_rate: bigint | undefined;
     let b_rate: bigint | undefined;
     let ir_mod: bigint | undefined;
-    let b_supply: bigint | undefined;
     let d_supply: bigint | undefined;
+    let b_supply: bigint | undefined;
     let backstop_credit: bigint | undefined;
     let last_time: bigint | undefined;
     for (const map_entry of data_entry_map) {
@@ -180,11 +180,11 @@ export class ReserveData {
         case 'ir_mod':
           ir_mod = scValToNative(map_entry.val());
           break;
-        case 'b_supply':
-          b_supply = scValToNative(map_entry.val());
-          break;
         case 'd_supply':
           d_supply = scValToNative(map_entry.val());
+          break;
+        case 'b_supply':
+          b_supply = scValToNative(map_entry.val());
           break;
         case 'backstop_credit':
           backstop_credit = scValToNative(map_entry.val());
@@ -201,15 +201,15 @@ export class ReserveData {
       d_rate == undefined ||
       b_rate == undefined ||
       ir_mod == undefined ||
-      b_supply == undefined ||
       d_supply == undefined ||
+      b_supply == undefined ||
       backstop_credit == undefined ||
       last_time == undefined
     ) {
       throw Error('Error: ReserveData scvMap value malformed');
     }
 
-    return new ReserveData(d_rate, b_rate, ir_mod, b_supply, d_supply, backstop_credit, last_time);
+    return new ReserveData(d_rate, b_rate, ir_mod, d_supply, b_supply, backstop_credit, last_time);
   }
 }
 

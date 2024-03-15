@@ -5,7 +5,7 @@ test('token metadata native SAC', () => {
     'AAAABgAAAAAAAAABfcHs35M1GZ/JkY2+DHMs4dEUaqjynMnDYK/Gp0eulN8AAAAUAAAAAQAAABMAAAABAAAAAQAAAAIAAAAPAAAACE1FVEFEQVRBAAAAEQAAAAEAAAADAAAADwAAAAdkZWNpbWFsAAAAAAMAAAAHAAAADwAAAARuYW1lAAAADgAAAAZuYXRpdmUAAAAAAA8AAAAGc3ltYm9sAAAAAAAOAAAABm5hdGl2ZQAAAAAAEAAAAAEAAAABAAAADwAAAAlBc3NldEluZm8AAAAAAAAQAAAAAQAAAAEAAAAPAAAABk5hdGl2ZQAA';
   const resouces = TokenMetadata.fromLedgerEntryData(xdr_string);
   expect(resouces.name).toEqual('native');
-  expect(resouces.symbol).toEqual('native');
+  expect(resouces.symbol).toEqual('XLM');
   expect(resouces.decimals).toEqual(7);
   expect(resouces.asset?.getCode()).toEqual('XLM');
   expect(resouces.asset?.getIssuer()).toEqual(undefined);

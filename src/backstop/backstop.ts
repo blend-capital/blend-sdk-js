@@ -1,4 +1,4 @@
-import { Account, SorobanRpc, TransactionBuilder, xdr, TimeoutInfinite } from 'stellar-sdk';
+import { Account, SorobanRpc, TimeoutInfinite, TransactionBuilder, xdr } from 'stellar-sdk';
 import { BackstopContract, BackstopUser, ContractResponse, Network, i128 } from '../index.js';
 import { BackstopConfig } from './backstop_config.js';
 import { BackstopPool } from './backstop_pool.js';
@@ -36,10 +36,10 @@ export class Backstop {
   ): Promise<Backstop> {
     const config_promise = BackstopConfig.load(network, id);
     // @dev: Sim only to prevent submitting the transaction, use random public key
-    let backstopContract = new BackstopContract(id);
+    const backstopContract = new BackstopContract(id);
     const op = backstopContract.updateTokenValue();
-    let rpc = new SorobanRpc.Server(network.rpc, network.opts);
-    let tx = new TransactionBuilder(
+    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
+    const tx = new TransactionBuilder(
       new Account('GANXGJV2RNOFMOSQ2DTI3RKDBAVERXUVFC27KW3RLVQCLB3RYNO3AAI4', '123'),
       { fee: '100', networkPassphrase: network.passphrase }
     )
@@ -47,10 +47,10 @@ export class Backstop {
       .addOperation(xdr.Operation.fromXDR(op, 'base64'))
       .build();
 
-    let lp_value_promise = rpc.simulateTransaction(tx);
+    const lp_value_promise = rpc.simulateTransaction(tx);
 
     const [config, lp_value_sim] = await Promise.all([config_promise, lp_value_promise]);
-    let lp_value_resp: ContractResponse<[i128, i128]> = ContractResponse.fromSimulationResponse(
+    const lp_value_resp: ContractResponse<[i128, i128]> = ContractResponse.fromSimulationResponse(
       lp_value_sim,
       tx.toXDR(),
       network.passphrase,
