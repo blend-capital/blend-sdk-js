@@ -9,7 +9,7 @@ export * from './pool_factory/index.js';
 export * from './contract_response.js';
 export { Emissions } from './emissions.js';
 export { TokenMetadata } from './token.js';
-export { ContractErrorType, ContractError } from './contract_error.js';
+export { ContractErrorType, ContractError, RestoreError, TxError } from './contract_error.js';
 
 export type u32 = number;
 export type i32 = number;

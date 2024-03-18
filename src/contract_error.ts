@@ -1,5 +1,5 @@
 import { xdr } from 'stellar-sdk';
-import { SorobanRpc } from 'stellar-sdk';
+import { SorobanRpc, SorobanDataBuilder } from 'stellar-sdk';
 export class ContractError extends Error {
   /**
    * The type of the error
@@ -9,6 +9,24 @@ export class ContractError extends Error {
   constructor(type: ContractErrorType) {
     super();
     this.type = type;
+  }
+}
+export class TxError extends Error {
+  public type: ContractErrorType;
+
+  constructor(type: ContractErrorType) {
+    super();
+    this.type = type;
+  }
+}
+
+export class RestoreError extends Error {
+  public type: ContractErrorType;
+  public restorePreamble: { minResourceFee: string; transactionData: SorobanDataBuilder };
+  constructor(restorePreamble: { minResourceFee: string; transactionData: SorobanDataBuilder }) {
+    super();
+    this.type = ContractErrorType.InvokeHostFunctionEntryArchived;
+    this.restorePreamble = restorePreamble;
   }
 }
 
@@ -89,7 +107,7 @@ export enum ContractErrorType {
 
 export function parseError(
   errorResult: xdr.TransactionResult | SorobanRpc.Api.SimulateTransactionErrorResponse
-): ContractError {
+): ContractError | TxError {
   if ('id' in errorResult) {
     // Transaction simulation failed
     errorResult = errorResult as SorobanRpc.Api.SimulateTransactionErrorResponse;
@@ -124,10 +142,10 @@ export function parseError(
     const txErrorValue = errorResult.result().switch().value - 7;
     // Use TransactionResultCode with more specific errors
     if (txErrorValue in ContractErrorType) {
-      return new ContractError(txErrorValue as ContractErrorType);
+      return new TxError(txErrorValue as ContractErrorType);
     }
 
     // If the error is not recognized, return an unknown error
-    return new ContractError(ContractErrorType.UnknownError);
+    return new TxError(ContractErrorType.UnknownError);
   }
 }

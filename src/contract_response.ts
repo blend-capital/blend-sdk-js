@@ -1,13 +1,19 @@
 import { Memo, MemoType, Operation, SorobanRpc, Transaction, xdr } from 'stellar-sdk';
-import { ContractError, ContractErrorType, parseError } from './contract_error.js';
-export interface Result<T, E extends ContractError> {
+import {
+  ContractError,
+  ContractErrorType,
+  TxError,
+  RestoreError,
+  parseError,
+} from './contract_error.js';
+export interface Result<T, E extends ContractError | TxError | RestoreError> {
   unwrap(): T;
   unwrapErr(): E;
   isOk(): boolean;
   isErr(): boolean;
 }
 
-export class Ok<T, E extends ContractError> implements Result<T, E> {
+export class Ok<T, E extends ContractError | TxError | RestoreError> implements Result<T, E> {
   constructor(readonly value: T) {}
   unwrapErr(): E {
     throw new Error('No error');
@@ -25,7 +31,7 @@ export class Ok<T, E extends ContractError> implements Result<T, E> {
   }
 }
 
-export class Err<E extends ContractError = ContractError> implements Result<any, E> {
+export class Err<E extends ContractError | TxError | RestoreError> implements Result<any, E> {
   constructor(readonly error: E) {}
   unwrapErr(): E {
     return this.error;
@@ -44,10 +50,10 @@ export class Err<E extends ContractError = ContractError> implements Result<any,
 }
 
 export class ContractResponse<T> {
-  result: Result<T, ContractError>;
+  result: Result<T, ContractError | RestoreError | TxError>;
   hash: string;
 
-  private constructor(result?: Result<T, ContractError>) {
+  private constructor(result?: Result<T, ContractError | RestoreError | TxError>) {
     if (result) {
       this.result = result;
     }
@@ -67,9 +73,7 @@ export class ContractResponse<T> {
     if (SorobanRpc.Api.isSimulationError(simulation)) {
       response.result = new Err(parseError(simulation));
     } else if (SorobanRpc.Api.isSimulationRestore(simulation)) {
-      response.result = new Err(
-        new ContractError(ContractErrorType.InvokeHostFunctionEntryArchived)
-      );
+      response.result = new Err(new RestoreError(simulation.restorePreamble));
     } else {
       if (!simulation.result) {
         response.result = new Ok(undefined as T);
