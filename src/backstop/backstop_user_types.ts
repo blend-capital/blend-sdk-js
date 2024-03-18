@@ -10,19 +10,25 @@ export class BackstopUserData {
     public userEmissions: BackstopUserEmissionData | undefined
   ) {}
 
-  static async load(network: Network, backstopId: string, poolId: string, userId: string) {
+  static async load(
+    network: Network,
+    backstopId: string,
+    poolId: string,
+    userId: string,
+    timestamp: number
+  ) {
     const rpc = new SorobanRpc.Server(network.rpc, network.opts);
     const userBalanceDataKey = UserBalance.ledgerKey(backstopId, poolId, userId);
     const userEmissionsDataKey = BackstopUserEmissionData.ledgerKey(backstopId, poolId, userId);
     const backstopUserData = await rpc.getLedgerEntries(userBalanceDataKey, userEmissionsDataKey);
-    let userBalance = new UserBalance(BigInt(0), []);
+    let userBalance = new UserBalance(BigInt(0), [], [], BigInt(0));
     let userEmissions: BackstopUserEmissionData | undefined;
     for (const entry of backstopUserData.entries ?? []) {
       const ledgerData = entry.val;
       const key = decodeEntryKey(ledgerData.contractData().key());
       switch (key) {
         case 'UserBalance': {
-          userBalance = UserBalance.fromLedgerEntryData(ledgerData);
+          userBalance = UserBalance.fromLedgerEntryData(ledgerData, timestamp);
           break;
         }
         case 'UEmisData':
@@ -37,7 +43,12 @@ export class BackstopUserData {
 }
 
 export class UserBalance {
-  constructor(public shares: i128, public q4w: Q4W[]) {}
+  constructor(
+    public shares: i128,
+    public q4w: Q4W[],
+    public unlockedQ4W: Q4W[],
+    public totalQ4W: i128
+  ) {}
 
   static ledgerKey(backstopId: string, poolId: string, userId: string): xdr.LedgerKey {
     return xdr.LedgerKey.contractData(
@@ -61,7 +72,10 @@ export class UserBalance {
     );
   }
 
-  static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): UserBalance {
+  static fromLedgerEntryData(
+    ledger_entry_data: xdr.LedgerEntryData | string,
+    timestamp: number
+  ): UserBalance {
     if (typeof ledger_entry_data == 'string') {
       ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
     }
@@ -73,6 +87,8 @@ export class UserBalance {
 
     let shares: bigint | undefined;
     let q4w: Q4W[] = [];
+    let unlockedQ4W: Q4W[] = [];
+    let totalQ4W: bigint = BigInt(0);
     for (const map_entry of data_entry_map) {
       const key = decodeEntryKey(map_entry.key());
       switch (key) {
@@ -80,7 +96,7 @@ export class UserBalance {
           shares = scValToNative(map_entry.val());
           break;
         case 'q4w':
-          q4w = map_entry
+          map_entry
             .val()
             .vec()
             ?.map((entry) => {
@@ -103,7 +119,12 @@ export class UserBalance {
               if (amount == undefined || exp == undefined) {
                 throw Error(`Malformed Q4W scvMap`);
               }
-              return { amount, exp };
+              totalQ4W += amount;
+              if (BigInt(timestamp) < exp) {
+                unlockedQ4W.push({ amount, exp });
+              } else {
+                q4w.push({ amount, exp });
+              }
             });
           break;
         default:
@@ -113,7 +134,7 @@ export class UserBalance {
     if (shares == undefined) {
       throw Error("Invalid UserBalance: should contain 'shares'");
     }
-    return new UserBalance(shares, q4w);
+    return new UserBalance(shares, q4w, unlockedQ4W, totalQ4W);
   }
 }
 
