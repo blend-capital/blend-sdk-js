@@ -30,7 +30,7 @@ export class PoolEstimate {
       totalBorrow += borrow_base;
       totalBorrowApy += borrow_base * reserve.estimates.apy;
     });
-    totalBorrowApy /= totalBorrow;
+    totalBorrowApy = totalBorrow != 0 ? totalBorrowApy / totalBorrow : 0;
 
     return new PoolEstimate(totalSupply, totalBorrow, totalBorrowApy);
   }

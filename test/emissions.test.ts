@@ -1,4 +1,4 @@
-import { Emissions, EmissionConfig, EmissionData, UserEmissions } from '../src/emissions.js';
+import { EmissionConfig, EmissionData, Emissions, UserEmissions } from '../src/emissions.js';
 
 test('load emissions for pool and user', () => {
   const config_xdr_string =
@@ -24,6 +24,6 @@ test('load emissions for pool and user', () => {
   const balance = BigInt(9986916470);
   const timestamp = 1699888478;
 
-  const accrued = user.estimateData(timestamp, emissions, supply, balance);
+  const accrued = user.estimateAccrual(timestamp, emissions, 7, supply, balance);
   expect(accrued).toEqual(10.52077513423858);
 });

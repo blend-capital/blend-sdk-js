@@ -1,7 +1,7 @@
 //! Base classes for emission data
 
 import { SorobanRpc, scValToNative, xdr } from 'stellar-sdk';
-import { Network, ReserveEmissionConfig, ReserveEmissionData, i128, u64 } from './index.js';
+import { Network, i128, u64 } from './index.js';
 import { decodeEntryKey } from './ledger_entry_helper.js';
 
 /********** Emission Source **********/
@@ -31,19 +31,19 @@ export class Emissions {
     const sorobanRpc = new SorobanRpc.Server(newtork.rpc, newtork.opts);
     const entriesResponse = await sorobanRpc.getLedgerEntries(configLedgerKey, dataLedgerkey);
     if (entriesResponse.entries.length == 2) {
-      let emissionConfig: ReserveEmissionConfig | undefined = undefined;
-      let emissionData: ReserveEmissionData | undefined = undefined;
+      let emissionConfig: EmissionConfig | undefined = undefined;
+      let emissionData: EmissionData | undefined = undefined;
       for (const entry of entriesResponse.entries) {
         const ledgerData = entry.val;
         const key = decodeEntryKey(ledgerData.contractData().key());
         switch (key) {
           case 'EmisConfig':
           case 'BEmisCfg':
-            emissionConfig = ReserveEmissionConfig.fromLedgerEntryData(ledgerData);
+            emissionConfig = EmissionConfig.fromLedgerEntryData(ledgerData);
             break;
           case 'EmisData':
           case 'BEmisData':
-            emissionData = ReserveEmissionData.fromLedgerEntryData(ledgerData);
+            emissionData = EmissionData.fromLedgerEntryData(ledgerData);
             break;
           default:
             throw Error(`Invalid emission key: should not contain ${key}`);
@@ -65,7 +65,7 @@ export class Emissions {
    * @returns The estimated emission index
    */
   public estimateIndex(timestamp: number, supply: bigint, decimals: number): number {
-    let time_diff =
+    const time_diff =
       timestamp > this.config.expiration
         ? Number(this.config.expiration) - Number(this.data.lastTime)
         : timestamp - Number(this.data.lastTime);
@@ -85,7 +85,7 @@ export class Emissions {
  * @property eps - The emission per second
  * @property expiration - The expiration time of the emission
  */
-export abstract class EmissionConfig {
+export class EmissionConfig {
   constructor(public eps: bigint, public expiration: bigint) {}
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): EmissionConfig {
@@ -114,11 +114,11 @@ export abstract class EmissionConfig {
     if (eps == undefined || expiration == undefined) {
       throw Error('EmissionConfig scvMap value malformed');
     }
-    return new ReserveEmissionConfig(BigInt(eps), BigInt(expiration));
+    return new EmissionConfig(BigInt(eps), BigInt(expiration));
   }
 }
 
-export abstract class EmissionData {
+export class EmissionData {
   constructor(public index: i128, public lastTime: u64) {}
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): EmissionData {
@@ -151,10 +151,7 @@ export abstract class EmissionData {
       throw new Error(`ReserveEmissionData scvMap value malformed`);
     }
 
-    return {
-      index,
-      lastTime: BigInt(last_time),
-    };
+    return new EmissionData(index, BigInt(last_time));
   }
 }
 
