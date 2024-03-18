@@ -9,24 +9,25 @@ export type Q4WEst = {
 };
 
 export class BackstopUserPoolEst {
-  /// The estimated LP tokens of the user
+  /// The estimated LP tokens the user has deposited
   public tokens: number;
-  /// The estimated BLND tokens of the user's LP tokens
+  /// The estimated BLND tokens of the user's deposited LP tokens
   public blnd: number;
-  /// The estimated USDC tokens of the user's LP tokens
+  /// The estimated USDC tokens of the user's deposited LP tokens
   public usdc: number;
-  /// The estimated spot value of the user's LP tokens
+  /// The estimated spot value of the user's deposited LP tokens
   public totalSpotValue: number;
-  /// The estimated number of unlocked tokens that have been queued
+  /// The estimated number of unlocked LP tokens that have been queued
   public totalUnlockedQ4W: number;
-  /// The array of queued Q4W tokens
+  /// The array of queued withdrawals in (token amounts)
   public q4w: Q4WEst[];
-  /// The estimated total Q4W tokens
+  /// The estimated total LP tokens queued for withdrawal
   public totalQ4W: number;
   /// The estimated emissions of the user
   public emissions: number;
 
   constructor(
+    tokens: number,
     blnd: number,
     usdc: number,
     totalSpotValue: number,
@@ -35,6 +36,7 @@ export class BackstopUserPoolEst {
     totalQ4W: number,
     emissions: number
   ) {
+    this.tokens = tokens;
     this.blnd = blnd;
     this.usdc = usdc;
     this.totalSpotValue = totalSpotValue;
@@ -52,14 +54,12 @@ export class BackstopUserPoolEst {
     timestamp: number
   ) {
     const shares_to_tokens = Number(pool.poolBalance.tokens) / Number(pool.poolBalance.shares);
-    const tokens_float = (Number(user_balance.shares) / 1e7) * shares_to_tokens;
-    const blnd = tokens_float * backstop.blndPerLpToken;
-    const usdc = tokens_float * backstop.usdcPerLpToken;
-    const totalSpotValue = tokens_float * backstop.lpTokenPrice;
+    const tokens = (Number(user_balance.shares) / 1e7) * shares_to_tokens;
+    const blnd = tokens * backstop.blndPerLpToken;
+    const usdc = tokens * backstop.usdcPerLpToken;
+    const totalSpotValue = tokens * backstop.lpTokenPrice;
 
-    const totalUnlockedQ4W = user_balance.unlockedQ4W.reduce((acc, q4w) => {
-      return acc + (Number(q4w.amount) / 1e7) * shares_to_tokens;
-    }, 0);
+    const totalUnlockedQ4W = (Number(user_balance.unlockedQ4W) / 1e7) * shares_to_tokens;
 
     let totalQ4W = 0;
     const q4w: Q4WEst[] = user_balance.q4w.map((q4w) => {
@@ -79,6 +79,7 @@ export class BackstopUserPoolEst {
       );
     }
     return new BackstopUserPoolEst(
+      tokens,
       blnd,
       usdc,
       totalSpotValue,

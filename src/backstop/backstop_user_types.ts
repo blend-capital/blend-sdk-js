@@ -21,7 +21,7 @@ export class BackstopUserData {
     const userBalanceDataKey = UserBalance.ledgerKey(backstopId, poolId, userId);
     const userEmissionsDataKey = BackstopUserEmissionData.ledgerKey(backstopId, poolId, userId);
     const backstopUserData = await rpc.getLedgerEntries(userBalanceDataKey, userEmissionsDataKey);
-    let userBalance = new UserBalance(BigInt(0), [], [], BigInt(0));
+    let userBalance = new UserBalance(BigInt(0), [], BigInt(0), BigInt(0));
     let userEmissions: BackstopUserEmissionData | undefined;
     for (const entry of backstopUserData.entries ?? []) {
       const ledgerData = entry.val;
@@ -46,7 +46,7 @@ export class UserBalance {
   constructor(
     public shares: i128,
     public q4w: Q4W[],
-    public unlockedQ4W: Q4W[],
+    public unlockedQ4W: i128,
     public totalQ4W: i128
   ) {}
 
@@ -87,7 +87,7 @@ export class UserBalance {
 
     let shares: bigint | undefined;
     let q4w: Q4W[] = [];
-    let unlockedQ4W: Q4W[] = [];
+    let unlockedQ4W: bigint = BigInt(0);
     let totalQ4W: bigint = BigInt(0);
     for (const map_entry of data_entry_map) {
       const key = decodeEntryKey(map_entry.key());
@@ -121,7 +121,7 @@ export class UserBalance {
               }
               totalQ4W += amount;
               if (BigInt(timestamp) < exp) {
-                unlockedQ4W.push({ amount, exp });
+                unlockedQ4W += amount;
               } else {
                 q4w.push({ amount, exp });
               }
