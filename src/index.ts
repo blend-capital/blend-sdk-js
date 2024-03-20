@@ -6,8 +6,7 @@ export * from './emitter/index.js';
 export * from './pool/index.js';
 export * from './pool_factory/index.js';
 
-export { ContractError, ContractErrorType } from './contract_error.js';
-export * from './contract_response.js';
+export * from './response_parser.js';
 export { Emissions } from './emissions.js';
 export { TokenMetadata } from './token.js';
 
