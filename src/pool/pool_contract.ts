@@ -91,10 +91,6 @@ export class PoolContract extends Contract {
     'AAAAAgAAAApBc3NldCB0eXBlAAAAAAAAAAAABUFzc2V0AAAAAAAAAgAAAAEAAAAAAAAAB1N0ZWxsYXIAAAAAAQAAABMAAAABAAAAAAAAAAVPdGhlcgAAAAAAAAEAAAAR',
   ]);
 
-  constructor(address: string) {
-    super(address);
-  }
-
   static readonly parsers = {
     initialize: () => {},
     setAdmin: () => {},

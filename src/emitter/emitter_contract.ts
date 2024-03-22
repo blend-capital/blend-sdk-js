@@ -31,10 +31,6 @@ export class EmitterContract extends Contract {
     'AAAAAgAAAAAAAAAAAAAADkVtaXR0ZXJEYXRhS2V5AAAAAAACAAAAAQAAAAAAAAAKTGFzdERpc3RybwAAAAAAAQAAABMAAAABAAAAAAAAAAdEcm9wcGVkAAAAAAEAAAAT',
   ]);
 
-  constructor(address: string) {
-    super(address);
-  }
-
   static readonly parsers = {
     initialize: () => {},
     distribute: (result: string): i128 =>

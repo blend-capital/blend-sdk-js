@@ -13,6 +13,7 @@ export interface DeployArgs {
 }
 
 export class PoolFactoryContract extends Contract {
+  // @dev: Generated from soroban-cli Typescript bindings
   static spec: ContractSpec = new ContractSpec([
     'AAAABAAAAKlFcnJvciBjb2RlcyBmb3IgdGhlIHBvb2wgZmFjdG9yeSBjb250cmFjdC4gQ29tbW9uIGVycm9ycyBhcmUgY29kZXMgdGhhdCBtYXRjaCB1cCB3aXRoIHRoZSBidWlsdC1pbgpjb250cmFjdHMgZXJyb3IgcmVwb3J0aW5nLiBQb29sIGZhY3Rvcnkgc3BlY2lmaWMgZXJyb3JzIHN0YXJ0IGF0IDEzMDAuAAAAAAAAAAAAABBQb29sRmFjdG9yeUVycm9yAAAAAwAAAAAAAAANSW50ZXJuYWxFcnJvcgAAAAAAAAEAAAAAAAAAF0FscmVhZHlJbml0aWFsaXplZEVycm9yAAAAAAMAAAAAAAAAE0ludmFsaWRQb29sSW5pdEFyZ3MAAAAFFA==',
     'AAAAAAAAAAAAAAAKaW5pdGlhbGl6ZQAAAAAAAQAAAAAAAAAOcG9vbF9pbml0X21ldGEAAAAAB9AAAAAMUG9vbEluaXRNZXRhAAAAAA==',
@@ -22,10 +23,6 @@ export class PoolFactoryContract extends Contract {
     'AAAAAQAAAAAAAAAAAAAADFBvb2xJbml0TWV0YQAAAAQAAAAAAAAACGJhY2tzdG9wAAAAEwAAAAAAAAAHYmxuZF9pZAAAAAATAAAAAAAAAAlwb29sX2hhc2gAAAAAAAPuAAAAIAAAAAAAAAAHdXNkY19pZAAAAAAT',
   ]);
 
-  constructor(address: string) {
-    super(address);
-    // @dev: Generated from soroban-cli Typescript bindings
-  }
   static readonly parsers = {
     initialize: () => {},
     deploy: (result: string): string => PoolFactoryContract.spec.funcResToNative('deploy', result),
