@@ -1,6 +1,5 @@
 import { Pool } from './pool.js';
-import { PoolUserEmissionData, UserPositions } from './pool_user_types.js';
-import { Reserve } from './reserve.js';
+import { UserPositions } from './pool_user_types.js';
 
 export class PositionEstimates {
   constructor(
@@ -82,24 +81,26 @@ export class PositionEstimates {
       }
     }
 
-    let borrowCap = totalEffectiveCollateral - totalEffectiveLiabilities;
-    let borrowLimit = totalEffectiveLiabilities / totalEffectiveCollateral;
-    const netApy = (supplyApy - borrowApy) / (totalBorrowed + totalSupplied);
-    supplyApy /= totalSupplied;
-    borrowApy /= totalBorrowed;
+    const borrowCap = totalEffectiveCollateral - totalEffectiveLiabilities;
+    const borrowLimit =
+      totalEffectiveCollateral == 0 ? 0 : totalEffectiveLiabilities / totalEffectiveCollateral;
+    const netApy =
+      totalBorrowed + totalSupplied == 0
+        ? 0
+        : (supplyApy - borrowApy) / (totalBorrowed + totalSupplied);
+    supplyApy = totalSupplied == 0 ? 0 : supplyApy / totalSupplied;
+    borrowApy = totalBorrowed == 0 ? 0 : borrowApy / totalBorrowed;
 
     return new PositionEstimates(
       liabilities,
       collateral,
       supply,
-
       totalBorrowed,
       totalSupplied,
       totalEffectiveLiabilities,
       totalEffectiveCollateral,
       borrowCap,
       borrowLimit,
-
       netApy,
       supplyApy,
       borrowApy
