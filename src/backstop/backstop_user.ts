@@ -45,7 +45,7 @@ export class BackstopUser {
       switch (key) {
         case 'UserBalance': {
           const pool = getPoolFromBackstopLedgerData(ledgerData);
-          const balance = UserBalance.fromLedgerEntryData(ledgerData);
+          const balance = UserBalance.fromLedgerEntryData(ledgerData, backstop.timestamp);
           balances.set(pool, balance);
           break;
         }
@@ -62,7 +62,8 @@ export class BackstopUser {
 
     const estimates = new Map<string, BackstopUserPoolEst>();
     for (const [pool, pool_data] of backstop.pools.entries()) {
-      const user_pool_balance = balances.get(pool) ?? new UserBalance(BigInt(0), []);
+      const user_pool_balance =
+        balances.get(pool) ?? new UserBalance(BigInt(0), [], BigInt(0), BigInt(0));
       const user_pool_emissions = emissions.get(pool);
       const pool_est = BackstopUserPoolEst.build(
         backstop,
