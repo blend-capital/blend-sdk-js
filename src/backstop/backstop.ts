@@ -1,5 +1,12 @@
 import { Account, SorobanRpc, TimeoutInfinite, TransactionBuilder, xdr } from 'stellar-sdk';
-import { BackstopContract, BackstopUser, ContractResponse, Network, i128 } from '../index.js';
+import {
+  BackstopContract,
+  BackstopUser,
+  Network,
+  PoolContract,
+  i128,
+  parseResult,
+} from '../index.js';
 import { BackstopConfig } from './backstop_config.js';
 import { BackstopPool } from './backstop_pool.js';
 
@@ -48,16 +55,12 @@ export class Backstop {
       .build();
 
     const lp_value_promise = rpc.simulateTransaction(tx);
-
     const [config, lp_value_sim] = await Promise.all([config_promise, lp_value_promise]);
-    const lp_value_resp: ContractResponse<[i128, i128]> = ContractResponse.fromSimulationResponse(
-      lp_value_sim,
-      tx.toXDR(),
-      network.passphrase,
-      backstopContract.parsers.updateTknVal
-    );
-    if (lp_value_resp.result.isOk()) {
-      const [blndPerShare, usdcPerShare] = lp_value_resp.result.unwrap();
+    const lp_value: [i128, i128] | undefined = SorobanRpc.Api.isSimulationSuccess(lp_value_sim)
+      ? parseResult(lp_value_sim, BackstopContract.parsers.updateTknVal)
+      : undefined;
+    if (lp_value) {
+      const [blndPerShare, usdcPerShare] = lp_value;
       const blndPerShareFloat = Number(blndPerShare) / 1e7;
       const usdcPerShareFloat = Number(usdcPerShare) / 1e7;
       const blndToUsdcLpRate = usdcPerShareFloat / 0.2 / (blndPerShareFloat / 0.8);

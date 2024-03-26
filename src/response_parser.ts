@@ -1,5 +1,6 @@
-import { xdr } from 'stellar-sdk';
 import { SorobanRpc } from 'stellar-sdk';
+import { EmitterContract, PoolContract, PoolFactoryContract, BackstopContract } from './index.js';
+
 export class ContractError extends Error {
   /**
    * The type of the error
@@ -88,29 +89,56 @@ export enum ContractErrorType {
 }
 
 export function parseError(
-  errorResult: xdr.TransactionResult | SorobanRpc.Api.SimulateTransactionErrorResponse
+  errorResponse:
+    | SorobanRpc.Api.GetFailedTransactionResponse
+    | SorobanRpc.Api.SendTransactionResponse
+    | SorobanRpc.Api.SimulateTransactionErrorResponse
 ): ContractError {
-  if ('id' in errorResult) {
-    // Transaction simulation failed
-    errorResult = errorResult as SorobanRpc.Api.SimulateTransactionErrorResponse;
-
-    const match = errorResult.error.match(/Error\(Contract, #(\d+)\)/);
+  // Simulation Error
+  if ('id' in errorResponse) {
+    const match = errorResponse.error.match(/Error\(Contract, #(\d+)\)/);
     if (match) {
       let errorValue = parseInt(match[1], 10);
       if (errorValue in ContractErrorType)
         return new ContractError(errorValue as ContractErrorType);
     }
     return new ContractError(ContractErrorType.UnknownError);
-  } else {
+  }
+
+  // Send Transaction Error
+  if ('errorResult' in errorResponse) {
+    const txErrorName = errorResponse.errorResult.result().switch().name;
+    if (txErrorName == 'txFailed') {
+      // Transaction should only contain one operation
+      if (errorResponse.errorResult.result().results().length == 1) {
+        const hostFunctionError = errorResponse.errorResult
+          .result()
+          .results()[0]
+          .tr()
+          .invokeHostFunctionResult()
+          .switch().value;
+        if (hostFunctionError in ContractErrorType)
+          return new ContractError(hostFunctionError as ContractErrorType);
+      }
+    } else {
+      const txErrorValue = errorResponse.errorResult.result().switch().value - 7;
+      if (txErrorValue in ContractErrorType) {
+        return new ContractError(txErrorValue as ContractErrorType);
+      }
+    }
+  }
+
+  // Get Transaction Error
+  if ('resultXdr' in errorResponse) {
     // Transaction submission failed
-    const txErrorName = errorResult.result().switch().name;
+    const txResult = errorResponse.resultXdr.result();
+    const txErrorName = txResult.switch().name;
 
     // Use invokeHostFunctionErrors in case of generic `txFailed` error
     if (txErrorName == 'txFailed') {
       // Transaction should only contain one operation
-      if (errorResult.result().results().length == 1) {
-        const hostFunctionError = errorResult
-          .result()
+      if (errorResponse.resultXdr.result().results().length == 1) {
+        const hostFunctionError = txResult
           .results()[0]
           .tr()
           .invokeHostFunctionResult()
@@ -121,13 +149,28 @@ export function parseError(
     }
 
     // Shift the error value to avoid collision with invokeHostFunctionErrors
-    const txErrorValue = errorResult.result().switch().value - 7;
+    const txErrorValue = txResult.switch().value - 7;
     // Use TransactionResultCode with more specific errors
     if (txErrorValue in ContractErrorType) {
       return new ContractError(txErrorValue as ContractErrorType);
     }
+  }
 
-    // If the error is not recognized, return an unknown error
-    return new ContractError(ContractErrorType.UnknownError);
+  // If the error is not recognized, return an unknown error
+  return new ContractError(ContractErrorType.UnknownError);
+}
+
+export function parseResult<T>(
+  response:
+    | SorobanRpc.Api.SimulateTransactionSuccessResponse
+    | SorobanRpc.Api.GetSuccessfulTransactionResponse,
+  parser: (xdr: string) => T
+): T | undefined {
+  if ('result' in response) {
+    return parser(response.result.retval.toXDR('base64'));
+  } else if ('returnValue' in response && response.returnValue) {
+    return parser(response.returnValue.toXDR('base64'));
+  } else {
+    return undefined;
   }
 }
