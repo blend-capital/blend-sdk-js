@@ -1,4 +1,4 @@
-import { Address, SorobanRpc, xdr } from 'stellar-sdk';
+import { Address, SorobanRpc, xdr } from '@stellar/stellar-sdk';
 import { EmissionConfig, EmissionData, Emissions } from '../emissions.js';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';

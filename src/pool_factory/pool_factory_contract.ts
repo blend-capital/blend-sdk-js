@@ -1,4 +1,4 @@
-import { Address, Contract, ContractSpec, xdr } from 'stellar-sdk';
+import { Address, Contract, ContractSpec } from '@stellar/stellar-sdk';
 import { PoolInitMeta } from './index.js';
 
 // @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES

@@ -1,4 +1,4 @@
-import { Address, SorobanRpc, scValToNative, xdr } from 'stellar-sdk';
+import { Address, SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { UserEmissions } from '../emissions.js';
 import { Network, i128 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
@@ -86,9 +86,9 @@ export class UserBalance {
     }
 
     let shares: bigint | undefined;
-    let q4w: Q4W[] = [];
-    let unlockedQ4W: bigint = BigInt(0);
-    let totalQ4W: bigint = BigInt(0);
+    const q4w: Q4W[] = [];
+    let unlockedQ4W = BigInt(0);
+    let totalQ4W = BigInt(0);
     for (const map_entry of data_entry_map) {
       const key = decodeEntryKey(map_entry.key());
       switch (key) {

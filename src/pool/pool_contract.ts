@@ -1,4 +1,4 @@
-import { Address, Contract, ContractSpec, xdr } from 'stellar-sdk';
+import { Address, Contract, ContractSpec } from '@stellar/stellar-sdk';
 import { i128, u32, u64 } from '../index.js';
 import {
   AuctionData,

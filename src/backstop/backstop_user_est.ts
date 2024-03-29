@@ -63,7 +63,7 @@ export class BackstopUserPoolEst {
 
     let totalQ4W = 0;
     const q4w: Q4WEst[] = user_balance.q4w.map((q4w) => {
-      let amount = (Number(q4w.amount) / 1e7) * shares_to_tokens;
+      const amount = (Number(q4w.amount) / 1e7) * shares_to_tokens;
       totalQ4W += amount;
       return { amount, exp: Number(q4w.exp) };
     });

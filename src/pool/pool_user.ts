@@ -1,10 +1,10 @@
-import { SorobanRpc, xdr } from 'stellar-sdk';
+import { SorobanRpc, xdr } from '@stellar/stellar-sdk';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
-import { Pool } from './pool.js';
-import { PositionEstimates } from './user_position_est.js';
-import { PoolUserEmissionData, UserPositions } from './pool_user_types.js';
 import { EmissionEstimates } from './emission_est.js';
+import { Pool } from './pool.js';
+import { PoolUserEmissionData, UserPositions } from './pool_user_types.js';
+import { PositionEstimates } from './user_position_est.js';
 export class PoolUser {
   constructor(
     public user: string,

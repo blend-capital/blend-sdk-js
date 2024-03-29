@@ -6,7 +6,7 @@ import {
   TransactionBuilder,
   scValToNative,
   xdr,
-} from 'stellar-sdk';
+} from '@stellar/stellar-sdk';
 import { Network } from './index.js';
 
 export async function getOraclePrice(

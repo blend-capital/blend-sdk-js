@@ -1,4 +1,4 @@
-import { Address, SorobanRpc, scValToNative, xdr } from 'stellar-sdk';
+import { Address, SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 import { LpTokenValue } from './index.js';

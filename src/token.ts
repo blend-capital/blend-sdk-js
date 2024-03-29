@@ -9,7 +9,7 @@ import {
   TransactionBuilder,
   scValToNative,
   xdr,
-} from 'stellar-sdk';
+} from '@stellar/stellar-sdk';
 import { Network } from './index.js';
 import { decodeEntryKey } from './ledger_entry_helper.js';
 

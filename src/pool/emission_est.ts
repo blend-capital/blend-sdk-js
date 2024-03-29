@@ -1,6 +1,5 @@
 import { Pool } from './pool.js';
-import { UserPositions } from './pool_user_types.js';
-import { PoolUserEmissionData } from './pool_user_types.js';
+import { PoolUserEmissionData, UserPositions } from './pool_user_types.js';
 export class EmissionEstimates {
   /**
    * Emissions for a reserve where the value is [dTokenEmissions, bTokenEmissions]
@@ -19,8 +18,8 @@ export class EmissionEstimates {
   ): EmissionEstimates {
     // accrue emission values
     // TODO: Refactor such that we catch emissions that are not created yet (user position created before emissions)
-    let reserve_list = pool.config.reserveList;
-    let accrued_emissions = new Map<string, [number, number]>();
+    const reserve_list = pool.config.reserveList;
+    const accrued_emissions = new Map<string, [number, number]>();
     let totalEmissions = 0;
     emissions.forEach((value, key) => {
       const reserve = pool.reserves.get(reserve_list[Math.floor(key / 2)]);

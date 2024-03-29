@@ -1,4 +1,4 @@
-import { xdr } from 'stellar-sdk';
+import { xdr } from '@stellar/stellar-sdk';
 
 export function decodeEntryKey(entryKey: xdr.ScVal): string {
   let key: string | undefined;

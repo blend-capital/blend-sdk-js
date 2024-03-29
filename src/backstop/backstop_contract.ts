@@ -1,4 +1,4 @@
-import { Address, Contract, ContractSpec } from 'stellar-sdk';
+import { Address, Contract, ContractSpec } from '@stellar/stellar-sdk';
 import { i128 } from '../index.js';
 import { PoolBackstopData, Q4W, UserBalance } from './index.js';
 
