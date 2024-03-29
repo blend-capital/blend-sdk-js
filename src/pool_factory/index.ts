@@ -28,5 +28,4 @@ export interface PoolInitMeta {
   backstop: string;
   blnd_id: string;
   pool_hash: Buffer;
-  usdc_id: string;
 }

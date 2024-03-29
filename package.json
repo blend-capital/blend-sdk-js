@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "buffer": "6.0.3",
-    "@stellar/stellar-sdk": "11.3.0"
+    "@stellar/stellar-sdk": "11.3.0",
+    "follow-redirects": ">=1.15.6"
   }
 }
