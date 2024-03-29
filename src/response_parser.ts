@@ -1,5 +1,4 @@
-import { SorobanRpc } from 'stellar-sdk';
-import { EmitterContract, PoolContract, PoolFactoryContract, BackstopContract } from './index.js';
+import { SorobanRpc } from '@stellar/stellar-sdk';
 
 export class ContractError extends Error {
   /**
@@ -59,6 +58,7 @@ export enum ContractErrorType {
   NotPool = 1004,
   InvalidShareMintAmount = 1005,
   InvalidTokenWithdrawAmount = 1006,
+  TooManyQ4WEntries = 1007,
 
   // Pool Request Errors (start at 1200)
   PoolBadRequest = 1200,
@@ -98,7 +98,7 @@ export function parseError(
   if ('id' in errorResponse) {
     const match = errorResponse.error.match(/Error\(Contract, #(\d+)\)/);
     if (match) {
-      let errorValue = parseInt(match[1], 10);
+      const errorValue = parseInt(match[1], 10);
       if (errorValue in ContractErrorType)
         return new ContractError(errorValue as ContractErrorType);
     }

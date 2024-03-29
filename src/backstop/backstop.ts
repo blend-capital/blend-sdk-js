@@ -1,12 +1,11 @@
-import { Account, SorobanRpc, TimeoutInfinite, TransactionBuilder, xdr } from 'stellar-sdk';
 import {
-  BackstopContract,
-  BackstopUser,
-  Network,
-  PoolContract,
-  i128,
-  parseResult,
-} from '../index.js';
+  Account,
+  SorobanRpc,
+  TimeoutInfinite,
+  TransactionBuilder,
+  xdr,
+} from '@stellar/stellar-sdk';
+import { BackstopContract, BackstopUser, Network, i128, parseResult } from '../index.js';
 import { BackstopConfig } from './backstop_config.js';
 import { BackstopPool } from './backstop_pool.js';
 

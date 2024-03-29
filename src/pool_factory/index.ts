@@ -1,7 +1,7 @@
-import { xdr, Address } from 'stellar-sdk';
+import { Address, xdr } from '@stellar/stellar-sdk';
 
-export * from './pool_factory_contract.js';
 export * from './pool_factory_config.js';
+export * from './pool_factory_contract.js';
 
 export type PoolFactoryDataKey = { tag: 'Contracts'; values: [string] } | { tag: 'PoolInitMeta' };
 
@@ -28,5 +28,4 @@ export interface PoolInitMeta {
   backstop: string;
   blnd_id: string;
   pool_hash: Buffer;
-  usdc_id: string;
 }
