@@ -78,7 +78,7 @@ export class ReserveEst {
     let supplied = b_supply * b_rate;
     let cur_util = 0;
     let cur_apy = r_base;
-    const cur_supply_apy = 0;
+    let cur_supply_apy = 0;
 
     if (supplied != 0 && borrowed != 0) {
       const cur_ir_mod = Number(reserveData.interestRateModifier) / 1e9;
@@ -93,6 +93,7 @@ export class ReserveEst {
       } else {
         cur_apy = ((cur_util - 0.95) / 0.05) * r_three + cur_ir_mod * (r_one + r_two + r_base);
       }
+      cur_supply_apy = cur_apy * (1 - backstop_take_rate_decimal) * cur_util;
       const accrual =
         ((timestamp != undefined ? timestamp - Number(reserveData.lastTime) : 0) / 31536000) *
           cur_apy +

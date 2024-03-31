@@ -7,7 +7,6 @@ export class PoolConfig {
     public admin: string,
     public name: string,
     public blndTkn: string,
-    public usdcTkn: string,
     public backstop: string,
     public backstopRate: number,
     public maxPositions: number,
@@ -36,7 +35,6 @@ export class PoolConfig {
     let admin: string | undefined;
     let name: string | undefined;
     let blndTkn: string | undefined;
-    let usdcTkn: string | undefined;
     let backstop: string | undefined;
     let backstopRate: number | undefined;
     let oracle: string | undefined;
@@ -65,9 +63,6 @@ export class PoolConfig {
                   return;
                 case 'Backstop':
                   backstop = Address.fromScVal(entry.val()).toString();
-                  return;
-                case 'USDCTkn':
-                  usdcTkn = Address.fromScVal(entry.val()).toString();
                   return;
                 case 'Config':
                   entry
@@ -123,7 +118,6 @@ export class PoolConfig {
       admin == undefined ||
       name == undefined ||
       blndTkn == undefined ||
-      usdcTkn == undefined ||
       backstop == undefined ||
       backstopRate == undefined ||
       oracle == undefined ||
@@ -137,7 +131,6 @@ export class PoolConfig {
       admin,
       name,
       blndTkn,
-      usdcTkn,
       backstop,
       backstopRate,
       maxPositions,
