@@ -1,8 +1,8 @@
-import { Address, xdr } from 'stellar-sdk';
+import { Address, xdr } from '@stellar/stellar-sdk';
 import { u64 } from '../index.js';
 
-export * from './emitter_contract.js';
 export * from './emitter_config.js';
+export * from './emitter_contract.js';
 
 export interface Swap {
   /**

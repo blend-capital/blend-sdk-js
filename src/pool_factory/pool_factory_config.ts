@@ -1,14 +1,9 @@
-import { Address, SorobanRpc, xdr } from 'stellar-sdk';
+import { Address, SorobanRpc, xdr } from '@stellar/stellar-sdk';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export class PoolFactoryConfig {
-  constructor(
-    public blndTkn: string,
-    public usdcTkn: string,
-    public backstop: string,
-    public poolHash: string
-  ) {}
+  constructor(public blndTkn: string, public backstop: string, public poolHash: string) {}
 
   static async load(network: Network, poolFactoryId: string) {
     const rpc = new SorobanRpc.Server(network.rpc, network.opts);
@@ -21,7 +16,6 @@ export class PoolFactoryConfig {
     );
 
     let blndTkn: string | undefined;
-    let usdcTkn: string | undefined;
     let backstop: string | undefined;
     let poolHash: string | undefined;
 
@@ -55,9 +49,6 @@ export class PoolFactoryConfig {
                         case 'pool_hash':
                           poolHash = mapEntry.val().bytes().toString('hex');
                           break;
-                        case 'usdc_id':
-                          usdcTkn = Address.fromScVal(mapEntry.val()).toString();
-                          break;
                         case 'IsInit':
                           // do nothing
                           break;
@@ -81,13 +72,12 @@ export class PoolFactoryConfig {
 
     if (
       blndTkn == undefined ||
-      usdcTkn == undefined ||
       backstop == undefined ||
       poolHash == undefined ||
       poolFactoryConfigEntries.length == 0
     ) {
       throw Error('Unable to load pool factory config');
     }
-    return new PoolFactoryConfig(blndTkn, usdcTkn, backstop, poolHash);
+    return new PoolFactoryConfig(blndTkn, backstop, poolHash);
   }
 }

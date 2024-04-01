@@ -1,13 +1,13 @@
+import { Horizon } from '@stellar/stellar-sdk';
 import { Buffer } from 'buffer';
-import { Horizon } from 'stellar-sdk';
 
 export * from './backstop/index.js';
 export * from './emitter/index.js';
 export * from './pool/index.js';
 export * from './pool_factory/index.js';
 
-export * from './response_parser.js';
 export { Emissions } from './emissions.js';
+export * from './response_parser.js';
 export { TokenMetadata } from './token.js';
 
 export type u32 = number;

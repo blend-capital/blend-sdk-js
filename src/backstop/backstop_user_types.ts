@@ -1,4 +1,4 @@
-import { Address, SorobanRpc, scValToNative, xdr } from 'stellar-sdk';
+import { Address, SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { UserEmissions } from '../emissions.js';
 import { Network, i128 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
@@ -86,9 +86,9 @@ export class UserBalance {
     }
 
     let shares: bigint | undefined;
-    let q4w: Q4W[] = [];
-    let unlockedQ4W: bigint = BigInt(0);
-    let totalQ4W: bigint = BigInt(0);
+    const q4w: Q4W[] = [];
+    let unlockedQ4W = BigInt(0);
+    let totalQ4W = BigInt(0);
     for (const map_entry of data_entry_map) {
       const key = decodeEntryKey(map_entry.key());
       switch (key) {
@@ -103,14 +103,14 @@ export class UserBalance {
               const q4w_array = entry.map();
               let amount: bigint | undefined;
               let exp: bigint | undefined;
-              for (const q4w of q4w_array ?? []) {
-                const q4wKey = q4w.key().sym().toString();
+              for (const q4wEntry of q4w_array ?? []) {
+                const q4wKey = q4wEntry.key().sym().toString();
                 switch (q4wKey) {
                   case 'amount':
-                    amount = scValToNative(q4w.val());
+                    amount = scValToNative(q4wEntry.val());
                     break;
                   case 'exp':
-                    exp = scValToNative(q4w.val());
+                    exp = scValToNative(q4wEntry.val());
                     break;
                   default:
                     throw Error(`Invalid Q4W key: should not contain ${q4wKey}`);
@@ -120,7 +120,7 @@ export class UserBalance {
                 throw Error(`Malformed Q4W scvMap`);
               }
               totalQ4W += amount;
-              if (BigInt(timestamp) < exp) {
+              if (BigInt(timestamp) > exp) {
                 unlockedQ4W += amount;
               } else {
                 q4w.push({ amount, exp });

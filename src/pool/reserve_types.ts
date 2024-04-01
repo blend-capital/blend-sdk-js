@@ -1,4 +1,4 @@
-import { Address, scValToNative, xdr } from 'stellar-sdk';
+import { Address, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { EmissionConfig, EmissionData } from '../emissions.js';
 import { u32 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';

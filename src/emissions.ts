@@ -1,6 +1,6 @@
 //! Base classes for emission data
 
-import { SorobanRpc, scValToNative, xdr } from 'stellar-sdk';
+import { SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { Network, i128, u64 } from './index.js';
 import { decodeEntryKey } from './ledger_entry_helper.js';
 

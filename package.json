@@ -1,6 +1,6 @@
 {
   "name": "@blend-capital/blend-sdk",
-  "version": "0.8.0",
+  "version": "1.0.0",
   "description": "Javascript SDK for the Blend Protocol",
   "type": "module",
   "scripts": {
@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "buffer": "6.0.3",
-    "stellar-sdk": "^11.2.2"
+    "@stellar/stellar-sdk": "11.3.0",
+    "follow-redirects": ">=1.15.6"
   }
 }

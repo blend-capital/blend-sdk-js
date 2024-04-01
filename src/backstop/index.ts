@@ -1,9 +1,9 @@
-import { Address, xdr } from 'stellar-sdk';
+import { Address, xdr } from '@stellar/stellar-sdk';
 import { i128, u64 } from '../index.js';
 
 export * from './backstop.js';
-export * from './backstop_contract.js';
 export * from './backstop_config.js';
+export * from './backstop_contract.js';
 export * from './backstop_pool.js';
 export * from './backstop_pool_est.js';
 export * from './backstop_user.js';
