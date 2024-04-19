@@ -60,7 +60,7 @@ export class PositionEstimates {
         const base_e_collateral = asset_e_collateral * reserve.oraclePrice;
         totalSupplied += base_collateral;
         totalEffectiveCollateral += base_e_collateral;
-        supplyApy += base_collateral * reserve.estimates.apy * reserve.estimates.util;
+        supplyApy += base_collateral * reserve.estimates.supplyApy;
         collateral.set(reserve.assetId, asset_collateral);
       } else {
         throw new Error(`Unable to find reserve for collateral balance: ${key}`);
@@ -74,7 +74,7 @@ export class PositionEstimates {
         const asset_supply = reserve.toAssetFromBToken(value);
         const base_supply = asset_supply * reserve.oraclePrice;
         totalSupplied += base_supply;
-        supplyApy += base_supply * reserve.estimates.apy * reserve.estimates.util;
+        supplyApy += base_supply * reserve.estimates.supplyApy;
         supply.set(reserve.assetId, asset_supply);
       } else {
         throw new Error(`Unable to find reserve for supply balance: ${key}`);
@@ -84,6 +84,7 @@ export class PositionEstimates {
     const borrowCap = totalEffectiveCollateral - totalEffectiveLiabilities;
     const borrowLimit =
       totalEffectiveCollateral == 0 ? 0 : totalEffectiveLiabilities / totalEffectiveCollateral;
+    console.log(supplyApy, borrowApy, totalBorrowed, totalSupplied);
     const netApy =
       totalBorrowed + totalSupplied == 0
         ? 0
