@@ -94,7 +94,7 @@ export class PoolConfig {
                   }
                   return;
                 case 'Name':
-                  name = entry.val().sym().toString();
+                  name = entry.val().str().toString();
                   return;
                 case 'IsInit':
                   // do nothing
