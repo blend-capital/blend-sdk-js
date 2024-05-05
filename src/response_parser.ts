@@ -58,6 +58,7 @@ export enum ContractErrorType {
   TrustlineMissingError = 13,
 
   // Potential Comet Errors
+  CometErrFreezeOnlyWithdrawals = 14,
   CometErrMaxInRatio = 17,
   CometErrMathApprox = 18,
   CometErrLimitIn = 19,
@@ -65,6 +66,18 @@ export enum ContractErrorType {
   CometErrMaxOutRatio = 21,
   CometErrBadLimitPrice = 22,
   CometErrLimitPrice = 23,
+  CometErrTokenAmountIsNegative = 25,
+  CometErrInsufficientAllowance = 27,
+  CometErrInsufficientBalance = 29,
+  CometErrAddOverflow = 30,
+  CometErrSubUnderflow = 31,
+  CometErrDivInternal = 32,
+  CometErrMulOverflow = 33,
+  CometErrCPowBaseTooLow = 34,
+  CometErrCPowBaseTooHigh = 35,
+  CometErrInvalidExpirationLedger = 36,
+  CometErrNegativeOrZero = 37,
+  CometErrTokenInvalid = 38,
 
   // Backstop
   BackstopBadRequest = 1000,
