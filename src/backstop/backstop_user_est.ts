@@ -69,14 +69,29 @@ export class BackstopUserPoolEst {
     });
 
     let emissions = 0;
-    if (pool.emissions && user_emissions) {
-      emissions = user_emissions.estimateAccrual(
-        timestamp,
-        pool.emissions,
-        7,
-        pool.poolBalance.shares - pool.poolBalance.q4w,
-        user_balance.shares
-      );
+    if (pool.emissions) {
+      const emission_balance = pool.poolBalance.shares - pool.poolBalance.q4w;
+      if (user_emissions === undefined) {
+        if (emission_balance > 0) {
+          // emissions started after the user deposited
+          const empty_emission_data = new UserEmissions(BigInt(0), BigInt(0));
+          emissions = empty_emission_data.estimateAccrual(
+            timestamp,
+            pool.emissions,
+            7,
+            emission_balance,
+            user_balance.shares
+          );
+        }
+      } else {
+        emissions = user_emissions.estimateAccrual(
+          timestamp,
+          pool.emissions,
+          7,
+          emission_balance,
+          user_balance.shares
+        );
+      }
     }
     return new BackstopUserPoolEst(
       tokens,

@@ -84,7 +84,6 @@ export class PositionEstimates {
     const borrowCap = totalEffectiveCollateral - totalEffectiveLiabilities;
     const borrowLimit =
       totalEffectiveCollateral == 0 ? 0 : totalEffectiveLiabilities / totalEffectiveCollateral;
-    console.log(supplyApy, borrowApy, totalBorrowed, totalSupplied);
     const netApy =
       totalBorrowed + totalSupplied == 0
         ? 0
