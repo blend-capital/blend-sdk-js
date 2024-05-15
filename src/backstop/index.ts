@@ -6,6 +6,7 @@ export * from './backstop_config.js';
 export * from './backstop_contract.js';
 export * from './backstop_pool.js';
 export * from './backstop_pool_est.js';
+export * from './backstop_token.js';
 export * from './backstop_user.js';
 export * from './backstop_user_est.js';
 export * from './backstop_user_types.js';
