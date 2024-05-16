@@ -51,7 +51,6 @@ export class BackstopToken {
       })
     );
     const ledgerEntriesResp = await rpc.getLedgerEntries(recordDataKey, totalSharesKey);
-    console.log(ledgerEntriesResp);
     let blnd: bigint | undefined;
     let usdc: bigint | undefined;
     let totalShares: bigint | undefined;
