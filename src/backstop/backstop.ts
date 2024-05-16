@@ -1,11 +1,4 @@
-import {
-  Account,
-  SorobanRpc,
-  TimeoutInfinite,
-  TransactionBuilder,
-  xdr,
-} from '@stellar/stellar-sdk';
-import { BackstopContract, BackstopUser, Network, i128, parseResult } from '../index.js';
+import { BackstopToken, BackstopUser, Network } from '../index.js';
 import { BackstopConfig } from './backstop_config.js';
 import { BackstopPool } from './backstop_pool.js';
 
@@ -17,9 +10,7 @@ export class Backstop {
     public id: string,
     public config: BackstopConfig,
     public pools: Map<string, BackstopPool>,
-    public blndPerLpToken: number,
-    public usdcPerLpToken: number,
-    public lpTokenPrice: number,
+    public backstopToken: BackstopToken,
     public latestLedger: number,
     public timestamp: number
   ) {}
@@ -40,61 +31,32 @@ export class Backstop {
     includeRewardZone: boolean,
     timestamp: number
   ): Promise<Backstop> {
-    const config_promise = BackstopConfig.load(network, id);
-    // @dev: Sim only to prevent submitting the transaction, use random public key
-    const backstopContract = new BackstopContract(id);
-    const op = backstopContract.updateTokenValue();
-    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
-    const tx = new TransactionBuilder(
-      new Account('GANXGJV2RNOFMOSQ2DTI3RKDBAVERXUVFC27KW3RLVQCLB3RYNO3AAI4', '123'),
-      { fee: '100', networkPassphrase: network.passphrase }
-    )
-      .setTimeout(TimeoutInfinite)
-      .addOperation(xdr.Operation.fromXDR(op, 'base64'))
-      .build();
+    const config = await BackstopConfig.load(network, id);
+    const backstop_token = await BackstopToken.load(
+      network,
+      config.backstopTkn,
+      config.blndTkn,
+      config.usdcTkn
+    );
 
-    const lp_value_promise = rpc.simulateTransaction(tx);
-    const [config, lp_value_sim] = await Promise.all([config_promise, lp_value_promise]);
-    const lp_value: [i128, i128] | undefined = SorobanRpc.Api.isSimulationSuccess(lp_value_sim)
-      ? parseResult(lp_value_sim, BackstopContract.parsers.updateTknVal)
-      : undefined;
-    if (lp_value) {
-      const [blndPerShare, usdcPerShare] = lp_value;
-      const blndPerShareFloat = Number(blndPerShare) / 1e7;
-      const usdcPerShareFloat = Number(usdcPerShare) / 1e7;
-      const blndToUsdcLpRate = usdcPerShareFloat / 0.2 / (blndPerShareFloat / 0.8);
-      const lpTokenPrice = blndToUsdcLpRate * blndPerShareFloat + usdcPerShareFloat;
-
-      const poolData: Map<string, BackstopPool> = new Map();
-      let poolList = pools;
-      if (includeRewardZone) {
-        // convert to Set to ensure uniqueness
-        poolList = [...new Set(config.rewardZone.concat(pools))];
-      }
-      for (const pool of poolList) {
-        const backstop_pool = await BackstopPool.load(
-          network,
-          id,
-          pool,
-          blndPerShareFloat,
-          usdcPerShareFloat,
-          lpTokenPrice
-        );
-        poolData.set(pool, backstop_pool);
-      }
-      return new Backstop(
-        id,
-        config,
-        poolData,
-        blndPerShareFloat,
-        usdcPerShareFloat,
-        lpTokenPrice,
-        config.latestLedger,
-        timestamp
-      );
-    } else {
-      throw new Error('Unable to load backstop tokens value');
+    const poolData: Map<string, BackstopPool> = new Map();
+    let poolList = pools;
+    if (includeRewardZone) {
+      // convert to Set to ensure uniqueness
+      poolList = [...new Set(config.rewardZone.concat(pools))];
     }
+    for (const pool of poolList) {
+      const backstop_pool = await BackstopPool.load(
+        network,
+        id,
+        pool,
+        backstop_token.blndPerLpToken,
+        backstop_token.usdcPerLpToken,
+        backstop_token.lpTokenPrice
+      );
+      poolData.set(pool, backstop_pool);
+    }
+    return new Backstop(id, config, poolData, backstop_token, config.latestLedger, timestamp);
   }
 
   public async loadUser(network: Network, user: string): Promise<BackstopUser> {

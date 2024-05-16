@@ -55,9 +55,9 @@ export class BackstopUserPoolEst {
   ) {
     const shares_to_tokens = Number(pool.poolBalance.tokens) / Number(pool.poolBalance.shares);
     const tokens = (Number(user_balance.shares) / 1e7) * shares_to_tokens;
-    const blnd = tokens * backstop.blndPerLpToken;
-    const usdc = tokens * backstop.usdcPerLpToken;
-    const totalSpotValue = tokens * backstop.lpTokenPrice;
+    const blnd = tokens * backstop.backstopToken.blndPerLpToken;
+    const usdc = tokens * backstop.backstopToken.usdcPerLpToken;
+    const totalSpotValue = tokens * backstop.backstopToken.lpTokenPrice;
 
     const totalUnlockedQ4W = (Number(user_balance.unlockedQ4W) / 1e7) * shares_to_tokens;
 
