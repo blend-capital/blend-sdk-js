@@ -1,4 +1,4 @@
-import { Address, Contract, ContractSpec } from '@stellar/stellar-sdk';
+import { Address, Contract, contract } from '@stellar/stellar-sdk';
 import { i128, u32, u64 } from '../index.js';
 import {
   AuctionData,
@@ -50,7 +50,7 @@ export interface NewLiqudiationAuctionArgs {
 
 export class PoolContract extends Contract {
   // @dev: Generated from soroban-cli Typescript bindings
-  static spec: ContractSpec = new ContractSpec([
+  static spec: contract.Spec = new contract.Spec([
     'AAAAAQAAAAAAAAAAAAAAC0F1Y3Rpb25EYXRhAAAAAAMAAAAAAAAAA2JpZAAAAAPsAAAAEwAAAAsAAAAAAAAABWJsb2NrAAAAAAAABAAAAAAAAAADbG90AAAAA+wAAAATAAAACw==',
     'AAAAAAAAAAAAAAAKaW5pdGlhbGl6ZQAAAAAABwAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAAAAAARuYW1lAAAAEAAAAAAAAAAGb3JhY2xlAAAAAAATAAAAAAAAAApic3RvcF9yYXRlAAAAAAAEAAAAAAAAAAxtYXhfcG9zdGlvbnMAAAAEAAAAAAAAAAtiYWNrc3RvcF9pZAAAAAATAAAAAAAAAAdibG5kX2lkAAAAABMAAAAA',
     'AAAAAAAAAAAAAAAJc2V0X2FkbWluAAAAAAAAAQAAAAAAAAAJbmV3X2FkbWluAAAAAAAAEwAAAAA=',

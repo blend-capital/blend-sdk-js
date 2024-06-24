@@ -1,4 +1,4 @@
-import { Address, Contract, ContractSpec } from '@stellar/stellar-sdk';
+import { Address, Contract, contract } from '@stellar/stellar-sdk';
 import { i128 } from '../index.js';
 import { PoolBackstopData, Q4W, UserBalance } from './index.js';
 
@@ -38,7 +38,7 @@ export interface DrawArgs {
 
 export class BackstopContract extends Contract {
   // @dev: Generated from soroban-cli Typescript bindings
-  static spec: ContractSpec = new ContractSpec([
+  static spec: contract.Spec = new contract.Spec([
     'AAAAAQAAABhUaGUgcG9vbCdzIGJhY2tzdG9wIGRhdGEAAAAAAAAAEFBvb2xCYWNrc3RvcERhdGEAAAAEAAAAAAAAAARibG5kAAAACwAAAAAAAAAHcTR3X3BjdAAAAAALAAAAAAAAAAZ0b2tlbnMAAAAAAAsAAAAAAAAABHVzZGMAAAAL',
     'AAAAAQAAABxUaGUgcG9vbCdzIGJhY2tzdG9wIGJhbGFuY2VzAAAAAAAAAAtQb29sQmFsYW5jZQAAAAADAAAAAAAAAANxNHcAAAAACwAAAAAAAAAGc2hhcmVzAAAAAAALAAAAAAAAAAZ0b2tlbnMAAAAAAAs=',
     'AAAAAQAAACdBIGRlcG9zaXQgdGhhdCBpcyBxdWV1ZWQgZm9yIHdpdGhkcmF3YWwAAAAAAAAAAANRNFcAAAAAAgAAAAAAAAAGYW1vdW50AAAAAAALAAAAAAAAAANleHAAAAAABg==',

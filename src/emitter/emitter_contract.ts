@@ -1,4 +1,4 @@
-import { Address, Contract, ContractSpec } from '@stellar/stellar-sdk';
+import { Address, Contract, contract } from '@stellar/stellar-sdk';
 import { Option, Swap, i128, u64 } from '../index.js';
 
 // @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
@@ -16,7 +16,7 @@ export interface QueueSwapBackstopArgs {
 
 export class EmitterContract extends Contract {
   // @dev: Generated from soroban-cli Typescript bindings
-  static spec: ContractSpec = new ContractSpec([
+  static spec: contract.Spec = new contract.Spec([
     'AAAAAQAAAAAAAAAAAAAABFN3YXAAAAADAAAAAAAAAAxuZXdfYmFja3N0b3AAAAATAAAAAAAAABJuZXdfYmFja3N0b3BfdG9rZW4AAAAAABMAAAAAAAAAC3VubG9ja190aW1lAAAAAAY=',
     'AAAAAAAAAAAAAAAKaW5pdGlhbGl6ZQAAAAAAAwAAAAAAAAAKYmxuZF90b2tlbgAAAAAAEwAAAAAAAAAIYmFja3N0b3AAAAATAAAAAAAAAA5iYWNrc3RvcF90b2tlbgAAAAAAEwAAAAA=',
     'AAAAAAAAAAAAAAAKZGlzdHJpYnV0ZQAAAAAAAAAAAAEAAAAL',
