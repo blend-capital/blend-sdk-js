@@ -31,9 +31,17 @@ function createEsmModulePackageJson() {
     dirs.forEach(function (dir) {
       if (dir === 'esm') {
         // 1. add package.json file with "type": "module"
-        var packageJsonFile = path.join(buildDir, dir, '/package.json');
-        if (!fs.existsSync(packageJsonFile)) {
-          fs.writeFileSync(packageJsonFile, '{"type": "module"}', 'utf8', (err) => {
+        var esmPackageJson = path.join(buildDir, dir, '/package.json');
+        if (!fs.existsSync(esmPackageJson)) {
+          fs.writeFileSync(esmPackageJson, '{"type": "module"}', 'utf8', (err) => {
+            if (err) throw err;
+          });
+        }
+      } else if (dir === 'cjs') {
+        // 2. add package.json file with "type": "commonjs"
+        var cjsPackageJson = path.join(buildDir, dir, '/package.json');
+        if (!fs.existsSync(cjsPackageJson)) {
+          fs.writeFileSync(cjsPackageJson, '{"type": "commonjs"}', 'utf8', (err) => {
             if (err) throw err;
           });
         }

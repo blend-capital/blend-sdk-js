@@ -1,6 +1,6 @@
-import { Address, scValToNative, xdr } from '@stellar/stellar-sdk';
+import { Address, SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { EmissionConfig, EmissionData } from '../emissions.js';
-import { u32 } from '../index.js';
+import { Network, u32 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export class ReserveConfig {
@@ -17,6 +17,17 @@ export class ReserveConfig {
     public r_three: number,
     public reactivity: number
   ) {}
+
+  static async load(network: Network, poolId: string, assetId: string): Promise<ReserveConfig> {
+    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
+    const ledger_key = this.ledgerKey(poolId, assetId);
+    const result = await rpc.getLedgerEntries(ledger_key);
+    if (result.entries.length > 0) {
+      return this.fromLedgerEntryData(result.entries[0].val);
+    } else {
+      throw Error(`Unable to find ReserveConfig with key: ${ledger_key.toXDR('base64')}`);
+    }
+  }
 
   static ledgerKey(poolId: string, assetId: string): xdr.LedgerKey {
     const res: xdr.ScVal[] = [
@@ -135,6 +146,17 @@ export class ReserveData {
     public backstopCredit: bigint,
     public lastTime: bigint
   ) {}
+
+  static async load(network: Network, poolId: string, assetId: string): Promise<ReserveData> {
+    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
+    const ledger_key = this.ledgerKey(poolId, assetId);
+    const result = await rpc.getLedgerEntries(ledger_key);
+    if (result.entries.length > 0) {
+      return this.fromLedgerEntryData(result.entries[0].val);
+    } else {
+      throw Error(`Unable to find ReserveData with key: ${ledger_key.toXDR('base64')}`);
+    }
+  }
 
   static ledgerKey(poolId: string, assetId: string): xdr.LedgerKey {
     const res: xdr.ScVal[] = [
