@@ -14,24 +14,24 @@ export class PoolEstimate {
      */
     public totalBorrow: number,
     /**
-     * The total amount of APY accrued by all borrowed tokens
+     * The average APR accrued by all borrowed tokens
      */
-    public totalBorrowApy: number
+    public avgBorrowApr: number
   ) {}
 
   static build(reserves: Map<string, Reserve>): PoolEstimate {
     let totalSupply = 0;
     let totalBorrow = 0;
-    let totalBorrowApy = 0;
+    let totalBorrowApr = 0;
 
     reserves.forEach((reserve) => {
       totalSupply += reserve.estimates.supplied * reserve.oraclePrice;
       const borrow_base = reserve.estimates.borrowed * reserve.oraclePrice;
       totalBorrow += borrow_base;
-      totalBorrowApy += borrow_base * reserve.estimates.apy;
+      totalBorrowApr += borrow_base * reserve.estimates.apr;
     });
-    totalBorrowApy = totalBorrow != 0 ? totalBorrowApy / totalBorrow : 0;
+    const avgBorrowApr = totalBorrow != 0 ? totalBorrowApr / totalBorrow : 0;
 
-    return new PoolEstimate(totalSupply, totalBorrow, totalBorrowApy);
+    return new PoolEstimate(totalSupply, totalBorrow, avgBorrowApr);
   }
 }
