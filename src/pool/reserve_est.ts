@@ -29,13 +29,13 @@ export class ReserveEst {
      */
     public available: number,
     /**
-     * The current borrow APY
+     * The current borrow APR
      */
-    public apy: number,
+    public apr: number,
     /**
-     * The current supply APY
+     * The current supply APR
      */
-    public supplyApy: number,
+    public supplyApr: number,
     /**
      * The utilization of the reserve
      */
@@ -62,7 +62,7 @@ export class ReserveEst {
     backstopTakeRate: number,
     timestamp: number
   ): ReserveEst {
-    // accrue interest and calculate est apy
+    // accrue interest and calculate est apr
     const r_base = reserveConfig.r_base / 1e7;
     const r_one = reserveConfig.r_one / 1e7;
     const r_two = reserveConfig.r_two / 1e7;
@@ -77,26 +77,26 @@ export class ReserveEst {
     const b_supply = Number(reserveData.bSupply) / scalar;
     let supplied = b_supply * b_rate;
     let cur_util = 0;
-    let cur_apy = r_base;
-    let cur_supply_apy = 0;
+    let cur_apr = r_base;
+    let cur_supply_apr = 0;
 
     if (supplied != 0 && borrowed != 0) {
       const cur_ir_mod = Number(reserveData.interestRateModifier) / 1e9;
       cur_util = borrowed / supplied;
       const target_util = reserveConfig.util / 1e7;
       if (cur_util <= target_util) {
-        cur_apy = (cur_util / target_util) * r_one + r_base;
-        cur_apy *= cur_ir_mod;
+        cur_apr = (cur_util / target_util) * r_one + r_base;
+        cur_apr *= cur_ir_mod;
       } else if (target_util < cur_util && cur_util <= 0.95) {
-        cur_apy = ((cur_util - target_util) / (0.95 - target_util)) * r_two + r_one + r_base;
-        cur_apy *= cur_ir_mod;
+        cur_apr = ((cur_util - target_util) / (0.95 - target_util)) * r_two + r_one + r_base;
+        cur_apr *= cur_ir_mod;
       } else {
-        cur_apy = ((cur_util - 0.95) / 0.05) * r_three + cur_ir_mod * (r_one + r_two + r_base);
+        cur_apr = ((cur_util - 0.95) / 0.05) * r_three + cur_ir_mod * (r_one + r_two + r_base);
       }
-      cur_supply_apy = cur_apy * (1 - backstop_take_rate_decimal) * cur_util;
+      cur_supply_apr = cur_apr * (1 - backstop_take_rate_decimal) * cur_util;
       const accrual =
         ((timestamp != undefined ? timestamp - Number(reserveData.lastTime) : 0) / 31536000) *
-          cur_apy +
+          cur_apr +
         1;
 
       d_rate *= accrual;
@@ -119,8 +119,8 @@ export class ReserveEst {
       supplied,
       borrowed,
       Number(poolBalance) / scalar,
-      cur_apy,
-      cur_supply_apy,
+      cur_apr,
+      cur_supply_apr,
       cur_util,
       timestamp
     );
