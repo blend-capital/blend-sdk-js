@@ -15,9 +15,9 @@ export class PositionEstimates {
     public borrowCap: number,
     public borrowLimit: number,
 
-    public netApy: number,
-    public supplyApy: number,
-    public borrowApy: number
+    public netApr: number,
+    public supplyApr: number,
+    public borrowApr: number
   ) {}
 
   public static build(pool: Pool, positions: UserPositions): PositionEstimates {
@@ -30,8 +30,8 @@ export class PositionEstimates {
     let totalSupplied = 0;
     let totalEffectiveLiabilities = 0;
     let totalEffectiveCollateral = 0;
-    let supplyApy = 0;
-    let borrowApy = 0;
+    let supplyApr = 0;
+    let borrowApr = 0;
 
     // translate ledger liabilities to floating point values
     for (const [key, value] of positions.liabilities) {
@@ -43,7 +43,7 @@ export class PositionEstimates {
         const base_e_liability = asset_e_liability * reserve.oraclePrice;
         totalBorrowed += base_liability;
         totalEffectiveLiabilities += base_e_liability;
-        borrowApy += base_liability * reserve.estimates.apy;
+        borrowApr += base_liability * reserve.estimates.apr;
         liabilities.set(reserve.assetId, asset_liability);
       } else {
         throw new Error(`Unable to find reserve for liability balance: ${key}`);
@@ -60,7 +60,7 @@ export class PositionEstimates {
         const base_e_collateral = asset_e_collateral * reserve.oraclePrice;
         totalSupplied += base_collateral;
         totalEffectiveCollateral += base_e_collateral;
-        supplyApy += base_collateral * reserve.estimates.supplyApy;
+        supplyApr += base_collateral * reserve.estimates.supplyApr;
         collateral.set(reserve.assetId, asset_collateral);
       } else {
         throw new Error(`Unable to find reserve for collateral balance: ${key}`);
@@ -74,7 +74,7 @@ export class PositionEstimates {
         const asset_supply = reserve.toAssetFromBToken(value);
         const base_supply = asset_supply * reserve.oraclePrice;
         totalSupplied += base_supply;
-        supplyApy += base_supply * reserve.estimates.supplyApy;
+        supplyApr += base_supply * reserve.estimates.supplyApr;
         supply.set(reserve.assetId, asset_supply);
       } else {
         throw new Error(`Unable to find reserve for supply balance: ${key}`);
@@ -84,12 +84,12 @@ export class PositionEstimates {
     const borrowCap = totalEffectiveCollateral - totalEffectiveLiabilities;
     const borrowLimit =
       totalEffectiveCollateral == 0 ? 0 : totalEffectiveLiabilities / totalEffectiveCollateral;
-    const netApy =
+    const netApr =
       totalBorrowed + totalSupplied == 0
         ? 0
-        : (supplyApy - borrowApy) / (totalBorrowed + totalSupplied);
-    supplyApy = totalSupplied == 0 ? 0 : supplyApy / totalSupplied;
-    borrowApy = totalBorrowed == 0 ? 0 : borrowApy / totalBorrowed;
+        : (supplyApr - borrowApr) / (totalBorrowed + totalSupplied);
+    supplyApr = totalSupplied == 0 ? 0 : supplyApr / totalSupplied;
+    borrowApr = totalBorrowed == 0 ? 0 : borrowApr / totalBorrowed;
 
     return new PositionEstimates(
       liabilities,
@@ -101,9 +101,9 @@ export class PositionEstimates {
       totalEffectiveCollateral,
       borrowCap,
       borrowLimit,
-      netApy,
-      supplyApy,
-      borrowApy
+      netApr,
+      supplyApr,
+      borrowApr
     );
   }
 }

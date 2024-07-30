@@ -33,8 +33,8 @@ test('reserve estimate data', () => {
     supplied: 111.42916504013168,
     borrowed: 87.72775665641458,
     available: 1,
-    apy: 0.151088168686867,
-    supplyApy: 0,
+    apr: 0.151088168686867,
+    supplyApr: 0,
     util: 0.7864352674747468,
     timestamp: 617280,
   });
@@ -72,8 +72,8 @@ test('reserve estimate data no supplied or borrowed', () => {
     supplied: 1.123456789,
     borrowed: 0,
     available: 1,
-    apy: 0.01,
-    supplyApy: 0,
+    apr: 0.01,
+    supplyApr: 0,
     util: 0,
     timestamp: 617280,
   });
@@ -87,8 +87,8 @@ test('reserve estimate data no supplied or borrowed', () => {
     supplied: 1.123456789,
     borrowed: 0,
     available: 1,
-    apy: 0.01,
-    supplyApy: 0,
+    apr: 0.01,
+    supplyApr: 0,
     util: 0,
     timestamp: 617280,
   });
