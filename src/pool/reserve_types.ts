@@ -48,7 +48,19 @@ export class ReserveConfig {
       ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
     }
 
-    const data_entry_map = ledger_entry_data.contractData().val().map();
+    const as_scval = ledger_entry_data.contractData().val();
+    if (as_scval === undefined) {
+      throw Error('ReserveConfig contract data value invalid');
+    }
+    return this.fromScVal(as_scval);
+  }
+
+  static fromScVal(scval_data: xdr.ScVal | string): ReserveConfig {
+    if (typeof scval_data == 'string') {
+      scval_data = xdr.ScVal.fromXDR(scval_data, 'base64');
+    }
+
+    const data_entry_map = scval_data.map();
     if (data_entry_map == undefined) {
       throw Error('ReserveConfig contract data value is not a map');
     }

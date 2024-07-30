@@ -5,6 +5,7 @@ export * from './pool.js';
 export * from './pool_config.js';
 export * from './pool_contract.js';
 export * from './pool_est.js';
+export * from './pool_events.js';
 export * from './pool_user.js';
 export * from './pool_user_types.js';
 export * from './reserve.js';

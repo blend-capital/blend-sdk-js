@@ -4,6 +4,7 @@ import { i128, u64 } from '../index.js';
 export * from './backstop.js';
 export * from './backstop_config.js';
 export * from './backstop_contract.js';
+export * from './backstop_events.js';
 export * from './backstop_pool.js';
 export * from './backstop_pool_est.js';
 export * from './backstop_token.js';
