@@ -2,6 +2,7 @@ import { Address, xdr } from '@stellar/stellar-sdk';
 
 export * from './pool_factory_config.js';
 export * from './pool_factory_contract.js';
+export * from './pool_factory_events.js';
 
 export type PoolFactoryDataKey = { tag: 'Contracts'; values: [string] } | { tag: 'PoolInitMeta' };
 
