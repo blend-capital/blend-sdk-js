@@ -500,8 +500,8 @@ export function poolEventFromEventResponse(
         if (isNaN(auctionType)) {
           return undefined;
         }
-        const from = Address.fromScVal(topic_scval[3]).toString();
-        const fillAmount = BigInt(scValToNative(value_scval));
+        const from = Address.fromScVal(valueAsVec[0]).toString();
+        const fillAmount = BigInt(scValToNative(valueAsVec[1]));
         return {
           ...baseEvent,
           eventType: PoolEventType.FillAuction,
