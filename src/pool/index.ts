@@ -98,9 +98,9 @@ function AuctionKeyToXDR(auctionKey?: AuctionKey): xdr.ScVal {
 }
 
 export interface AuctionData {
-  bid: Map<u32, i128>;
+  bid: Map<string, i128>;
   block: u32;
-  lot: Map<u32, i128>;
+  lot: Map<string, i128>;
 }
 
 export type PoolDataKey =
