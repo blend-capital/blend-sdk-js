@@ -207,7 +207,7 @@ export class Reserve {
    * @returns The floating point asset amount
    */
   public toAssetFromDToken(dTokens: bigint): number {
-    return this.estimates.bRate * (Number(dTokens) / 10 ** this.config.decimals);
+    return this.estimates.dRate * (Number(dTokens) / 10 ** this.config.decimals);
   }
 
   /**
