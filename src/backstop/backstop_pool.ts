@@ -19,7 +19,8 @@ export class BackstopPool {
     poolId: string,
     blndPerLpToken: number,
     usdcPerLpToken: number,
-    lpTokenPrice: number
+    lpTokenPrice: number,
+    timestamp?: number | undefined
   ) {
     const rpc = new SorobanRpc.Server(network.rpc, network.opts);
     const poolBalanceDataKey = PoolBalance.ledgerKey(backstopId, poolId);
@@ -71,7 +72,12 @@ export class BackstopPool {
     }
     let emissions: Emissions | undefined;
     if (emission_config != undefined && emission_data != undefined) {
-      emissions = new Emissions(emission_config, emission_data);
+      emissions = new Emissions(
+        emission_config,
+        emission_data,
+        backstopPoolDataEntries.latestLedger
+      );
+      emissions.accrue(poolBalance.shares - poolBalance.q4w, 7, timestamp);
     }
 
     const estimates = BackstopPoolEst.build(

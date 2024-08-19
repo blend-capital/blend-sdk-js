@@ -21,16 +21,15 @@ export class Backstop {
    * @param id - The contract address of the backstop
    * @param pools - The set of pools to load backstop pool data for
    * @param includeRewardZone - Whether to load the pools in the reward zone.
-   * @param timestamp - The timestamp to project the pool data to
    * @returns - The backstop object
    */
   public static async load(
     network: Network,
     id: string,
     pools: string[],
-    includeRewardZone: boolean,
-    timestamp: number
+    includeRewardZone: boolean
   ): Promise<Backstop> {
+    const timestamp = Math.floor(Date.now() / 1000);
     const config = await BackstopConfig.load(network, id);
     const backstop_token = await BackstopToken.load(
       network,
@@ -52,7 +51,8 @@ export class Backstop {
         pool,
         backstop_token.blndPerLpToken,
         backstop_token.usdcPerLpToken,
-        backstop_token.lpTokenPrice
+        backstop_token.lpTokenPrice,
+        timestamp
       );
       poolData.set(pool, backstop_pool);
     }

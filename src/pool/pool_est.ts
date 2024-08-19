@@ -1,7 +1,10 @@
+import { toFloat } from '../math.js';
+import { PoolOracle } from './pool_oracle.js';
 import { Reserve } from './reserve.js';
 
 /**
- * Pool data projected to a specific timestamp.
+ * Aggregate floating point data for a pool. These numbers are not guaranteed to be exact, but
+ * are suitable for display purposes.
  */
 export class PoolEstimate {
   constructor(
@@ -12,26 +15,30 @@ export class PoolEstimate {
     /**
      * The total value of all tokens borrowed from the pool in the pool's oracle denomination
      */
-    public totalBorrow: number,
+    public totalBorrowed: number,
     /**
      * The average APR accrued by all borrowed tokens
      */
     public avgBorrowApr: number
   ) {}
 
-  static build(reserves: Map<string, Reserve>): PoolEstimate {
+  static build(reserves: Map<string, Reserve>, poolOracle: PoolOracle): PoolEstimate {
     let totalSupply = 0;
-    let totalBorrow = 0;
-    let totalBorrowApr = 0;
+    let totalBorrowed = 0;
+    let totalInterestInYear = 0;
 
-    reserves.forEach((reserve) => {
-      totalSupply += reserve.estimates.supplied * reserve.oraclePrice;
-      const borrow_base = reserve.estimates.borrowed * reserve.oraclePrice;
-      totalBorrow += borrow_base;
-      totalBorrowApr += borrow_base * reserve.estimates.apr;
-    });
-    const avgBorrowApr = totalBorrow != 0 ? totalBorrowApr / totalBorrow : 0;
+    for (const reserve of reserves.values()) {
+      const oraclePrice = poolOracle.getPriceFloat(reserve.assetId);
+      if (oraclePrice !== undefined) {
+        totalSupply += toFloat(reserve.totalSupply(), reserve.config.decimals) * oraclePrice;
+        const reserveLiabilitiesBase =
+          toFloat(reserve.totalLiabilities(), reserve.config.decimals) * oraclePrice;
+        totalBorrowed += reserveLiabilitiesBase;
+        totalInterestInYear += reserveLiabilitiesBase * reserve.borrowApr;
+      }
+    }
+    const avgBorrowApr = totalBorrowed != 0 ? totalInterestInYear / totalBorrowed : 0;
 
-    return new PoolEstimate(totalSupply, totalBorrow, avgBorrowApr);
+    return new PoolEstimate(totalSupply, totalBorrowed, avgBorrowApr);
   }
 }

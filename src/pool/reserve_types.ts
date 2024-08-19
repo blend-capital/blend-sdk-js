@@ -156,7 +156,7 @@ export class ReserveData {
     public dSupply: bigint,
     public bSupply: bigint,
     public backstopCredit: bigint,
-    public lastTime: bigint
+    public lastTime: number
   ) {}
 
   static async load(network: Network, poolId: string, assetId: string): Promise<ReserveData> {
@@ -201,7 +201,7 @@ export class ReserveData {
     let d_supply: bigint | undefined;
     let b_supply: bigint | undefined;
     let backstop_credit: bigint | undefined;
-    let last_time: bigint | undefined;
+    let last_time: number | undefined;
     for (const map_entry of data_entry_map) {
       const key = decodeEntryKey(map_entry.key());
       switch (key) {
@@ -224,7 +224,7 @@ export class ReserveData {
           backstop_credit = scValToNative(map_entry.val());
           break;
         case 'last_time':
-          last_time = scValToNative(map_entry.val());
+          last_time = Number(scValToNative(map_entry.val()));
           break;
         default:
           throw Error(`Invalid ReserveData key should not contain ${key}`);

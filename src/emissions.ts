@@ -1,8 +1,9 @@
 //! Base classes for emission data
 
 import { SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
-import { Network, i128, u64 } from './index.js';
+import { Network, i128 } from './index.js';
 import { decodeEntryKey } from './ledger_entry_helper.js';
+import * as FixedMath from './math.js';
 
 /********** Emission Source **********/
 
@@ -13,20 +14,30 @@ import { decodeEntryKey } from './ledger_entry_helper.js';
  * @property data - The EmissionData
  */
 export class Emissions {
-  constructor(public config: EmissionConfig, public data: EmissionData) {}
+  constructor(
+    public config: EmissionConfig,
+    public data: EmissionData,
+    public latestLedger: number
+  ) {}
 
   /**
    * Fetch the emissions for a token.
    * @param newtork - The network to load the emissions from
    * @param configLedgerKey - The LedgerLey for the config
    * @param dataLedgerkey - The LedgerKey for the data
+   * @param totalSupply - The total supply of the token being emitted to
+   * @param decimals - The decimals of the token being emitted to
+   * @param timestamp - The timestamp to accrue to. Defaults to the current time if not provided
    * @returns - The emissions if they exist, or undefined
    * @throws - If the emission data exists but is malformed
    */
   static async load(
     newtork: Network,
     configLedgerKey: xdr.LedgerKey,
-    dataLedgerkey: xdr.LedgerKey
+    dataLedgerkey: xdr.LedgerKey,
+    totalSupply: bigint,
+    decimals: number,
+    timestamp?: number | undefined
   ): Promise<Emissions | undefined> {
     const sorobanRpc = new SorobanRpc.Server(newtork.rpc, newtork.opts);
     const entriesResponse = await sorobanRpc.getLedgerEntries(configLedgerKey, dataLedgerkey);
@@ -52,30 +63,52 @@ export class Emissions {
       if (emissionData == undefined || emissionConfig == undefined) {
         throw new Error(`Unable to load emissions`);
       }
-      return new Emissions(emissionConfig, emissionData);
+      const emissions = new Emissions(emissionConfig, emissionData, entriesResponse.latestLedger);
+      emissions.accrue(totalSupply, decimals, timestamp);
+      return emissions;
     }
     return undefined;
   }
 
   /**
-   * Estimate the emission index to a given timestamp
-   *
-   * @param timestamp - The timestamp to extrapolate to
+   * Accrue emissions to the provided timestamp
    * @param supply - The total supply of the token being emitted to
-   * @returns The estimated emission index
+   * @param decimals - The decimals of the token being emitted to
+   * @param timestamp - The timestamp to accrue to. Defaults to the current time if not provided
    */
-  public estimateIndex(timestamp: number, supply: bigint, decimals: number): number {
-    const time_diff =
-      timestamp > this.config.expiration
-        ? Number(this.config.expiration) - Number(this.data.lastTime)
-        : timestamp - Number(this.data.lastTime);
-    if (time_diff < 0) {
-      return Number(this.data.index);
+  public accrue(supply: bigint, decimals: number, timestamp?: number) {
+    if (timestamp == undefined) {
+      timestamp = Math.floor(Date.now() / 1000);
     }
 
-    const scaled_supply = Number(supply) / 10 ** decimals;
-    const additional_index = (time_diff * Number(this.config.eps)) / scaled_supply;
-    return Number(this.data.index) + additional_index;
+    if (
+      this.data.lastTime >= this.config.expiration ||
+      this.data.lastTime >= timestamp ||
+      this.config.eps === BigInt(0) ||
+      supply === BigInt(0)
+    ) {
+      return;
+    }
+
+    const ledgerTimestamp = timestamp > this.config.expiration ? this.config.expiration : timestamp;
+    const additionalIndex = FixedMath.divFloor(
+      BigInt(ledgerTimestamp - this.data.lastTime) * this.config.eps,
+      supply,
+      FixedMath.toFixed(1, decimals)
+    );
+    this.data.index += additionalIndex;
+  }
+
+  /**
+   * Calculate the emissions per year per token as a float.
+   * @param supply - The total supply of the token being emitted to
+   * @param decimals - The decimals of the token being emitted to. Defaults to 7.
+   * @returns The emissions per year per token as a float
+   */
+  public emissionsPerYearPerToken(supply: bigint, decimals?: number): number {
+    const supplyFloat = FixedMath.toFloat(supply, decimals);
+    const totalEmissions = FixedMath.toFloat(this.config.eps, 7) * 31536000;
+    return totalEmissions / supplyFloat;
   }
 }
 
@@ -86,7 +119,7 @@ export class Emissions {
  * @property expiration - The expiration time of the emission
  */
 export class EmissionConfig {
-  constructor(public eps: bigint, public expiration: bigint) {}
+  constructor(public eps: bigint, public expiration: number) {}
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): EmissionConfig {
     if (typeof ledger_entry_data == 'string') {
@@ -97,12 +130,12 @@ export class EmissionConfig {
       throw Error('EmissionConfig contract data value is not a map');
     }
     let expiration: number | undefined;
-    let eps: number | undefined;
+    let eps: bigint | undefined;
     for (const map_entry of data_entry_map) {
       const key = decodeEntryKey(map_entry.key());
       switch (key) {
         case 'expiration':
-          expiration = scValToNative(map_entry.val());
+          expiration = Number(scValToNative(map_entry.val()));
           break;
         case 'eps':
           eps = scValToNative(map_entry.val());
@@ -114,12 +147,12 @@ export class EmissionConfig {
     if (eps == undefined || expiration == undefined) {
       throw Error('EmissionConfig scvMap value malformed');
     }
-    return new EmissionConfig(BigInt(eps), BigInt(expiration));
+    return new EmissionConfig(BigInt(eps), expiration);
   }
 }
 
 export class EmissionData {
-  constructor(public index: i128, public lastTime: u64) {}
+  constructor(public index: i128, public lastTime: number) {}
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): EmissionData {
     if (typeof ledger_entry_data == 'string') {
@@ -140,7 +173,7 @@ export class EmissionData {
           index = scValToNative(map_entry.val());
           break;
         case 'last_time':
-          last_time = scValToNative(map_entry.val());
+          last_time = Number(scValToNative(map_entry.val()));
           break;
         default:
           throw new Error(`EmissionData invalid key: should not contain ${key}`);
@@ -151,7 +184,7 @@ export class EmissionData {
       throw new Error(`ReserveEmissionData scvMap value malformed`);
     }
 
-    return new EmissionData(index, BigInt(last_time));
+    return new EmissionData(index, last_time);
   }
 }
 
@@ -162,7 +195,7 @@ export class EmissionData {
  * @property accrued - The accrued emissions the user has
  */
 export class UserEmissions {
-  constructor(public index: i128, public accrued: i128) {}
+  constructor(public index: bigint, public accrued: bigint) {}
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): UserEmissions {
     if (typeof ledger_entry_data == 'string') {
@@ -199,23 +232,13 @@ export class UserEmissions {
 
   /**
    * Estimate the accrued emission to a given timestamp
-   * @param timestamp - The timestamp to extrapolate to
    * @param emissions - The emissions data for a token
-   * @param decimals - The decimals of the token being emitted to
-   * @param supply - The total supply of the token being emitted to (as integer)
-   * @param balance - The balance of the user of the token being emitted to (in integer)
-   * @returns The estimated accrued emissions as a float
+   * @param balance - The balance of the user of the token being emitted to (fixed point)
+   * @returns The estimated accrued emissions in fixed point
    */
-  estimateAccrual(
-    timestamp: number,
-    emissions: Emissions,
-    decimals: number,
-    supply: bigint,
-    balance: bigint
-  ): number {
-    const emission_index = emissions.estimateIndex(timestamp, supply, decimals);
-    const additional_index = emission_index - Number(this.index);
-    // emissions are a Stellar Asset with 7 decimals
-    return ((additional_index * Number(balance)) / 10 ** decimals + Number(this.accrued)) / 1e7;
+  estimateAccrual(emissions: Emissions, decimals: number, balance: bigint): number {
+    const additional_index = emissions.data.index - this.index;
+    const toAccrue = FixedMath.mulFloor(balance, additional_index, FixedMath.SCALAR_7);
+    return FixedMath.toFloat(toAccrue + this.accrued, decimals);
   }
 }

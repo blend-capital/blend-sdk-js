@@ -69,8 +69,7 @@ export class BackstopUser {
         backstop,
         pool_data,
         user_pool_balance,
-        user_pool_emissions,
-        backstop.timestamp
+        user_pool_emissions
       );
       estimates.set(pool, pool_est);
     }

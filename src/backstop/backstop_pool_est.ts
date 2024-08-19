@@ -1,3 +1,4 @@
+import { toFloat } from '../math.js';
 import { PoolBalance } from './backstop_pool.js';
 
 export class BackstopPoolEst {
@@ -14,7 +15,7 @@ export class BackstopPoolEst {
     usdcPerLpToken: number,
     lpTokenPrice: number
   ) {
-    const tokens_float = Number(poolBalance.tokens) / 1e7;
+    const tokens_float = toFloat(poolBalance.tokens, 7);
     const blnd = tokens_float * blndPerLpToken;
     const usdc = tokens_float * usdcPerLpToken;
     const totalSpotValue = tokens_float * lpTokenPrice;

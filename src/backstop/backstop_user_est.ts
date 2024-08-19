@@ -50,8 +50,7 @@ export class BackstopUserPoolEst {
     backstop: Backstop,
     pool: BackstopPool,
     user_balance: UserBalance,
-    user_emissions: UserEmissions | undefined,
-    timestamp: number
+    user_emissions: UserEmissions | undefined
   ) {
     const shares_to_tokens = Number(pool.poolBalance.tokens) / Number(pool.poolBalance.shares);
     const tokens = (Number(user_balance.shares) / 1e7) * shares_to_tokens;
@@ -75,22 +74,10 @@ export class BackstopUserPoolEst {
         if (emission_balance > 0) {
           // emissions started after the user deposited
           const empty_emission_data = new UserEmissions(BigInt(0), BigInt(0));
-          emissions = empty_emission_data.estimateAccrual(
-            timestamp,
-            pool.emissions,
-            7,
-            emission_balance,
-            user_balance.shares
-          );
+          emissions = empty_emission_data.estimateAccrual(pool.emissions, 7, emission_balance);
         }
       } else {
-        emissions = user_emissions.estimateAccrual(
-          timestamp,
-          pool.emissions,
-          7,
-          emission_balance,
-          user_balance.shares
-        );
+        emissions = user_emissions.estimateAccrual(pool.emissions, 7, emission_balance);
       }
     }
     return new BackstopUserPoolEst(
