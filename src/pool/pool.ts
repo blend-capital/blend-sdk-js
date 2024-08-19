@@ -1,5 +1,6 @@
-import { Network, PoolConfig } from '../index.js';
+import { Network, PoolConfig, UserPositions } from '../index.js';
 import { PoolOracle } from './pool_oracle.js';
+import { PoolUser } from './pool_user.js';
 import { Reserve } from './reserve.js';
 import { ReserveEmissions } from './reserve_emissions.js';
 
@@ -65,5 +66,17 @@ export class Pool {
    */
   public async loadOracle(network: Network): Promise<PoolOracle> {
     return PoolOracle.load(network, this.config.oracle, this.config.reserveList);
+  }
+
+  /**
+   * Load a user for the pool
+   * @param network - The network information to load the oracle from
+   * @param oracle - The oracle for the pool
+   * @param user - The user to load
+   * @returns A pool user object
+   */
+  public async loadPoolUser(network: Network, oracle: PoolOracle, user: string): Promise<PoolUser> {
+    const positions = await UserPositions.load(network, this.id, user);
+    return PoolUser.build(this, oracle, positions);
   }
 }

@@ -98,9 +98,18 @@ export class Reserve {
    * @param backstopTakeRate - The backstop take rate (as a fixed point number)
    * @param timestamp - The timestamp to accrue interest to (in seconds since epoch)
    */
-  public accrue(backstopTakeRate: bigint, timestamp = Math.floor(Date.now() / 1000)) {
-    const curUtilFloat = this.getUtilization();
-    const curUtil = FixedMath.toFixed(curUtilFloat);
+  public accrue(backstopTakeRate: bigint, timestamp?: number | undefined): void {
+    if (timestamp === undefined) {
+      timestamp = Math.floor(Date.now() / 1000);
+    }
+
+    const curUtil = this.getUtilization();
+    if (curUtil === BigInt(0)) {
+      this.borrowApr = FixedMath.toFloat(BigInt(this.config.r_base), 7);
+      this.data.lastTime = timestamp;
+      return;
+    }
+
     let curIr: bigint;
     const targetUtil = BigInt(this.config.util);
     const fixed_95_percent = BigInt(9_500_000);
@@ -143,10 +152,10 @@ export class Reserve {
       curIr = extraRate + intersection;
     }
     this.borrowApr = FixedMath.toFloat(curIr, 7);
-    this.supplyApr = this.borrowApr * curUtilFloat;
+    this.supplyApr = FixedMath.toFloat(FixedMath.mulFloor(curIr, curUtil, FixedMath.SCALAR_7), 7);
 
     // update rate_modifier on reserve data
-    const deltaTimeScaled = FixedMath.toFixed(timestamp - this.data.lastTime);
+    const deltaTimeScaled = FixedMath.toFixed(timestamp - this.data.lastTime, 9);
     if (curUtil > targetUtil) {
       // rate modifier increasing
       const utilDifScaled = (curUtil - targetUtil) * BigInt(100);
@@ -251,14 +260,37 @@ export class Reserve {
   }
 
   /**
+   * Get the utilization of the Reserve as a fixed point number
+   */
+  public getUtilization(): bigint {
+    const totalSupply = this.totalSupply();
+    if (totalSupply === BigInt(0)) {
+      return BigInt(0);
+    } else {
+      return FixedMath.divCeil(
+        this.totalLiabilities(),
+        totalSupply,
+        FixedMath.toFixed(1, this.config.decimals)
+      );
+    }
+  }
+
+  /**
    * Get the utilization of the Reserve as a floating point number
    */
-  public getUtilization(): number {
+  public getUtilizationFloat(): number {
     const totalSupply = this.totalSupply();
     if (totalSupply === BigInt(0)) {
       return 0;
     } else {
-      return Number(this.totalLiabilities()) / Number(totalSupply);
+      return FixedMath.toFloat(
+        FixedMath.divCeil(
+          this.totalLiabilities(),
+          totalSupply,
+          FixedMath.toFixed(1, this.config.decimals)
+        ),
+        7
+      );
     }
   }
 
@@ -270,10 +302,24 @@ export class Reserve {
   }
 
   /**
+   * Get the total supply of the Reserve as a floating point number
+   */
+  public totalSupplyFloat(): number {
+    return this.toAssetFromBTokenFloat(this.data.bSupply);
+  }
+
+  /**
    * Get the total liabilities of the Reserve
    */
   public totalLiabilities(): bigint {
     return this.toAssetFromDToken(this.data.dSupply);
+  }
+
+  /**
+   * Get the total liabilities of the Reserve as a floating point number
+   */
+  public totalLiabilitiesFloat(): number {
+    return this.toAssetFromDTokenFloat(this.data.dSupply);
   }
 
   /********** Conversion Functions ***********/

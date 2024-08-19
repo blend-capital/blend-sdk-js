@@ -22,40 +22,18 @@ export function divFloor(x: bigint, y: bigint, denominator: bigint): bigint {
 }
 
 export function divCeil(x: bigint, y: bigint, denominator: bigint): bigint {
-  return mulDivFloor(x, denominator, y);
+  return mulDivCeil(x, denominator, y);
 }
 
+// Performs floor(x * y / z)
 function mulDivFloor(x: bigint, y: bigint, z: bigint): bigint {
   const r = x * y;
-  return _divFloor(r, z);
-}
-
-// Performs floor(r / z)
-function _divFloor(r: bigint, z: bigint): bigint {
-  if (r < 0n || (r > 0n && z < 0n)) {
-    // ceiling is taken by default for a negative result
-    const remainder = r % z;
-    return r / z - (remainder > 0n ? 1n : 0n);
-  } else {
-    // floor taken by default for a positive or zero result
-    return r / z;
-  }
+  return r / z;
 }
 
 // Performs ceil(x * y / z)
 function mulDivCeil(x: bigint, y: bigint, z: bigint): bigint {
   const r = x * y;
-  return _divCeil(r, z);
-}
-
-// Performs ceil(r / z)
-function _divCeil(r: bigint, z: bigint): bigint {
-  if (r <= 0n || (r > 0n && z < 0n)) {
-    // ceiling is taken by default for a negative or zero result
-    return r / z;
-  } else {
-    // floor taken by default for a positive result
-    const remainder = r % z;
-    return r / z + (remainder > 0n ? 1n : 0n);
-  }
+  const remainder = r % z;
+  return r / z + (remainder > 0n ? 1n : 0n);
 }
