@@ -1,11 +1,11 @@
 import { Network } from '../index.js';
 import { toFloat } from '../math.js';
-import { getOracleDecimals, getOraclePrice } from '../oracle.js';
+import { getOracleDecimals, getOraclePrice, PriceData } from '../oracle.js';
 
 export class PoolOracle {
   constructor(
     public oracleId: string,
-    public prices: Map<string, bigint>,
+    public prices: Map<string, PriceData>,
     public decimals: number,
     public latestLedger: number
   ) {}
@@ -26,9 +26,9 @@ export class PoolOracle {
       throw Error('Failed to load all prices');
     }
 
-    const prices = new Map<string, bigint>();
+    const prices = new Map<string, PriceData>();
     for (let i = 0; i < assets.length; i++) {
-      prices.set(assets[i], pricesResult[i].price);
+      prices.set(assets[i], pricesResult[i]);
     }
 
     return new PoolOracle(oracleId, prices, decimalsResult.decimals, decimalsResult.latestLedger);
@@ -40,7 +40,7 @@ export class PoolOracle {
    * @returns The price as a fixed point number, or undefined if no price is available
    */
   public getPrice(assetId: string): bigint | undefined {
-    return this.prices.get(assetId);
+    return this.prices.get(assetId)?.price;
   }
 
   /**

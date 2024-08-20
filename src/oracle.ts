@@ -9,11 +9,16 @@ import {
 } from '@stellar/stellar-sdk';
 import { Network } from './index.js';
 
+export interface PriceData {
+  price: bigint;
+  timestamp: number;
+}
+
 export async function getOraclePrice(
   network: Network,
   oracle_id: string,
   token_id: string
-): Promise<{ price: bigint; latestLedger: number }> {
+): Promise<PriceData> {
   // account does not get validated during simulateTx
   const account = new Account('GANXGJV2RNOFMOSQ2DTI3RKDBAVERXUVFC27KW3RLVQCLB3RYNO3AAI4', '123');
   const tx_builder = new TransactionBuilder(account, {
@@ -37,7 +42,7 @@ export async function getOraclePrice(
           // eslint-disable-next-line
           // @ts-ignore
           price: scValToNative(price_result[0]?.val()),
-          latestLedger: result.latestLedger,
+          timestamp: Number(scValToNative(price_result[1]?.val())),
         };
       }
     }
