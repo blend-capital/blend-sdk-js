@@ -1,6 +1,5 @@
-import { Network, PoolConfig, UserPositions } from '../index.js';
+import { Network, PoolConfig } from '../index.js';
 import { PoolOracle } from './pool_oracle.js';
-import { PoolUser } from './pool_user.js';
 import { Reserve } from './reserve.js';
 import { ReserveEmissions } from './reserve_emissions.js';
 
@@ -9,10 +8,10 @@ import { ReserveEmissions } from './reserve_emissions.js';
  */
 export class Pool {
   constructor(
+    private network: Network,
     public id: string,
     public config: PoolConfig,
     public reserves: Map<string, Reserve>,
-    public latestLedger: number,
     public timestamp: number
   ) {}
 
@@ -36,19 +35,18 @@ export class Pool {
       reserves.set(reserve.assetId, reserve);
     }
 
-    return new Pool(id, pool_config, reserves, pool_config.latestLedger, timestamp);
+    return new Pool(network, id, pool_config, reserves, timestamp);
   }
 
   /**
    * Load emission data for the pool
-   * @param network - The network information to load the data from
    * @returns A map of assetId to emission data
    */
-  public async loadEmissions(network: Network): Promise<Map<string, ReserveEmissions>> {
+  public async loadEmissions(): Promise<Map<string, ReserveEmissions>> {
     const reserveEmissions = new Map<string, ReserveEmissions>();
     await Promise.all(
       Array.from(this.reserves.values()).map((reserve) => {
-        reserve.loadEmissions(network).then((emissions) => {
+        reserve.loadEmissions(this.network).then((emissions) => {
           if (emissions) {
             // assetIds are unique, so no risk of overwriting
             reserveEmissions.set(reserve.assetId, emissions);
@@ -61,22 +59,9 @@ export class Pool {
 
   /**
    * Load the oracle for the pool
-   * @param network - The network information to load the oracle from
    * @returns The oracle for the pool
    */
-  public async loadOracle(network: Network): Promise<PoolOracle> {
-    return PoolOracle.load(network, this.config.oracle, this.config.reserveList);
-  }
-
-  /**
-   * Load a user for the pool
-   * @param network - The network information to load the oracle from
-   * @param oracle - The oracle for the pool
-   * @param user - The user to load
-   * @returns A pool user object
-   */
-  public async loadPoolUser(network: Network, oracle: PoolOracle, user: string): Promise<PoolUser> {
-    const positions = await UserPositions.load(network, this.id, user);
-    return PoolUser.build(this, oracle, positions);
+  public async loadOracle(): Promise<PoolOracle> {
+    return PoolOracle.load(this.network, this.config.oracle, this.config.reserveList);
   }
 }

@@ -8,22 +8,38 @@ export type Q4WEst = {
   exp: number;
 };
 
-export class BackstopUserPoolEst {
-  /// The estimated LP tokens the user has deposited
+export class BackstopPoolUserEst {
+  /**
+   * The estimated LP tokens the user has deposited
+   */
   public tokens: number;
-  /// The estimated BLND tokens of the user's deposited LP tokens
+  /**
+   * The estimated BLND tokens of the user's deposited LP tokens
+   */
   public blnd: number;
-  /// The estimated USDC tokens of the user's deposited LP tokens
+  /**
+   * The estimated USDC tokens of the user's deposited LP tokens
+   */
   public usdc: number;
-  /// The estimated spot value of the user's deposited LP tokens
+  /**
+   * The estimated spot value of the user's deposited LP tokens
+   */
   public totalSpotValue: number;
-  /// The estimated number of unlocked LP tokens that have been queued
+  /**
+   * The estimated number of unlocked LP tokens that have been queued
+   */
   public totalUnlockedQ4W: number;
-  /// The array of queued withdrawals in (token amounts)
+  /**
+   * The array of queued withdrawals in (token amounts)
+   */
   public q4w: Q4WEst[];
-  /// The estimated total LP tokens queued for withdrawal
+  /**
+   * The estimated total LP tokens queued for withdrawal
+   */
   public totalQ4W: number;
-  /// The estimated emissions of the user
+  /**
+   * The estimated emissions of the user
+   */
   public emissions: number;
 
   constructor(
@@ -80,7 +96,7 @@ export class BackstopUserPoolEst {
         emissions = user_emissions.estimateAccrual(pool.emissions, 7, emission_balance);
       }
     }
-    return new BackstopUserPoolEst(
+    return new BackstopPoolUserEst(
       tokens,
       blnd,
       usdc,

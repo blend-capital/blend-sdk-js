@@ -2,6 +2,7 @@ import { Address, SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { UserEmissions } from '../emissions.js';
 import { Network, i128, u32 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
+import { Reserve } from './reserve.js';
 
 export class UserPositions {
   constructor(
@@ -107,6 +108,105 @@ export class UserPositions {
       throw Error('User positions xdr_string is malformed');
     }
     return new UserPositions(liability_map, collateral_map, supply_map);
+  }
+
+  /**
+   * Get a non-collaterized supply position in bTokens
+   * @param reserve
+   * @returns
+   */
+  getSupplyBTokens(reserve: Reserve): bigint {
+    const supply = this.supply.get(reserve.config.index);
+    if (supply == undefined) {
+      return BigInt(0);
+    }
+    return supply;
+  }
+
+  /**
+   * Get the non-collaterized supply position for a given reserve
+   * @param reserve - The reserve
+   * @returns The supply, or 0 if the position does not have any supply
+   */
+  getSupply(reserve: Reserve): bigint {
+    const supply = this.supply.get(reserve.config.index);
+    return reserve.toAssetFromBToken(supply);
+  }
+
+  /**
+   * Get the non-collaterized supply position for a given reserve as a floating point number
+   * @param reserve - The reserve
+   * @returns The supply, or 0 if the position does not have any supply
+   */
+  getSupplyFloat(reserve: Reserve): number {
+    const supply = this.supply.get(reserve.config.index);
+    return reserve.toAssetFromBTokenFloat(supply);
+  }
+
+  /**
+   * Get the collaterized supply position in bTokens
+   * @param reserve
+   * @returns
+   */
+  getCollateralBTokens(reserve: Reserve): bigint {
+    const collateral = this.collateral.get(reserve.config.index);
+    if (collateral == undefined) {
+      return BigInt(0);
+    }
+    return collateral;
+  }
+
+  /**
+   * Get the collateral position for a given reserve
+   * @param reserve - The reserve
+   * @returns The collateral, or 0 if the position does not have any collateral
+   */
+  getCollateral(reserve: Reserve): bigint {
+    const collateral = this.collateral.get(reserve.config.index);
+    return reserve.toAssetFromBToken(collateral);
+  }
+
+  /**
+   * Get the collateral position for a given reserve as a floating point number
+   * @param reserve - The reserve
+   * @returns The collateral, or 0 if the position does not have any collateral
+   */
+  getCollateralFloat(reserve: Reserve): number {
+    const collateral = this.collateral.get(reserve.config.index);
+    return reserve.toAssetFromBTokenFloat(collateral);
+  }
+
+  /**
+   * Get the liability position in dTokens
+   * @param reserve
+   * @returns
+   */
+  getLiabilityDTokens(reserve: Reserve): bigint {
+    const liability = this.liabilities.get(reserve.config.index);
+    if (liability == undefined) {
+      return BigInt(0);
+    }
+    return liability;
+  }
+
+  /**
+   * Get the liabilities position for a given reserve
+   * @param reserve - The reserve
+   * @returns The liabilities, or 0 if the position does not have any liabilities
+   */
+  getLiabilities(reserve: Reserve): bigint {
+    const liability = this.liabilities.get(reserve.config.index);
+    return reserve.toAssetFromDToken(liability);
+  }
+
+  /**
+   * Get the liabilities position for a given reserve as a floating point number
+   * @param reserve - The reserve
+   * @returns The liabilities, or 0 if the position does not have any liabilities
+   */
+  getLiabilitiesFloat(reserve: Reserve): number {
+    const liability = this.liabilities.get(reserve.config.index);
+    return reserve.toAssetFromDTokenFloat(liability);
   }
 }
 

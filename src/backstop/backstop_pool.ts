@@ -2,14 +2,12 @@ import { Address, SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { EmissionConfig, EmissionData, Emissions } from '../emissions.js';
 import { Network, i128 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
-import { BackstopPoolEst } from './backstop_pool_est.js';
 
 export class BackstopPool {
   constructor(
     public poolBalance: PoolBalance,
     public toGulpEmissions: bigint,
     public emissions: Emissions | undefined,
-    public estimates: BackstopPoolEst,
     public latestLedger: number
   ) {}
 
@@ -17,9 +15,6 @@ export class BackstopPool {
     network: Network,
     backstopId: string,
     poolId: string,
-    blndPerLpToken: number,
-    usdcPerLpToken: number,
-    lpTokenPrice: number,
     timestamp?: number | undefined
   ) {
     const rpc = new SorobanRpc.Server(network.rpc, network.opts);
@@ -80,18 +75,10 @@ export class BackstopPool {
       emissions.accrue(poolBalance.shares - poolBalance.q4w, 7, timestamp);
     }
 
-    const estimates = BackstopPoolEst.build(
-      poolBalance,
-      blndPerLpToken,
-      usdcPerLpToken,
-      lpTokenPrice
-    );
-
     return new BackstopPool(
       poolBalance,
       toGulpEmissions,
       emissions,
-      estimates,
       backstopPoolDataEntries.latestLedger
     );
   }

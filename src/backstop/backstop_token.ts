@@ -7,19 +7,33 @@ import { decodeEntryKey } from '../ledger_entry_helper.js';
  */
 export class BackstopToken {
   constructor(
-    /// The address of the comet pool
+    /**
+     * The address of the comet pool
+     */
     public id: string,
-    /// The amount of BLND in the comet LP
+    /**
+     * The amount of BLND in the comet LP
+     */
     public blnd: bigint,
-    /// The amount of USDC in the comet LP
+    /**
+     * The amount of USDC in the comet LP
+     */
     public usdc: bigint,
-    /// The number of shares in the comet LP
+    /**
+     * The number of shares in the comet LP
+     */
     public shares: bigint,
-    /// The amount of BLND per LP token
+    /**
+     * The amount of BLND per LP token
+     */
     public blndPerLpToken: number,
-    /// The amount of USDC per LP token
+    /**
+     * The amount of USDC per LP token
+     */
     public usdcPerLpToken: number,
-    /// The price of the LP token in USDC
+    /**
+     * The price of the LP token in USDC
+     */
     public lpTokenPrice: number
   ) {}
 
