@@ -1,7 +1,7 @@
 import { Network, PoolConfig } from '../index.js';
 import { PoolOracle } from './pool_oracle.js';
+import { PoolUser } from './pool_user.js';
 import { Reserve } from './reserve.js';
-import { ReserveEmissions } from './reserve_emissions.js';
 
 /**
  * Manage ledger data for a Blend pool
@@ -26,8 +26,8 @@ export class Pool {
     const timestamp = Math.floor(Date.now() / 1000);
 
     const reserveList = await Promise.all(
-      pool_config.reserveList.map((asset) =>
-        Reserve.load(network, id, BigInt(pool_config.backstopRate), asset, timestamp)
+      pool_config.reserveList.map((asset, index) =>
+        Reserve.load(network, id, BigInt(pool_config.backstopRate), asset, index, timestamp)
       )
     );
     const reserves = new Map<string, Reserve>();
@@ -39,29 +39,19 @@ export class Pool {
   }
 
   /**
-   * Load emission data for the pool
-   * @returns A map of assetId to emission data
-   */
-  public async loadEmissions(): Promise<Map<string, ReserveEmissions>> {
-    const reserveEmissions = new Map<string, ReserveEmissions>();
-    await Promise.all(
-      Array.from(this.reserves.values()).map((reserve) => {
-        reserve.loadEmissions(this.network).then((emissions) => {
-          if (emissions) {
-            // assetIds are unique, so no risk of overwriting
-            reserveEmissions.set(reserve.assetId, emissions);
-          }
-        });
-      })
-    );
-    return reserveEmissions;
-  }
-
-  /**
    * Load the oracle for the pool
    * @returns The oracle for the pool
    */
   public async loadOracle(): Promise<PoolOracle> {
     return PoolOracle.load(this.network, this.config.oracle, this.config.reserveList);
+  }
+
+  /**
+   * Load the user from the pool
+   * @param userId - The address of the user to load
+   * @returns The pool user
+   */
+  public async loadUser(userId: string): Promise<PoolUser> {
+    return PoolUser.load(this.network, this, userId);
   }
 }

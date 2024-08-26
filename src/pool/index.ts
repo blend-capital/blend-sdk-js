@@ -6,9 +6,11 @@ export * from './pool_config.js';
 export * from './pool_contract.js';
 export * from './pool_est.js';
 export * from './pool_events.js';
-export * from './pool_user_est.js';
+export * from './pool_oracle.js';
+export * from './pool_user.js';
 export * from './reserve.js';
 export * from './reserve_types.js';
+export * from './user_positions_est.js';
 export * from './user_types.js';
 
 /**

@@ -1,10 +1,16 @@
 import { SorobanRpc, xdr } from '@stellar/stellar-sdk';
+import { EmissionConfig, EmissionData, Emissions } from '../emissions.js';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 import * as FixedMath from '../math.js';
 import { TokenMetadata } from '../token.js';
-import { ReserveEmissions } from './reserve_emissions.js';
-import { ReserveConfig, ReserveData } from './reserve_types.js';
+import {
+  getEmissionEntryTokenType,
+  ReserveConfig,
+  ReserveData,
+  ReserveEmissionConfig,
+  ReserveEmissionData,
+} from './reserve_types.js';
 
 /**
  * Manage ledger data for a reserve in a Blend pool
@@ -16,6 +22,8 @@ export class Reserve {
     public tokenMetadata: TokenMetadata,
     public config: ReserveConfig,
     public data: ReserveData,
+    public borrowEmissions: Emissions | undefined,
+    public supplyEmissions: Emissions | undefined,
     public borrowApr: number,
     public supplyApr: number,
     public latestLedger: number
@@ -27,6 +35,7 @@ export class Reserve {
    * @param poolId - The contract address of the Pool
    * @param backstopTakeRate - The backstop take rate (as a fixed point number with 7 decimals)
    * @param assetId - The contract address of the Reserve asset
+   * @param index - The index of the Reserve in the Pool
    * @param timestamp - The timestamp to project the Reserve data to (in seconds since epoch)
    * @returns A Reserve object
    */
@@ -35,14 +44,21 @@ export class Reserve {
     poolId: string,
     backstopTakeRate: bigint,
     assetId: string,
+    index: number,
     timestamp?: number
   ): Promise<Reserve> {
     const sorobanRpc = new SorobanRpc.Server(network.rpc, network.opts);
 
+    const dTokenIndex = index * 2;
+    const bTokenIndex = index * 2 + 1;
     const ledgerKeys: xdr.LedgerKey[] = [
       ReserveConfig.ledgerKey(poolId, assetId),
       TokenMetadata.ledgerKey(assetId),
       ReserveData.ledgerKey(poolId, assetId),
+      ReserveEmissionConfig.ledgerKey(poolId, bTokenIndex),
+      ReserveEmissionData.ledgerKey(poolId, bTokenIndex),
+      ReserveEmissionConfig.ledgerKey(poolId, dTokenIndex),
+      ReserveEmissionData.ledgerKey(poolId, dTokenIndex),
     ];
     const reserveLedgerEntries = await sorobanRpc.getLedgerEntries(...ledgerKeys);
 
@@ -54,6 +70,10 @@ export class Reserve {
     let reserveConfig: ReserveConfig | undefined;
     let reserveData: ReserveData | undefined;
     let tokenMetadata: TokenMetadata | undefined;
+    let emissionBorrowConfig: EmissionConfig | undefined;
+    let emissionBorrowData: EmissionData | undefined;
+    let emissionSupplyConfig: EmissionConfig | undefined;
+    let emissionSupplyData: EmissionData | undefined;
     for (const entry of reserveLedgerEntries.entries) {
       const ledgerEntry = entry.val;
       const key = decodeEntryKey(ledgerEntry.contractData().key());
@@ -67,6 +87,24 @@ export class Reserve {
         case 'ContractInstance':
           tokenMetadata = TokenMetadata.fromLedgerEntryData(ledgerEntry);
           break;
+        case `EmisConfig`: {
+          const token_type = getEmissionEntryTokenType(ledgerEntry);
+          if (token_type == 0) {
+            emissionBorrowConfig = EmissionConfig.fromLedgerEntryData(ledgerEntry);
+          } else if (token_type == 1) {
+            emissionSupplyConfig = EmissionConfig.fromLedgerEntryData(ledgerEntry);
+          }
+          break;
+        }
+        case `EmisData`: {
+          const token_type = getEmissionEntryTokenType(ledgerEntry);
+          if (token_type == 0) {
+            emissionBorrowData = EmissionData.fromLedgerEntryData(ledgerEntry);
+          } else if (token_type == 1) {
+            emissionSupplyData = EmissionData.fromLedgerEntryData(ledgerEntry);
+          }
+          break;
+        }
         default:
           throw Error(`Invalid reserve key: should not contain ${key}`);
       }
@@ -76,15 +114,37 @@ export class Reserve {
       throw new Error('Unable to load reserve: missing data.');
     }
 
+    let borrowEmissions: Emissions | undefined = undefined;
+    if (emissionBorrowConfig && emissionBorrowData) {
+      borrowEmissions = new Emissions(
+        emissionBorrowConfig,
+        emissionBorrowData,
+        reserveLedgerEntries.latestLedger
+      );
+      borrowEmissions.accrue(reserveData.dSupply, reserveConfig.decimals, timestamp);
+    }
+
+    let supplyEmissions: Emissions | undefined = undefined;
+    if (emissionSupplyConfig && emissionSupplyData) {
+      supplyEmissions = new Emissions(
+        emissionSupplyConfig,
+        emissionSupplyData,
+        reserveLedgerEntries.latestLedger
+      );
+      supplyEmissions.accrue(reserveData.bSupply, reserveConfig.decimals, timestamp);
+    }
+
     const reserve = new Reserve(
       poolId,
       assetId,
       tokenMetadata,
       reserveConfig,
       reserveData,
-      reserveLedgerEntries.latestLedger,
+      borrowEmissions,
+      supplyEmissions,
       0,
-      0
+      0,
+      reserveLedgerEntries.latestLedger
     );
     reserve.accrue(backstopTakeRate, timestamp);
     return reserve;
@@ -210,39 +270,20 @@ export class Reserve {
     this.data.lastTime = timestamp;
   }
 
-  /**
-   * Load the emissions data for the Reserve
-   * @param network - The network configuration
-   * @returns The ReserveEmissions object, or undefined if no emissions are found
-   */
-  public async loadEmissions(network: Network): Promise<ReserveEmissions | undefined> {
-    const reserveEmissions = await ReserveEmissions.load(
-      network,
-      this.poolId,
-      this.config.index,
-      this.data.bSupply,
-      this.data.dSupply,
-      this.config.decimals
-    );
-    if (reserveEmissions.supply === undefined && reserveEmissions.borrow === undefined) {
-      return undefined;
-    }
-    return reserveEmissions;
-  }
-
   /********** Data Helpers **********/
 
   /**
-   * Get the collateral factor as a floating point decimal percentage
-   * (e.g 0.95 == 95%)
-   *
-   * The effective collateral of a positions is:
-   * ```
-   * effective_collateral = collateral * collateral_factor
-   * ```
+   * Get the borrow (dToken) emission index
    */
-  public getCollateralFactor(): number {
-    return Number(this.config.c_factor) / 1e7;
+  public getDTokenEmissionIndex(): number {
+    return this.config.index * 2;
+  }
+
+  /**
+   * Get the supply (bToken) emission index
+   */
+  public getBTokenEmissionIndex(): number {
+    return this.config.index * 2 + 1;
   }
 
   /**
@@ -257,6 +298,19 @@ export class Reserve {
    */
   public getLiabilityFactor(): number {
     return 1 / (Number(this.config.l_factor) / 1e7);
+  }
+
+  /**
+   * Get the collateral factor as a floating point decimal percentage
+   * (e.g 0.95 == 95%)
+   *
+   * The effective collateral of a positions is:
+   * ```
+   * effective_collateral = collateral * collateral_factor
+   * ```
+   */
+  public getCollateralFactor(): number {
+    return Number(this.config.c_factor) / 1e7;
   }
 
   /**
@@ -295,6 +349,20 @@ export class Reserve {
   }
 
   /**
+   * Get the total liabilities of the Reserve
+   */
+  public totalLiabilities(): bigint {
+    return this.toAssetFromDToken(this.data.dSupply);
+  }
+
+  /**
+   * Get the total liabilities of the Reserve as a floating point number
+   */
+  public totalLiabilitiesFloat(): number {
+    return this.toAssetFromDTokenFloat(this.data.dSupply);
+  }
+
+  /**
    * Get the total supply of the Reserve
    */
   public totalSupply(): bigint {
@@ -309,17 +377,23 @@ export class Reserve {
   }
 
   /**
-   * Get the total liabilities of the Reserve
+   * Get the BLND per year currently being emitted to each dToken
    */
-  public totalLiabilities(): bigint {
-    return this.toAssetFromDToken(this.data.dSupply);
+  public emissionsPerYearPerDToken(): number {
+    if (this.borrowEmissions === undefined) {
+      return 0;
+    }
+    return this.borrowEmissions.emissionsPerYearPerToken(this.data.dSupply, this.config.decimals);
   }
 
   /**
-   * Get the total liabilities of the Reserve as a floating point number
+   * Get the BLND per year currently being emitted to each bToken
    */
-  public totalLiabilitiesFloat(): number {
-    return this.toAssetFromDTokenFloat(this.data.dSupply);
+  public emissionsPerYearPerBToken(): number {
+    if (this.supplyEmissions === undefined) {
+      return 0;
+    }
+    return this.supplyEmissions.emissionsPerYearPerToken(this.data.bSupply, this.config.decimals);
   }
 
   /********** Conversion Functions ***********/
@@ -392,12 +466,12 @@ export class Reserve {
   }
 
   /**
-   * Convert dTokens to assets as a floating point number
-   * @param dTokens - The number of dTokens to convert
+   * Convert bTokens to assets as a floating point number
+   * @param bTokens - The number of bTokens to convert
    * @returns The asset amount
    */
-  public toAssetFromBTokenFloat(dTokens: bigint | undefined): number {
-    return FixedMath.toFloat(this.toAssetFromBToken(dTokens), this.config.decimals);
+  public toAssetFromBTokenFloat(bTokens: bigint | undefined): number {
+    return FixedMath.toFloat(this.toAssetFromBToken(bTokens), this.config.decimals);
   }
 
   /**
