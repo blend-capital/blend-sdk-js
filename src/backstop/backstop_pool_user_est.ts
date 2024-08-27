@@ -1,5 +1,6 @@
 import { UserEmissions } from '../emissions.js';
 import { BackstopPoolUser } from '../index.js';
+import { toFloat } from '../math.js';
 import { Backstop } from './backstop.js';
 import { BackstopPool } from './backstop_pool.js';
 
@@ -64,16 +65,16 @@ export class BackstopPoolUserEst {
 
   public static build(backstop: Backstop, pool: BackstopPool, user: BackstopPoolUser) {
     const shares_to_tokens = Number(pool.poolBalance.tokens) / Number(pool.poolBalance.shares);
-    const tokens = (Number(user.balance.shares) / 1e7) * shares_to_tokens;
+    const tokens = toFloat(user.balance.shares, 7) * shares_to_tokens;
     const blnd = tokens * backstop.backstopToken.blndPerLpToken;
     const usdc = tokens * backstop.backstopToken.usdcPerLpToken;
     const totalSpotValue = tokens * backstop.backstopToken.lpTokenPrice;
 
-    const totalUnlockedQ4W = (Number(user.balance.unlockedQ4W) / 1e7) * shares_to_tokens;
+    const totalUnlockedQ4W = toFloat(user.balance.unlockedQ4W, 7) * shares_to_tokens;
 
     let totalQ4W = 0;
     const q4w: Q4WEst[] = user.balance.q4w.map((q4w) => {
-      const amount = (Number(q4w.amount) / 1e7) * shares_to_tokens;
+      const amount = toFloat(q4w.amount, 7) * shares_to_tokens;
       totalQ4W += amount;
       return { amount, exp: Number(q4w.exp) };
     });

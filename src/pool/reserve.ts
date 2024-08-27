@@ -297,7 +297,7 @@ export class Reserve {
    * ```
    */
   public getLiabilityFactor(): number {
-    return 1 / (Number(this.config.l_factor) / 1e7);
+    return 1 / FixedMath.toFloat(BigInt(this.config.l_factor), 7);
   }
 
   /**
@@ -310,7 +310,7 @@ export class Reserve {
    * ```
    */
   public getCollateralFactor(): number {
-    return Number(this.config.c_factor) / 1e7;
+    return FixedMath.toFloat(BigInt(this.config.c_factor), 7);
   }
 
   /**
@@ -377,23 +377,26 @@ export class Reserve {
   }
 
   /**
-   * Get the BLND per year currently being emitted to each dToken
+   * Get the BLND per year currently being emitted to each borrowed asset
    */
-  public emissionsPerYearPerDToken(): number {
+  public emissionsPerYearPerBorrowedAsset(): number {
     if (this.borrowEmissions === undefined) {
       return 0;
     }
-    return this.borrowEmissions.emissionsPerYearPerToken(this.data.dSupply, this.config.decimals);
+    return this.borrowEmissions.emissionsPerYearPerToken(
+      this.totalLiabilities(),
+      this.config.decimals
+    );
   }
 
   /**
-   * Get the BLND per year currently being emitted to each bToken
+   * Get the BLND per year currently being emitted to each supplied asset
    */
-  public emissionsPerYearPerBToken(): number {
+  public emissionsPerYearPerSuppliedAsset(): number {
     if (this.supplyEmissions === undefined) {
       return 0;
     }
-    return this.supplyEmissions.emissionsPerYearPerToken(this.data.bSupply, this.config.decimals);
+    return this.supplyEmissions.emissionsPerYearPerToken(this.totalSupply(), this.config.decimals);
   }
 
   /********** Conversion Functions ***********/
