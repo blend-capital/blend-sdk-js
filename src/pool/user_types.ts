@@ -3,7 +3,7 @@ import { UserEmissions } from '../emissions.js';
 import { Network, i128, u32 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
-export class UserPositions {
+export class Positions {
   constructor(
     public liabilities: Map<u32, i128>,
     public collateral: Map<u32, i128>,
@@ -24,23 +24,23 @@ export class UserPositions {
     );
   }
 
-  static async load(network: Network, poolId: string, userId: string): Promise<UserPositions> {
+  static async load(network: Network, poolId: string, userId: string): Promise<Positions> {
     const rpc = new SorobanRpc.Server(network.rpc, network.opts);
-    const userPositionsKey = UserPositions.ledgerKey(poolId, userId);
+    const userPositionsKey = Positions.ledgerKey(poolId, userId);
     const positionResp = await rpc.getLedgerEntries(userPositionsKey);
 
     // if entry does not exist assume empty
     if (positionResp.entries == undefined || positionResp.entries.length == 0) {
-      return new UserPositions(new Map<u32, i128>(), new Map<u32, i128>(), new Map<u32, i128>());
+      return new Positions(new Map<u32, i128>(), new Map<u32, i128>(), new Map<u32, i128>());
     }
 
-    let userPositions: UserPositions | undefined = undefined;
+    let userPositions: Positions | undefined = undefined;
     for (const entry of positionResp.entries ?? []) {
       const ledgerData = entry.val;
       const key = decodeEntryKey(ledgerData.contractData().key());
       switch (key) {
         case 'Positions':
-          userPositions = UserPositions.fromLedgerEntryData(ledgerData);
+          userPositions = Positions.fromLedgerEntryData(ledgerData);
           break;
         default:
           throw Error(`Invalid user positions key: should not contain: ${key}`);
@@ -52,12 +52,20 @@ export class UserPositions {
     return userPositions;
   }
 
-  static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): UserPositions {
+  static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): Positions {
     if (typeof ledger_entry_data == 'string') {
       ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
     }
 
-    const data_entry_map = ledger_entry_data.contractData().val().map();
+    return Positions.fromScVal(ledger_entry_data.contractData().val());
+  }
+
+  static fromScVal(sc_val: xdr.ScVal | string): Positions {
+    if (typeof sc_val == 'string') {
+      sc_val = xdr.ScVal.fromXDR(sc_val, 'base64');
+    }
+
+    const data_entry_map = sc_val.map();
     if (data_entry_map == undefined) {
       throw Error('UserPositions contract data value is not a map');
     }
@@ -106,7 +114,7 @@ export class UserPositions {
     if (!liability_map || !collateral_map || !supply_map) {
       throw Error('User positions xdr_string is malformed');
     }
-    return new UserPositions(liability_map, collateral_map, supply_map);
+    return new Positions(liability_map, collateral_map, supply_map);
   }
 }
 

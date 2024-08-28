@@ -1,8 +1,8 @@
 import { Pool } from './pool.js';
 import { PoolOracle } from './pool_oracle.js';
-import { UserPositions } from './user_types.js';
+import { Positions } from './user_types.js';
 
-export class UserPositionsEstimate {
+export class PositionsEstimate {
   constructor(
     /**
      * The total value of all tokens borrowed from the pool in the pool's oracle denomination
@@ -42,11 +42,7 @@ export class UserPositionsEstimate {
     public borrowApr: number
   ) {}
 
-  public static build(
-    pool: Pool,
-    poolOracle: PoolOracle,
-    positions: UserPositions
-  ): UserPositionsEstimate {
+  public static build(pool: Pool, poolOracle: PoolOracle, positions: Positions): PositionsEstimate {
     const reserve_list = pool.config.reserveList;
 
     const liabilities = new Map<string, number>();
@@ -130,7 +126,7 @@ export class UserPositionsEstimate {
     supplyApr = totalSupplied == 0 ? 0 : supplyApr / totalSupplied;
     borrowApr = totalBorrowed == 0 ? 0 : borrowApr / totalBorrowed;
 
-    return new UserPositionsEstimate(
+    return new PositionsEstimate(
       totalBorrowed,
       totalSupplied,
       totalEffectiveLiabilities,

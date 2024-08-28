@@ -97,9 +97,8 @@ export class PoolContract extends Contract {
     queueSetReserve: () => {},
     cancelSetReserve: () => {},
     setReserve: (result: string): u32 => PoolContract.spec.funcResToNative('set_reserve', result),
-    getPositions: (result: string): Positions =>
-      PoolContract.spec.funcResToNative('get_positions', result),
-    submit: (result: string): Positions => PoolContract.spec.funcResToNative('submit', result),
+    getPositions: (result: string): Positions => Positions.fromScVal(result),
+    submit: (result: string): Positions => Positions.fromScVal(result),
     badDebt: () => {},
     updateStatus: (result: string): u32 =>
       PoolContract.spec.funcResToNative('update_status', result),
