@@ -1,46 +1,8 @@
-import { Address, SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
+import { Address, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { UserEmissions } from '../emissions.js';
-import { Network, i128 } from '../index.js';
+import { i128 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 import { Q4W } from './index.js';
-
-export class BackstopUserData {
-  constructor(
-    public userBalance: UserBalance,
-    public userEmissions: BackstopUserEmissionData | undefined
-  ) {}
-
-  static async load(
-    network: Network,
-    backstopId: string,
-    poolId: string,
-    userId: string,
-    timestamp: number
-  ) {
-    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
-    const userBalanceDataKey = UserBalance.ledgerKey(backstopId, poolId, userId);
-    const userEmissionsDataKey = BackstopUserEmissionData.ledgerKey(backstopId, poolId, userId);
-    const backstopUserData = await rpc.getLedgerEntries(userBalanceDataKey, userEmissionsDataKey);
-    let userBalance = new UserBalance(BigInt(0), [], BigInt(0), BigInt(0));
-    let userEmissions: BackstopUserEmissionData | undefined;
-    for (const entry of backstopUserData.entries ?? []) {
-      const ledgerData = entry.val;
-      const key = decodeEntryKey(ledgerData.contractData().key());
-      switch (key) {
-        case 'UserBalance': {
-          userBalance = UserBalance.fromLedgerEntryData(ledgerData, timestamp);
-          break;
-        }
-        case 'UEmisData':
-          userEmissions = BackstopUserEmissionData.fromLedgerEntryData(ledgerData);
-          break;
-        default:
-          throw new Error(`Invalid BackstopUserData key: should not contain ${key}`);
-      }
-    }
-    return new BackstopUserData(userBalance, userEmissions);
-  }
-}
 
 export class UserBalance {
   constructor(
@@ -138,7 +100,7 @@ export class UserBalance {
   }
 }
 
-export class BackstopUserEmissionData extends UserEmissions {
+export class BackstopUserEmissions extends UserEmissions {
   static ledgerKey(backstopId: string, poolId: string, userId: string): xdr.LedgerKey {
     return xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({

@@ -10,13 +10,13 @@ test('load emissions for pool and user', () => {
 
   const config = EmissionConfig.fromLedgerEntryData(config_xdr_string);
   const data = EmissionData.fromLedgerEntryData(data_xdr_string);
-  const emissions = new Emissions(config, data);
+  const emissions = new Emissions(config, data, 1);
   const user = UserEmissions.fromLedgerEntryData(user_xdr_string);
 
   expect(config.eps).toEqual(BigInt(900000));
-  expect(config.expiration).toEqual(BigInt(1700159660));
+  expect(config.expiration).toEqual(1700159660);
   expect(data.index).toEqual(BigInt(38968575));
-  expect(data.lastTime).toEqual(BigInt(1699885727));
+  expect(data.lastTime).toEqual(1699885727);
   expect(user.accrued).toEqual(BigInt(0));
   expect(user.index).toEqual(BigInt(38968575));
 
@@ -24,6 +24,7 @@ test('load emissions for pool and user', () => {
   const balance = BigInt(9986916470);
   const timestamp = 1699888478;
 
-  const accrued = user.estimateAccrual(timestamp, emissions, 7, supply, balance);
-  expect(accrued).toEqual(10.52077513423858);
+  emissions.accrue(supply, 7, timestamp);
+  const accrued = user.estimateAccrual(emissions, 7, balance);
+  expect(accrued).toEqual(10.5207171);
 });

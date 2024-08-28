@@ -87,6 +87,7 @@ export enum ContractErrorType {
   NotPool = 1004,
   InvalidShareMintAmount = 1005,
   InvalidTokenWithdrawAmount = 1006,
+  TooManyQ4WEntries = 1007,
 
   // Pool Request Errors (start at 1200)
   PoolBadRequest = 1200,
