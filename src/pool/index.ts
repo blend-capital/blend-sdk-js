@@ -69,12 +69,6 @@ export interface Request {
   amount: i128;
 }
 
-export interface Positions {
-  liabilities: Map<u32, i128>;
-  collateral: Map<u32, i128>;
-  supply: Map<u32, i128>;
-}
-
 export interface AuctionKey {
   auct_type: u32;
   user: string;

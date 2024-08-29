@@ -1,6 +1,5 @@
 import { UserEmissions } from '../emissions.js';
 import { BackstopPoolUser } from '../index.js';
-import { toFloat } from '../math.js';
 import { Backstop } from './backstop.js';
 import { BackstopPool } from './backstop_pool.js';
 
@@ -64,32 +63,30 @@ export class BackstopPoolUserEst {
   }
 
   public static build(backstop: Backstop, pool: BackstopPool, user: BackstopPoolUser) {
-    const shares_to_tokens = Number(pool.poolBalance.tokens) / Number(pool.poolBalance.shares);
-    const tokens = toFloat(user.balance.shares, 7) * shares_to_tokens;
+    const tokens = pool.sharesToBackstopTokensFloat(user.balance.shares);
     const blnd = tokens * backstop.backstopToken.blndPerLpToken;
     const usdc = tokens * backstop.backstopToken.usdcPerLpToken;
     const totalSpotValue = tokens * backstop.backstopToken.lpTokenPrice;
 
-    const totalUnlockedQ4W = toFloat(user.balance.unlockedQ4W, 7) * shares_to_tokens;
+    const totalUnlockedQ4W = pool.sharesToBackstopTokensFloat(user.balance.unlockedQ4W);
 
     let totalQ4W = 0;
     const q4w: Q4WEst[] = user.balance.q4w.map((q4w) => {
-      const amount = toFloat(q4w.amount, 7) * shares_to_tokens;
+      const amount = pool.sharesToBackstopTokensFloat(q4w.amount);
       totalQ4W += amount;
       return { amount, exp: Number(q4w.exp) };
     });
 
     let emissions = 0;
     if (pool.emissions) {
-      const emission_balance = pool.poolBalance.shares - pool.poolBalance.q4w;
       if (user.emissions === undefined) {
-        if (emission_balance > 0) {
+        if (user.balance.shares > 0) {
           // emissions started after the user deposited
           const empty_emission_data = new UserEmissions(BigInt(0), BigInt(0));
-          emissions = empty_emission_data.estimateAccrual(pool.emissions, 7, emission_balance);
+          emissions = empty_emission_data.estimateAccrual(pool.emissions, 7, user.balance.shares);
         }
       } else {
-        emissions = user.emissions.estimateAccrual(pool.emissions, 7, emission_balance);
+        emissions = user.emissions.estimateAccrual(pool.emissions, 7, user.balance.shares);
       }
     }
     return new BackstopPoolUserEst(

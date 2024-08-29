@@ -1,17 +1,17 @@
 import { SorobanRpc, xdr } from '@stellar/stellar-sdk';
 import { Network, Pool, Reserve } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
-import { PoolUserEmissionData, UserPositions } from './user_types.js';
+import { PoolUserEmissionData, Positions } from './user_types.js';
 
 export class PoolUser {
   constructor(
     public userId: string,
-    public positions: UserPositions,
+    public positions: Positions,
     public emissions: Map<number, PoolUserEmissionData>
   ) {}
 
   public static async load(network: Network, pool: Pool, userId: string): Promise<PoolUser> {
-    const ledgerKeys: xdr.LedgerKey[] = [UserPositions.ledgerKey(pool.id, userId)];
+    const ledgerKeys: xdr.LedgerKey[] = [Positions.ledgerKey(pool.id, userId)];
     for (const reserve of pool.reserves.values()) {
       if (reserve.borrowEmissions) {
         ledgerKeys.push(
@@ -27,14 +27,14 @@ export class PoolUser {
     const sorobanRpc = new SorobanRpc.Server(network.rpc, network.opts);
     const ledgerEntries = await sorobanRpc.getLedgerEntries(...ledgerKeys);
 
-    let positions: UserPositions = new UserPositions(new Map(), new Map(), new Map());
+    let positions: Positions = new Positions(new Map(), new Map(), new Map());
     const emissions: Map<number, PoolUserEmissionData> = new Map();
     for (const entry of ledgerEntries.entries) {
       const ledgerEntry = entry.val;
       const key = decodeEntryKey(ledgerEntry.contractData().key());
       switch (key) {
         case 'Positions':
-          positions = UserPositions.fromLedgerEntryData(ledgerEntry);
+          positions = Positions.fromLedgerEntryData(ledgerEntry);
           break;
         case `UserEmis`: {
           const reserve_emis_id =
