@@ -6,10 +6,10 @@ export * from './emitter/index.js';
 export * from './pool/index.js';
 export * from './pool_factory/index.js';
 
-export * as FixedMath from './math.js';
-
 export * from './base_event.js';
 export { Emissions } from './emissions.js';
+export * as FixedMath from './math.js';
+export * from './oracle.js';
 export * from './response_parser.js';
 export { TokenMetadata } from './token.js';
 
