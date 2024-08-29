@@ -106,6 +106,9 @@ export class Emissions {
    * @returns The emissions per year per token as a float
    */
   public emissionsPerYearPerToken(supply: bigint, decimals?: number): number {
+    if (this.config.expiration <= Math.floor(Date.now() / 1000)) {
+      return 0;
+    }
     const supplyFloat = FixedMath.toFloat(supply, decimals);
     const totalEmissions = FixedMath.toFloat(this.config.eps, 7) * 31536000;
     return totalEmissions / supplyFloat;

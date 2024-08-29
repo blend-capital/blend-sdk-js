@@ -1,6 +1,6 @@
 import { Address, SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { EmissionConfig, EmissionData, Emissions } from '../emissions.js';
-import { Network, i128 } from '../index.js';
+import { FixedMath, Network, i128 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export class BackstopPool {
@@ -81,6 +81,57 @@ export class BackstopPool {
       emissions,
       backstopPoolDataEntries.latestLedger
     );
+  }
+
+  /**
+   * Fetch the emission per year per non-Q4W backstop token
+   * @returns The emission per year per backstop token as a float
+   */
+  public emissionPerYearPerBackstopToken(): number {
+    if (this.emissions == undefined) {
+      return 0;
+    }
+    const tokensNotInQ4w = this.sharesToBackstopTokens(
+      this.poolBalance.shares - this.poolBalance.q4w
+    );
+    return this.emissions.emissionsPerYearPerToken(tokensNotInQ4w, 7);
+  }
+
+  /**
+   * Convert backstop tokens to shares
+   * @param backstopTokens - The number of backstop tokens to convert
+   * @returns - The number of shares as a fixed point number
+   */
+  public backstopTokensToShares(backstopTokens: bigint | number): bigint {
+    if (typeof backstopTokens === 'number') {
+      backstopTokens = FixedMath.toFixed(backstopTokens, 7);
+    }
+
+    if (this.poolBalance.shares === BigInt(0)) {
+      return backstopTokens;
+    }
+    return FixedMath.mulFloor(backstopTokens, this.poolBalance.shares, this.poolBalance.tokens);
+  }
+
+  /**
+   * Convert shares to backstop tokens
+   * @param shares - The number of shares to convert
+   * @returns - The number of backstop tokens as a fixed point number
+   */
+  public sharesToBackstopTokens(shares: bigint): bigint {
+    if (this.poolBalance.shares === BigInt(0)) {
+      return shares;
+    }
+    return FixedMath.mulFloor(shares, this.poolBalance.tokens, this.poolBalance.shares);
+  }
+
+  /**
+   * Convert shares to backstop tokens
+   * @param shares - The number of shares to convert
+   * @returns - The number of backstop tokens as a floating point number
+   */
+  public sharesToBackstopTokensFloat(shares: bigint): number {
+    return FixedMath.toFloat(this.sharesToBackstopTokens(shares), 7);
   }
 }
 
