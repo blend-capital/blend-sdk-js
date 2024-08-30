@@ -28,7 +28,7 @@ export class BackstopPoolUser {
     timestamp?: number | undefined
   ): Promise<BackstopPoolUser> {
     if (timestamp === undefined) {
-      timestamp = Date.now() / 1000;
+      timestamp = Math.floor(Date.now() / 1000);
     }
     const rpc = new SorobanRpc.Server(network.rpc, network.opts);
     const ledgerKeys: xdr.LedgerKey[] = [];
