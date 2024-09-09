@@ -1,5 +1,6 @@
-import { Address, xdr } from '@stellar/stellar-sdk';
+import { Address, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { i128, u32, u64 } from '../index.js';
+import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export * from './pool.js';
 export * from './pool_config.js';
@@ -91,10 +92,94 @@ function AuctionKeyToXDR(auctionKey?: AuctionKey): xdr.ScVal {
   return xdr.ScVal.scvMap(arr);
 }
 
-export interface AuctionData {
-  bid: Map<string, i128>;
-  block: u32;
-  lot: Map<string, i128>;
+export class AuctionData {
+  constructor(public bid: Map<string, i128>, public block: u32, public lot: Map<string, i128>) {}
+
+  static ledgerKey(poolId: string, auctionKey: AuctionKey): xdr.LedgerKey {
+    const res: xdr.ScVal[] = [
+      xdr.ScVal.scvSymbol('Auction'),
+      xdr.ScVal.scvMap([
+        new xdr.ScMapEntry({
+          key: ((i) => xdr.ScVal.scvSymbol(i))('auct_type'),
+          val: ((i) => xdr.ScVal.scvU32(i))(auctionKey.auct_type),
+        }),
+        new xdr.ScMapEntry({
+          key: ((i) => xdr.ScVal.scvSymbol(i))('user'),
+          val: ((i) => Address.fromString(i).toScVal())(auctionKey.user),
+        }),
+      ]),
+    ];
+    return xdr.LedgerKey.contractData(
+      new xdr.LedgerKeyContractData({
+        contract: Address.fromString(poolId).toScAddress(),
+        key: xdr.ScVal.scvVec(res),
+        durability: xdr.ContractDataDurability.temporary(),
+      })
+    );
+  }
+
+  static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): AuctionData {
+    if (typeof ledger_entry_data == 'string') {
+      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+    }
+
+    return AuctionData.fromScVal(ledger_entry_data.contractData().val());
+  }
+
+  static fromScVal(sc_val: xdr.ScVal | string): AuctionData {
+    if (typeof sc_val == 'string') {
+      sc_val = xdr.ScVal.fromXDR(sc_val, 'base64');
+    }
+    console.log(sc_val);
+    const data_entry_map = sc_val.map();
+    if (data_entry_map == undefined) {
+      throw Error('UserPositions contract data value is not a map');
+    }
+    let bid_map: Map<string, i128> | undefined;
+    let lot_map: Map<string, i128> | undefined;
+    let block: u32;
+
+    for (const map_entry of data_entry_map) {
+      const key = decodeEntryKey(map_entry.key());
+      console.log(key);
+      switch (key) {
+        case 'bid': {
+          bid_map = new Map<string, i128>();
+          const bid = map_entry.val().map();
+          if (bid) {
+            for (const asset of bid) {
+              console.log(scValToNative(asset.key()), scValToNative(asset.val()));
+              bid_map.set(scValToNative(asset.key()), scValToNative(asset.val()));
+            }
+          }
+          break;
+        }
+        case 'lot': {
+          lot_map = new Map<string, i128>();
+          const lot = map_entry.val().map();
+          if (lot) {
+            for (const asset of lot) {
+              console.log(scValToNative(asset.key()), scValToNative(asset.val()));
+
+              lot_map.set(scValToNative(asset.key()), scValToNative(asset.val()));
+            }
+          }
+          break;
+        }
+        case 'block': {
+          block = scValToNative(map_entry.val());
+          break;
+        }
+        default:
+          throw Error(`Invalid UserPositions key: should not contain ${key}`);
+      }
+    }
+
+    if (!bid_map || !lot_map || !block) {
+      throw Error('User positions xdr_string is malformed');
+    }
+    return new AuctionData(bid_map, block, lot_map);
+  }
 }
 
 export type PoolDataKey =

@@ -109,8 +109,7 @@ export class PoolContract extends Contract {
     claim: (result: string): i128 => PoolContract.spec.funcResToNative('claim', result),
     newLiquidationAuction: (result: string): AuctionData =>
       PoolContract.spec.funcResToNative('new_liquidation_auction', result),
-    getAuction: (result: string): AuctionData =>
-      PoolContract.spec.funcResToNative('get_auction', result),
+    getAuction: (result: string): AuctionData => AuctionData.fromScVal(result),
     newBadDebtAuction: (result: string): AuctionData =>
       PoolContract.spec.funcResToNative('new_bad_debt_auction', result),
     newInterestAuction: (result: string): AuctionData =>
