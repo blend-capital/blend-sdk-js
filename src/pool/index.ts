@@ -130,7 +130,6 @@ export class AuctionData {
     if (typeof sc_val == 'string') {
       sc_val = xdr.ScVal.fromXDR(sc_val, 'base64');
     }
-    console.log(sc_val);
     const data_entry_map = sc_val.map();
     if (data_entry_map == undefined) {
       throw Error('UserPositions contract data value is not a map');
@@ -141,14 +140,12 @@ export class AuctionData {
 
     for (const map_entry of data_entry_map) {
       const key = decodeEntryKey(map_entry.key());
-      console.log(key);
       switch (key) {
         case 'bid': {
           bid_map = new Map<string, i128>();
           const bid = map_entry.val().map();
           if (bid) {
             for (const asset of bid) {
-              console.log(scValToNative(asset.key()), scValToNative(asset.val()));
               bid_map.set(scValToNative(asset.key()), scValToNative(asset.val()));
             }
           }
@@ -159,8 +156,6 @@ export class AuctionData {
           const lot = map_entry.val().map();
           if (lot) {
             for (const asset of lot) {
-              console.log(scValToNative(asset.key()), scValToNative(asset.val()));
-
               lot_map.set(scValToNative(asset.key()), scValToNative(asset.val()));
             }
           }
