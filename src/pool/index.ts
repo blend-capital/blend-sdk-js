@@ -13,7 +13,7 @@ export * from './reserve.js';
 export * from './reserve_types.js';
 export * from './user_positions_est.js';
 export * from './user_types.js';
-
+export * from './auction.js';
 /**
  * Metadata for a pool's reserve emission configuration
  */
