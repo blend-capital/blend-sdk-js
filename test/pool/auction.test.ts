@@ -203,7 +203,7 @@ describe('getAuctionsFromEvents', () => {
     expect(remainingAuction.type).toBe(AuctionType.Liquidation);
     expect(remainingAuction.user).toBe('user1');
 
-    const firstFill = auctions.filled[1];
+    const firstFill = auctions.filled[0];
     expect(firstFill.type).toBe(AuctionType.Liquidation);
     expect(firstFill.user).toBe('user1');
     expect(firstFill.data.bid).toEqual(expectedFill_1.bid);
@@ -213,7 +213,7 @@ describe('getAuctionsFromEvents', () => {
     expect(firstFill.fillHash).toBe('hash');
     expect(firstFill.filled).toBe(true);
 
-    const secondFill = auctions.filled[0];
+    const secondFill = auctions.filled[1];
     expect(secondFill.type).toBe(AuctionType.Liquidation);
     expect(secondFill.user).toBe('user1');
     expect(secondFill.data.bid).toEqual(expectedFill_2.bid);

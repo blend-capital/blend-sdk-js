@@ -54,7 +54,7 @@ export function getAuctionsfromEvents(events: PoolEvent[], backstopId: string): 
           );
           filledAuction.filled = true;
           filledAuction.fillHash = event.txHash;
-          auctions.filled.unshift(filledAuction);
+          auctions.filled.push(filledAuction);
           if (remainingAuction !== undefined) {
             auctions.ongoing[index] = remainingAuction;
           } else {
