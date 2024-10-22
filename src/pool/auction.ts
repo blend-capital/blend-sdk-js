@@ -21,11 +21,9 @@ export interface ScaledAuction {
   type: AuctionType;
   user: string;
   data: AuctionData;
-  startBlock: number;
   scaleBlock: number;
   filled: boolean;
   fillHash: string | undefined;
-  fillBlock: number | undefined;
 }
 
 /**
@@ -55,7 +53,6 @@ export function getAuctionsfromEvents(events: PoolEvent[], backstopId: string): 
             Number(event.fillAmount)
           );
           filledAuction.filled = true;
-          filledAuction.fillBlock = event.ledger;
           filledAuction.fillHash = event.txHash;
           auctions.filled.unshift(filledAuction);
           if (remainingAuction !== undefined) {
@@ -153,11 +150,9 @@ export class Auction {
       type: this.type,
       user: this.user,
       data: scaledAuctionData,
-      startBlock: this.data.block,
       scaleBlock: scaleBlock,
       filled: false,
       fillHash: undefined,
-      fillBlock: undefined,
     };
     if (remainingAuctionData.lot.size > 0 || remainingAuctionData.bid.size > 0) {
       remainingAuction = new Auction(this.user, this.type, remainingAuctionData);
