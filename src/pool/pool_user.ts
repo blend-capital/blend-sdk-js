@@ -161,7 +161,7 @@ export class PoolUser {
       // handle dToken emissions
       const d_token_id = reserve.getDTokenEmissionIndex();
       const d_token_data = this.emissions.get(d_token_id);
-      const d_token_position = this.getLiabilities(reserve);
+      const d_token_position = this.getLiabilityDTokens(reserve);
       if (reserve.borrowEmissions && (d_token_data || d_token_position > BigInt(0))) {
         let dTokenAccrual = 0;
         if (d_token_data) {
@@ -170,7 +170,7 @@ export class PoolUser {
             reserve.config.decimals,
             d_token_position
           );
-        } else if (d_token_position) {
+        } else if (d_token_position > BigInt(0)) {
           // emissions began after user position was created, accrue all emissions
           const temp_d_token_data = new PoolUserEmissionData(BigInt(0), BigInt(0));
           dTokenAccrual = temp_d_token_data.estimateAccrual(
@@ -188,7 +188,7 @@ export class PoolUser {
       // handle bToken emissions
       const b_token_id = reserve.getBTokenEmissionIndex();
       const b_token_data = this.emissions.get(b_token_id);
-      const b_token_position = this.getSupply(reserve) + this.getCollateral(reserve);
+      const b_token_position = this.getSupplyBTokens(reserve) + this.getCollateralBTokens(reserve);
       if (reserve.supplyEmissions && (b_token_data || b_token_position > BigInt(0))) {
         let bTokenAccrual = 0;
         if (b_token_data) {
