@@ -1,7 +1,7 @@
-import { TokenMetadata } from '../../src';
-import { toFixed } from '../../src/math';
-import { Reserve } from '../../src/pool/reserve';
-import { ReserveConfig, ReserveData } from '../../src/pool/reserve_types';
+import { TokenMetadata } from '../../src/token.js';
+import { toFixed } from '../../src/math.js';
+import { Reserve } from '../../src/pool/reserve.js';
+import { ReserveConfig, ReserveData } from '../../src/pool/reserve_types.js';
 
 test('reserve accrual', () => {
   const config = new ReserveConfig(
@@ -29,7 +29,18 @@ test('reserve accrual', () => {
 
   const timestamp = 123456 * 5;
   const take_rate = toFixed(0.2, 7);
-  const reserve = new Reserve('poolId', 'assetId', {} as TokenMetadata, config, data, 0, 0, 123);
+  const reserve = new Reserve(
+    'poolId',
+    'assetId',
+    {} as TokenMetadata,
+    config,
+    data,
+    undefined,
+    undefined,
+    0,
+    0,
+    123
+  );
   reserve.accrue(take_rate, timestamp);
 
   expect(reserve.data.dRate).toEqual(BigInt(1_349_657_800));
@@ -69,7 +80,18 @@ test('reserve accrual no supplied', () => {
 
   const timestamp = 123456 * 5;
   const take_rate = toFixed(0.2, 7);
-  const reserve = new Reserve('poolId', 'assetId', {} as TokenMetadata, config, data, 0, 0, 123);
+  const reserve = new Reserve(
+    'poolId',
+    'assetId',
+    {} as TokenMetadata,
+    config,
+    data,
+    undefined,
+    undefined,
+    0,
+    0,
+    123
+  );
   reserve.accrue(take_rate, timestamp);
 
   expect(reserve.data.dRate).toEqual(BigInt(0));
