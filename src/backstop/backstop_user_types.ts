@@ -47,7 +47,7 @@ export class UserBalance {
       throw Error('UserBalance contract data value is not a map');
     }
 
-    let shares: bigint | undefined;
+    let shares = BigInt(0);
     const q4w: Q4W[] = [];
     let unlockedQ4W = BigInt(0);
     let totalQ4W = BigInt(0);
@@ -93,9 +93,7 @@ export class UserBalance {
           throw Error(`Invalid backstop UserBalance key: should not contain ${key}`);
       }
     }
-    if (shares == undefined) {
-      throw Error("Invalid UserBalance: should contain 'shares'");
-    }
+
     return new UserBalance(shares, q4w, unlockedQ4W, totalQ4W);
   }
 }

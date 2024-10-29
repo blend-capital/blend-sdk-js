@@ -38,7 +38,7 @@ export class BackstopPool {
 
     let emission_config: EmissionConfig | undefined;
     let emission_data: EmissionData | undefined;
-    let poolBalance: PoolBalance | undefined;
+    let poolBalance = new PoolBalance(BigInt(0), BigInt(0), BigInt(0));
     let toGulpEmissions = BigInt(0);
     for (const entry of backstopPoolDataEntries.entries) {
       const ledgerData = entry.val;
@@ -62,9 +62,6 @@ export class BackstopPool {
       }
     }
 
-    if (poolBalance == undefined) {
-      throw new Error('Error: Unable to load backstop pool data');
-    }
     let emissions: Emissions | undefined;
     if (emission_config != undefined && emission_data != undefined) {
       emissions = new Emissions(
