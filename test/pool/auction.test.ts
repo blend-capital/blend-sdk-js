@@ -21,7 +21,9 @@ describe('Auction', () => {
     expect(scaledAuction.data.bid.size).toEqual(2);
     expect(scaledAuction.data.bid.get('asset1')).toEqual(100_0000000n);
     expect(scaledAuction.data.bid.get('asset2')).toEqual(200_0000001n);
-    expect(scaledAuction.data.lot.size).toEqual(0);
+    expect(scaledAuction.data.lot.size).toEqual(2);
+    expect(scaledAuction.data.lot.get('asset2')).toEqual(0n);
+    expect(scaledAuction.data.lot.get('asset3')).toEqual(0n);
 
     // 100 blocks -> 100 percent, validate lot is rounded down
     [scaledAuction] = auction.scale(223, 100);
@@ -76,7 +78,9 @@ describe('Auction', () => {
     // 400 blocks -> 100 percent
     [scaledAuction] = auction.scale(523, 100);
     expect(scaledAuction.data.block).toEqual(123);
-    expect(scaledAuction.data.bid.size).toEqual(0);
+    expect(scaledAuction.data.bid.size).toEqual(2);
+    expect(scaledAuction.data.bid.get('asset1')).toEqual(0n);
+    expect(scaledAuction.data.bid.get('asset2')).toEqual(0n);
     expect(scaledAuction.data.lot.size).toEqual(2);
     expect(scaledAuction.data.lot.get('asset2')).toEqual(1_0000000n);
     expect(scaledAuction.data.lot.get('asset3')).toEqual(5_0000001n);
@@ -84,7 +88,9 @@ describe('Auction', () => {
     // 500 blocks -> 100 percent (unchanged)
     [scaledAuction] = auction.scale(623, 100);
     expect(scaledAuction.data.block).toEqual(123);
-    expect(scaledAuction.data.bid.size).toEqual(0);
+    expect(scaledAuction.data.bid.size).toEqual(2);
+    expect(scaledAuction.data.bid.get('asset1')).toEqual(0n);
+    expect(scaledAuction.data.bid.get('asset2')).toEqual(0n);
     expect(scaledAuction.data.lot.size).toEqual(2);
     expect(scaledAuction.data.lot.get('asset2')).toEqual(1_0000000n);
     expect(scaledAuction.data.lot.get('asset3')).toEqual(5_0000001n);
@@ -102,14 +108,16 @@ describe('Auction', () => {
     expect(scaledAuction.data.block).toEqual(123);
     expect(scaledAuction.data.bid.size).toEqual(1);
     expect(scaledAuction.data.bid.get('asset1')).toEqual(1n);
-    expect(scaledAuction.data.lot.size).toEqual(0);
+    expect(scaledAuction.data.lot.size).toEqual(1);
+    expect(scaledAuction.data.lot.get('asset2')).toEqual(0n);
 
     // 399 blocks -> 10 percent
     [scaledAuction] = auction.scale(522, 10);
     expect(scaledAuction.data.block).toEqual(123);
     expect(scaledAuction.data.bid.size).toEqual(1);
     expect(scaledAuction.data.bid.get('asset1')).toEqual(1n);
-    expect(scaledAuction.data.lot.size).toEqual(0);
+    expect(scaledAuction.data.lot.size).toEqual(1);
+    expect(scaledAuction.data.lot.get('asset2')).toEqual(0n);
 
     // 399 blocks -> 100 percent
     [scaledAuction] = auction.scale(522, 100);
