@@ -129,9 +129,7 @@ export class Auction {
         remainingAuctionData.lot.set(assetId, remainingBase);
       }
       const scaledLot = FixedMath.mulFloor(baseFill, lotModifier, FixedMath.SCALAR_7);
-      if (scaledLot > 0n) {
-        scaledAuctionData.lot.set(assetId, BigInt(scaledLot));
-      }
+      scaledAuctionData.lot.set(assetId, BigInt(scaledLot));
     }
 
     for (const [assetId, amount] of Array.from(this.data.bid)) {
@@ -141,9 +139,7 @@ export class Auction {
         remainingAuctionData.bid.set(assetId, remainingBase);
       }
       const scaledBid = FixedMath.mulCeil(baseFill, bidModifier, FixedMath.SCALAR_7);
-      if (scaledBid > 0n) {
-        scaledAuctionData.bid.set(assetId, BigInt(scaledBid));
-      }
+      scaledAuctionData.bid.set(assetId, BigInt(scaledBid));
     }
     let remainingAuction: Auction | undefined = undefined;
     const scaledAuction: ScaledAuction = {
