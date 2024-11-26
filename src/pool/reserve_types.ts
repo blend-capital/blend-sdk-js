@@ -1,4 +1,4 @@
-import { Address, SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
+import { Address, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { EmissionConfig, EmissionData } from '../emissions.js';
 import { Network, u32 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
@@ -19,9 +19,9 @@ export class ReserveConfig {
   ) {}
 
   static async load(network: Network, poolId: string, assetId: string): Promise<ReserveConfig> {
-    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
+    const stellarRpc = new rpc.Server(network.rpc, network.opts);
     const ledger_key = this.ledgerKey(poolId, assetId);
-    const result = await rpc.getLedgerEntries(ledger_key);
+    const result = await stellarRpc.getLedgerEntries(ledger_key);
     if (result.entries.length > 0) {
       return this.fromLedgerEntryData(result.entries[0].val);
     } else {
@@ -160,9 +160,9 @@ export class ReserveData {
   ) {}
 
   static async load(network: Network, poolId: string, assetId: string): Promise<ReserveData> {
-    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
+    const stellarRpc = new rpc.Server(network.rpc, network.opts);
     const ledger_key = this.ledgerKey(poolId, assetId);
-    const result = await rpc.getLedgerEntries(ledger_key);
+    const result = await stellarRpc.getLedgerEntries(ledger_key);
     if (result.entries.length > 0) {
       return this.fromLedgerEntryData(result.entries[0].val);
     } else {

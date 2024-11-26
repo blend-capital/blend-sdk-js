@@ -1,4 +1,4 @@
-import { Address, scValToNative, SorobanRpc, xdr } from '@stellar/stellar-sdk';
+import { Address, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { BaseBlendEvent, BlendContractType } from '../base_event.js';
 import { Swap } from './index.js';
 
@@ -54,7 +54,7 @@ export type EmitterEvent =
  * @returns The EmitterEvent or undefined if the EventResponse is not an EmitterEvent
  */
 export function emitterEventFromEventResponse(
-  eventResponse: SorobanRpc.Api.RawEventResponse
+  eventResponse: rpc.Api.RawEventResponse
 ): EmitterEvent | undefined {
   if (
     eventResponse.type !== 'contract' ||
@@ -65,7 +65,7 @@ export function emitterEventFromEventResponse(
   }
 
   try {
-    // NOTE: Decode RawEventResponse to ScVals. Do not update to `SorobanRpc.Api.EventResponse`. This
+    // NOTE: Decode RawEventResponse to ScVals. Do not update to `rpc.Api.EventResponse`. This
     // will cause failures in the conversion functions due to the requirement that the exact same
     // `js-xdr` code is used. (the same version from two different sources does not work)
     const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXDR(topic, 'base64'));

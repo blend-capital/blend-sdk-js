@@ -1,4 +1,4 @@
-import { Address, SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
+import { Address, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { EmissionConfig, EmissionData, Emissions } from '../emissions.js';
 import { FixedMath, Network, i128 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
@@ -17,7 +17,7 @@ export class BackstopPool {
     poolId: string,
     timestamp?: number | undefined
   ) {
-    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
+    const stellarRpc = new rpc.Server(network.rpc, network.opts);
     const poolBalanceDataKey = PoolBalance.ledgerKey(backstopId, poolId);
     const poolEmisDataKey = xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
@@ -29,7 +29,7 @@ export class BackstopPool {
         durability: xdr.ContractDataDurability.persistent(),
       })
     );
-    const backstopPoolDataEntries = await rpc.getLedgerEntries(
+    const backstopPoolDataEntries = await stellarRpc.getLedgerEntries(
       poolBalanceDataKey,
       poolEmisDataKey,
       BackstopEmissionConfig.ledgerKey(backstopId, poolId),

@@ -1,4 +1,4 @@
-import { SorobanRpc, xdr } from '@stellar/stellar-sdk';
+import { rpc, xdr } from '@stellar/stellar-sdk';
 import { Network, Pool, Reserve } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 import { PoolUserEmissionData, Positions } from './user_types.js';
@@ -24,8 +24,8 @@ export class PoolUser {
         );
       }
     }
-    const sorobanRpc = new SorobanRpc.Server(network.rpc, network.opts);
-    const ledgerEntries = await sorobanRpc.getLedgerEntries(...ledgerKeys);
+    const stellarRpc = new rpc.Server(network.rpc, network.opts);
+    const ledgerEntries = await stellarRpc.getLedgerEntries(...ledgerKeys);
 
     let positions: Positions = new Positions(new Map(), new Map(), new Map());
     const emissions: Map<number, PoolUserEmissionData> = new Map();

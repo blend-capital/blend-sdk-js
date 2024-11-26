@@ -1,4 +1,4 @@
-import { Address, SorobanRpc, xdr } from '@stellar/stellar-sdk';
+import { Address, rpc, xdr } from '@stellar/stellar-sdk';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
@@ -6,7 +6,7 @@ export class EmitterConfig {
   constructor(public blndTkn: string, public backstop: string) {}
 
   static async load(network: Network, emitterId: string) {
-    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
+    const stellarRpc = new rpc.Server(network.rpc, network.opts);
     const contractInstanceKey = xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(emitterId).toScAddress(),
@@ -17,7 +17,8 @@ export class EmitterConfig {
 
     let blndTkn: string | undefined;
     let backstop: string | undefined;
-    const emitterConfigEntries = (await rpc.getLedgerEntries(contractInstanceKey)).entries ?? [];
+    const emitterConfigEntries =
+      (await stellarRpc.getLedgerEntries(contractInstanceKey)).entries ?? [];
     for (const entry of emitterConfigEntries) {
       const ledgerData = entry.val.contractData();
       const key = decodeEntryKey(ledgerData.key());

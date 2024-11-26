@@ -1,4 +1,4 @@
-import { SorobanRpc } from '@stellar/stellar-sdk';
+import { rpc } from '@stellar/stellar-sdk';
 
 export class ContractError extends Error {
   /**
@@ -119,9 +119,9 @@ export enum ContractErrorType {
 
 export function parseError(
   errorResponse:
-    | SorobanRpc.Api.GetFailedTransactionResponse
-    | SorobanRpc.Api.SendTransactionResponse
-    | SorobanRpc.Api.SimulateTransactionErrorResponse
+    | rpc.Api.GetFailedTransactionResponse
+    | rpc.Api.SendTransactionResponse
+    | rpc.Api.SimulateTransactionErrorResponse
 ): ContractError {
   // Simulation Error
   if ('id' in errorResponse) {
@@ -190,9 +190,7 @@ export function parseError(
 }
 
 export function parseResult<T>(
-  response:
-    | SorobanRpc.Api.SimulateTransactionSuccessResponse
-    | SorobanRpc.Api.GetSuccessfulTransactionResponse,
+  response: rpc.Api.SimulateTransactionSuccessResponse | rpc.Api.GetSuccessfulTransactionResponse,
   parser: (xdr: string) => T
 ): T | undefined {
   if ('result' in response) {
