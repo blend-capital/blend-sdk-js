@@ -1,4 +1,4 @@
-import { Address, SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
+import { Address, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { UserEmissions } from '../emissions.js';
 import { Network, i128, u32 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
@@ -25,9 +25,9 @@ export class Positions {
   }
 
   static async load(network: Network, poolId: string, userId: string): Promise<Positions> {
-    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
+    const stellarRpc = new rpc.Server(network.rpc, network.opts);
     const userPositionsKey = Positions.ledgerKey(poolId, userId);
-    const positionResp = await rpc.getLedgerEntries(userPositionsKey);
+    const positionResp = await stellarRpc.getLedgerEntries(userPositionsKey);
 
     // if entry does not exist assume empty
     if (positionResp.entries == undefined || positionResp.entries.length == 0) {

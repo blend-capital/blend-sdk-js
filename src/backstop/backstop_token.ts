@@ -1,4 +1,4 @@
-import { Address, SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
+import { Address, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
@@ -49,7 +49,7 @@ export class BackstopToken {
     blndTkn: string,
     usdcTkn: string
   ): Promise<BackstopToken> {
-    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
+    const stellarRpc = new rpc.Server(network.rpc, network.opts);
     const recordDataKey = xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(id).toScAddress(),
@@ -64,7 +64,7 @@ export class BackstopToken {
         durability: xdr.ContractDataDurability.persistent(),
       })
     );
-    const ledgerEntriesResp = await rpc.getLedgerEntries(recordDataKey, totalSharesKey);
+    const ledgerEntriesResp = await stellarRpc.getLedgerEntries(recordDataKey, totalSharesKey);
     let blnd: bigint | undefined;
     let usdc: bigint | undefined;
     let totalShares: bigint | undefined;

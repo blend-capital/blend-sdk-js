@@ -1,4 +1,4 @@
-import { Address, SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
+import { Address, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
@@ -17,7 +17,7 @@ export class PoolConfig {
   ) {}
 
   static async load(network: Network, poolId: string) {
-    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
+    const stellarRpc = new rpc.Server(network.rpc, network.opts);
     const contractInstanceKey = xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(poolId).toScAddress(),
@@ -42,7 +42,10 @@ export class PoolConfig {
     let maxPositions: number | undefined;
     let reserveList: string[] | undefined;
 
-    const poolConfigEntries = await rpc.getLedgerEntries(contractInstanceKey, reserveListDataKey);
+    const poolConfigEntries = await stellarRpc.getLedgerEntries(
+      contractInstanceKey,
+      reserveListDataKey
+    );
     for (const entry of poolConfigEntries.entries ?? []) {
       const ledgerData = entry.val.contractData();
       const key = decodeEntryKey(ledgerData.key());

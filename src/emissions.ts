@@ -1,6 +1,6 @@
 //! Base classes for emission data
 
-import { SorobanRpc, scValToNative, xdr } from '@stellar/stellar-sdk';
+import { rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { Network, i128 } from './index.js';
 import { decodeEntryKey } from './ledger_entry_helper.js';
 import * as FixedMath from './math.js';
@@ -39,8 +39,8 @@ export class Emissions {
     decimals: number,
     timestamp?: number | undefined
   ): Promise<Emissions | undefined> {
-    const sorobanRpc = new SorobanRpc.Server(newtork.rpc, newtork.opts);
-    const entriesResponse = await sorobanRpc.getLedgerEntries(configLedgerKey, dataLedgerkey);
+    const stellarRpc = new rpc.Server(newtork.rpc, newtork.opts);
+    const entriesResponse = await stellarRpc.getLedgerEntries(configLedgerKey, dataLedgerkey);
     if (entriesResponse.entries.length == 2) {
       let emissionConfig: EmissionConfig | undefined = undefined;
       let emissionData: EmissionData | undefined = undefined;

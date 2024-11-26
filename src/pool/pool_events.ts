@@ -1,4 +1,4 @@
-import { Address, scValToNative, SorobanRpc, xdr } from '@stellar/stellar-sdk';
+import { Address, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { BaseBlendEvent, BlendContractType } from '../base_event.js';
 import { AuctionData, PoolContract } from './index.js';
 import { ReserveConfig } from './reserve_types.js';
@@ -195,7 +195,7 @@ export type PoolEvent =
  * @returns The PoolEvent or undefined if the EventResponse is not a PoolEvent
  */
 export function poolEventFromEventResponse(
-  eventResponse: SorobanRpc.Api.RawEventResponse
+  eventResponse: rpc.Api.RawEventResponse
 ): PoolEvent | undefined {
   if (
     eventResponse.type !== 'contract' ||
@@ -206,7 +206,7 @@ export function poolEventFromEventResponse(
   }
 
   try {
-    // NOTE: Decode RawEventResponse to ScVals. Do not update to `SorobanRpc.Api.EventResponse`. This
+    // NOTE: Decode RawEventResponse to ScVals. Do not update to `rpc.Api.EventResponse`. This
     // will cause failures in the conversion functions due to the requirement that the exact same
     // `js-xdr` code is used. (the same version from two different sources does not work)
     const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXDR(topic, 'base64'));

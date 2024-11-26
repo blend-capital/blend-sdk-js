@@ -2,9 +2,9 @@ import {
   Account,
   Address,
   Contract,
-  SorobanRpc,
-  TransactionBuilder,
+  rpc,
   scValToNative,
+  TransactionBuilder,
   xdr,
 } from '@stellar/stellar-sdk';
 import { Network } from './index.js';
@@ -31,9 +31,9 @@ export async function getOraclePrice(
     Address.fromString(token_id).toScVal(),
   ]);
   tx_builder.addOperation(new Contract(oracle_id).call('lastprice', asset));
-  const stellar_rpc = new SorobanRpc.Server(network.rpc, network.opts);
+  const stellar_rpc = new rpc.Server(network.rpc, network.opts);
   const result = await stellar_rpc.simulateTransaction(tx_builder.build());
-  if (SorobanRpc.Api.isSimulationSuccess(result)) {
+  if (rpc.Api.isSimulationSuccess(result)) {
     const xdr_str = result.result?.retval.toXDR('base64');
     if (xdr_str) {
       const price_result = xdr.ScVal.fromXDR(xdr_str, 'base64')?.value();
@@ -64,9 +64,9 @@ export async function getOracleDecimals(
     networkPassphrase: network.passphrase,
   });
   tx_builder.addOperation(new Contract(oracle_id).call('decimals'));
-  const stellar_rpc = new SorobanRpc.Server(network.rpc, network.opts);
+  const stellar_rpc = new rpc.Server(network.rpc, network.opts);
   const result = await stellar_rpc.simulateTransaction(tx_builder.build());
-  if (SorobanRpc.Api.isSimulationSuccess(result)) {
+  if (rpc.Api.isSimulationSuccess(result)) {
     const val = scValToNative(result.result.retval);
     return {
       decimals: val,

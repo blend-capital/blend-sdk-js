@@ -1,4 +1,4 @@
-import { SorobanRpc, xdr } from '@stellar/stellar-sdk';
+import { rpc, xdr } from '@stellar/stellar-sdk';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 import { BackstopUserEmissions, UserBalance } from './backstop_user_types.js';
@@ -30,11 +30,11 @@ export class BackstopPoolUser {
     if (timestamp === undefined) {
       timestamp = Math.floor(Date.now() / 1000);
     }
-    const rpc = new SorobanRpc.Server(network.rpc, network.opts);
+    const stellarRpc = new rpc.Server(network.rpc, network.opts);
     const ledgerKeys: xdr.LedgerKey[] = [];
     ledgerKeys.push(UserBalance.ledgerKey(backstopId, poolId, userId));
     ledgerKeys.push(BackstopUserEmissions.ledgerKey(backstopId, poolId, userId));
-    const ledgerEntries = await rpc.getLedgerEntries(...ledgerKeys);
+    const ledgerEntries = await stellarRpc.getLedgerEntries(...ledgerKeys);
 
     let balances: UserBalance = new UserBalance(BigInt(0), [], BigInt(0), BigInt(0));
     let emissions: BackstopUserEmissions | undefined;

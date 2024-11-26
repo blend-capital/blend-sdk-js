@@ -1,4 +1,4 @@
-import { SorobanRpc, xdr } from '@stellar/stellar-sdk';
+import { rpc, xdr } from '@stellar/stellar-sdk';
 import { EmissionConfig, EmissionData, Emissions } from '../emissions.js';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
@@ -47,7 +47,7 @@ export class Reserve {
     index: number,
     timestamp?: number
   ): Promise<Reserve> {
-    const sorobanRpc = new SorobanRpc.Server(network.rpc, network.opts);
+    const stellarRpc = new rpc.Server(network.rpc, network.opts);
 
     const dTokenIndex = index * 2;
     const bTokenIndex = index * 2 + 1;
@@ -60,7 +60,7 @@ export class Reserve {
       ReserveEmissionConfig.ledgerKey(poolId, dTokenIndex),
       ReserveEmissionData.ledgerKey(poolId, dTokenIndex),
     ];
-    const reserveLedgerEntries = await sorobanRpc.getLedgerEntries(...ledgerKeys);
+    const reserveLedgerEntries = await stellarRpc.getLedgerEntries(...ledgerKeys);
 
     // not all reserves have emissions, but the first 3 entries are required
     if (reserveLedgerEntries.entries.length < 3) {
