@@ -55,17 +55,26 @@ export interface Q4W {
 }
 
 export type BackstopDataKey =
+  | { tag: 'Emitter'; values: void }
+  | { tag: 'BToken'; values: void }
+  | { tag: 'PoolFact'; values: void }
+  | { tag: 'BLNDTkn'; values: void }
+  | { tag: 'USDCTkn'; values: void }
+  | { tag: 'RZ'; values: void }
+  | { tag: 'RZEmissionIndex'; values: void }
+  | { tag: 'BackfillEmis'; values: void }
+  | { tag: 'Backfill'; values: void }
+  | { tag: 'LastDist'; values: void }
+  | { tag: 'DropList'; values: void }
+  | { tag: 'LPTknVal'; values: void }
   | { tag: 'UserBalance'; values: readonly [PoolUserKey] }
   | { tag: 'PoolBalance'; values: readonly [string] }
   | { tag: 'PoolUSDC'; values: readonly [string] }
-  | { tag: 'NextEmis'; values: void }
-  | { tag: 'RewardZone'; values: void }
+  | { tag: 'RzEmisData'; values: readonly [string] }
   | { tag: 'PoolEPS'; values: readonly [string] }
   | { tag: 'BEmisCfg'; values: readonly [string] }
   | { tag: 'BEmisData'; values: readonly [string] }
-  | { tag: 'UEmisData'; values: readonly [PoolUserKey] }
-  | { tag: 'DropList'; values: void }
-  | { tag: 'LPTknVal'; values: void };
+  | { tag: 'UEmisData'; values: readonly [PoolUserKey] };
 
 export function BackstopDataKeyToXDR(backstopDataKey?: BackstopDataKey): xdr.ScVal {
   if (!backstopDataKey) {
@@ -73,6 +82,26 @@ export function BackstopDataKeyToXDR(backstopDataKey?: BackstopDataKey): xdr.ScV
   }
   const res: xdr.ScVal[] = [];
   switch (backstopDataKey.tag) {
+    case 'Emitter':
+      return ((i) => xdr.ScVal.scvSymbol(i))('Emitter');
+    case 'BToken':
+      return ((i) => xdr.ScVal.scvSymbol(i))('BToken');
+    case 'PoolFact':
+      return ((i) => xdr.ScVal.scvSymbol(i))('PoolFact');
+    case 'BLNDTkn':
+      return ((i) => xdr.ScVal.scvSymbol(i))('BLNDTkn');
+    case 'USDCTkn':
+      return ((i) => xdr.ScVal.scvSymbol(i))('USDCTkn');
+    case 'RZ':
+      return ((i) => xdr.ScVal.scvSymbol(i))('RZ');
+    case 'RZEmissionIndex':
+      return ((i) => xdr.ScVal.scvSymbol(i))('RZEmissionIndex');
+    case 'BackfillEmis':
+      return ((i) => xdr.ScVal.scvSymbol(i))('BackfillEmis');
+    case 'Backfill':
+      return ((i) => xdr.ScVal.scvSymbol(i))('Backfill');
+    case 'LastDist':
+      return ((i) => xdr.ScVal.scvSymbol(i))('LastDist');
     case 'UserBalance':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('UserBalance'));
       res.push(...((i) => [((i) => PoolUserKeyToXDR(i))(i[0])])(backstopDataKey.values));
@@ -83,11 +112,17 @@ export function BackstopDataKeyToXDR(backstopDataKey?: BackstopDataKey): xdr.ScV
         ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
       );
       break;
-    case 'NextEmis':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('NextEmis'));
+    case 'PoolUSDC':
+      res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolUSDC'));
+      res.push(
+        ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
+      );
       break;
-    case 'RewardZone':
-      res.push(((i) => xdr.ScVal.scvSymbol(i))('RewardZone'));
+    case 'RzEmisData':
+      res.push(((i) => xdr.ScVal.scvSymbol(i))('RzEmisData'));
+      res.push(
+        ...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(backstopDataKey.values)
+      );
       break;
     case 'PoolEPS':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('PoolEPS'));

@@ -10,7 +10,7 @@ import {
 import { FixedMath, Network, i128 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
-export class BackstopPool {
+export abstract class BackstopPool {
   constructor(
     public poolBalance: PoolBalance,
     public emissions: Emissions | undefined,
