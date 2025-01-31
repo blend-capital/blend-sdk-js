@@ -43,7 +43,7 @@ export class PositionsEstimate {
   ) {}
 
   public static build(pool: Pool, poolOracle: PoolOracle, positions: Positions): PositionsEstimate {
-    const reserve_list = pool.config.reserveList;
+    const reserve_list = Array.from(pool.reserves.keys());
 
     const liabilities = new Map<string, number>();
     const collateral = new Map<string, number>();

@@ -1,9 +1,9 @@
 import { Address, scValToNative, xdr } from '@stellar/stellar-sdk';
-import { i128, u32, u64 } from '../index.js';
+import { ContractReserve, i128, u32, u64 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export * from './pool.js';
-export * from './pool_config.js';
+export * from './pool_metadata.js';
 export * from './pool_contract.js';
 export * from './pool_est.js';
 export * from './pool_events.js';
@@ -177,24 +177,97 @@ export class AuctionData {
   }
 }
 
+/*
+ * The pool contracts config object
+ */
+
+export class PoolConfig {
+  constructor(
+    public backstopRate: number,
+    public maxPositions: number,
+    public oracle: string,
+    public status: number
+  ) {}
+
+  static fromScVal(sc_val: xdr.ScVal | string): PoolConfig {
+    if (typeof sc_val == 'string') {
+      sc_val = xdr.ScVal.fromXDR(sc_val, 'base64');
+    }
+    let backstopRate: number | undefined;
+    let oracle: string | undefined;
+    let status: number | undefined;
+    let maxPositions: number | undefined;
+    sc_val.map()?.map((config_entry) => {
+      const poolConfigKey = decodeEntryKey(config_entry.key());
+      switch (poolConfigKey) {
+        case 'bstop_rate':
+          backstopRate = Number(config_entry.val().u32().toString());
+          return;
+        case 'oracle':
+          oracle = Address.fromScVal(config_entry.val()).toString();
+          return;
+        case 'status':
+          status = scValToNative(config_entry.val());
+          return;
+        case 'max_positions':
+          maxPositions = Number(config_entry.val().u32().toString());
+          return;
+        default:
+          throw Error(`Invalid pool config key: should not contain ${poolConfigKey}`);
+      }
+    });
+    if (
+      backstopRate == undefined ||
+      oracle == undefined ||
+      status == undefined ||
+      maxPositions == undefined
+    ) {
+      throw new Error();
+    }
+    return new PoolConfig(backstopRate, maxPositions, oracle, status);
+  }
+}
+
+export class Market {
+  constructor(public poolConfig: PoolConfig, public reserves: ContractReserve[]) {}
+
+  static fromScVal(sc_val: xdr.ScVal | string): Market {
+    if (typeof sc_val == 'string') {
+      sc_val = xdr.ScVal.fromXDR(sc_val, 'base64');
+    }
+    const vec = sc_val.vec();
+    if (vec == undefined) {
+      throw Error('Market contract data value is not a vec');
+    }
+    const poolConfig: PoolConfig = PoolConfig.fromScVal(vec[0]);
+    const reserves: ContractReserve[] = vec[1]
+      .vec()
+      .map((reserve) => ContractReserve.fromScVal(reserve));
+
+    if (poolConfig == undefined || reserves == undefined) {
+      throw Error('Unable to load market data');
+    }
+    return new Market(poolConfig, reserves);
+  }
+}
+
 export type PoolDataKey =
   | { tag: 'Admin' }
   | { tag: 'Name' }
   | { tag: 'Backstop' }
-  | { tag: 'TokenHash' }
   | { tag: 'BLNDTkn' }
-  | { tag: 'USDCTkn' }
-  | { tag: 'PoolConfig' }
+  | { tag: 'Config' }
   | { tag: 'PoolEmis' }
+  | { tag: 'ResList' }
   | { tag: 'Positions'; values: [string] }
   | { tag: 'ResConfig'; values: [string] }
   | { tag: 'ResData'; values: [string] }
-  | { tag: 'ResList' }
   | { tag: 'EmisConfig'; values: [u32] }
   | { tag: 'EmisData'; values: [u32] }
   | { tag: 'UserEmis'; values: [UserReserveKey] }
   | { tag: 'Auction'; values: [AuctionKey] }
-  | { tag: 'AuctData'; values: [string] };
+  | { tag: 'AuctData'; values: [string] }
+  | { tag: 'ResInit'; values: [string] };
 
 export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
   if (!poolDataKey) {
@@ -210,12 +283,12 @@ export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
       return ((i) => xdr.ScVal.scvSymbol(i))('Backstop');
     case 'BLNDTkn':
       return ((i) => xdr.ScVal.scvSymbol(i))('BLNDTkn');
-    case 'USDCTkn':
-      return ((i) => xdr.ScVal.scvSymbol(i))('USDCTkn');
-    case 'PoolConfig':
-      return ((i) => xdr.ScVal.scvSymbol(i))('PoolConfig');
+    case 'Config':
+      return ((i) => xdr.ScVal.scvSymbol(i))('Config');
     case 'PoolEmis':
       return ((i) => xdr.ScVal.scvSymbol(i))('PoolEmis');
+    case 'ResList':
+      return ((i) => xdr.ScVal.scvSymbol(i))('ResList');
     case 'Positions':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('Positions'));
       res.push(...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolDataKey.values));
@@ -228,8 +301,6 @@ export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
       res.push(((i) => xdr.ScVal.scvSymbol(i))('ResData'));
       res.push(...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolDataKey.values));
       break;
-    case 'ResList':
-      return ((i) => xdr.ScVal.scvSymbol(i))('ResList');
     case 'EmisConfig':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('EmisConfig'));
       res.push(...((i) => [((i) => xdr.ScVal.scvU32(i))(i[0])])(poolDataKey.values));
@@ -248,6 +319,10 @@ export function PoolDataKeyToXDR(poolDataKey?: PoolDataKey): xdr.ScVal {
       break;
     case 'AuctData':
       res.push(((i) => xdr.ScVal.scvSymbol(i))('AuctData'));
+      res.push(...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolDataKey.values));
+      break;
+    case 'ResInit':
+      res.push(((i) => xdr.ScVal.scvSymbol(i))('ResInit'));
       res.push(...((i) => [((i) => Address.fromString(i).toScVal())(i[0])])(poolDataKey.values));
       break;
   }
