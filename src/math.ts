@@ -1,6 +1,6 @@
 export const SCALAR_7 = BigInt(10000000);
 export const SCALAR_9 = BigInt(1000000000);
-
+export const SCALAR_12 = BigInt(1000000000000);
 export function toFixed(x: number, decimals = 7): bigint {
   return BigInt(Math.floor(x * 10 ** decimals));
 }

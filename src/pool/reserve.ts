@@ -667,7 +667,7 @@ export class ReserveV2 extends Reserve {
     poolId: string,
     contractReserve: ContractReserve,
     timestamp?: number
-  ): Promise<Reserve> {
+  ): Promise<ReserveV2> {
     const stellarRpc = new rpc.Server(network.rpc, network.opts);
 
     const dTokenIndex = contractReserve.config.index * 2;
@@ -806,5 +806,77 @@ export class ReserveV2 extends Reserve {
     }
     this.borrowApr = FixedMath.toFloat(curIr, 7);
     this.supplyApr = FixedMath.toFloat(FixedMath.mulFloor(curIr, curUtil, FixedMath.SCALAR_7), 7);
+  }
+
+  /**
+   * Convert dTokens to assets
+   * @param dTokens - The number of dTokens to convert
+   * @returns The asset amount
+   */
+  public toAssetFromDToken(dTokens: bigint | undefined): bigint {
+    if (dTokens === undefined) {
+      return BigInt(0);
+    }
+    return FixedMath.mulCeil(dTokens, this.data.dRate, FixedMath.SCALAR_12);
+  }
+
+  /**
+   * Convert bTokens to assets
+   * @param bTokens - The number of bTokens to convert
+   * @returns The asset amount
+   */
+  public toAssetFromBToken(bTokens: bigint | undefined): bigint {
+    if (bTokens === undefined) {
+      return BigInt(0);
+    }
+    return FixedMath.mulFloor(bTokens, this.data.bRate, FixedMath.SCALAR_12);
+  }
+
+  /**
+   * Convert an asset amount to dTokens taking the floor
+   * @param asset - The asset amount to convert
+   * @returns The number of dTokens
+   */
+  public toDTokensFromAssetFloor(asset: bigint | undefined): bigint {
+    if (asset === undefined) {
+      return BigInt(0);
+    }
+    return FixedMath.divFloor(asset, this.data.dRate, FixedMath.SCALAR_12);
+  }
+
+  /**
+   * Convert an asset amount to dTokens taking the ceiling
+   * @param asset - The asset amount to convert
+   * @returns The number of dTokens
+   */
+  public toDTokensFromAssetCeil(asset: bigint | undefined): bigint {
+    if (asset === undefined) {
+      return BigInt(0);
+    }
+    return FixedMath.divCeil(asset, this.data.dRate, FixedMath.SCALAR_12);
+  }
+
+  /**
+   * Convert an asset amount to bTokens taking the floor
+   * @param asset - The asset amount to convert
+   * @returns The number of bTokens
+   */
+  public toBTokensFromAssetFloor(asset: bigint | undefined): bigint {
+    if (asset === undefined) {
+      return BigInt(0);
+    }
+    return FixedMath.divFloor(asset, this.data.bRate, FixedMath.SCALAR_12);
+  }
+
+  /**
+   * Convert an asset amount to bTokens taking the ceiling
+   * @param asset - The asset amount to convert
+   * @returns The number of bTokens
+   */
+  public toBTokensFromAssetCeil(asset: bigint | undefined): bigint {
+    if (asset === undefined) {
+      return BigInt(0);
+    }
+    return FixedMath.divCeil(asset, this.data.bRate, FixedMath.SCALAR_12);
   }
 }
