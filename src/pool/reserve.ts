@@ -1,5 +1,5 @@
 import { rpc, xdr } from '@stellar/stellar-sdk';
-import { EmissionConfig, EmissionData, Emissions } from '../emissions.js';
+import { EmissionConfig, EmissionData, Emissions, EmissionsV1 } from '../emissions.js';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 import * as FixedMath from '../math.js';
@@ -116,7 +116,7 @@ export class Reserve {
 
     let borrowEmissions: Emissions | undefined = undefined;
     if (emissionBorrowConfig && emissionBorrowData) {
-      borrowEmissions = new Emissions(
+      borrowEmissions = new EmissionsV1(
         emissionBorrowConfig,
         emissionBorrowData,
         reserveLedgerEntries.latestLedger
@@ -126,7 +126,7 @@ export class Reserve {
 
     let supplyEmissions: Emissions | undefined = undefined;
     if (emissionSupplyConfig && emissionSupplyData) {
-      supplyEmissions = new Emissions(
+      supplyEmissions = new EmissionsV1(
         emissionSupplyConfig,
         emissionSupplyData,
         reserveLedgerEntries.latestLedger

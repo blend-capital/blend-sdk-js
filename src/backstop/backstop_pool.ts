@@ -1,16 +1,82 @@
 import { Address, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
-import { EmissionConfig, EmissionData, Emissions } from '../emissions.js';
+import {
+  EmissionConfig,
+  EmissionData,
+  EmissionDataV2,
+  Emissions,
+  EmissionsV1,
+  EmissionsV2,
+} from '../emissions.js';
 import { FixedMath, Network, i128 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export class BackstopPool {
   constructor(
     public poolBalance: PoolBalance,
-    public toGulpEmissions: bigint,
     public emissions: Emissions | undefined,
     public latestLedger: number
   ) {}
 
+  /**
+   * Fetch the emission per year per non-Q4W backstop token
+   * @returns The emission per year per backstop token as a float
+   */
+  public emissionPerYearPerBackstopToken(): number {
+    if (this.emissions == undefined) {
+      return 0;
+    }
+    const tokensNotInQ4w = this.sharesToBackstopTokens(
+      this.poolBalance.shares - this.poolBalance.q4w
+    );
+    return this.emissions.emissionsPerYearPerToken(tokensNotInQ4w, 7);
+  }
+
+  /**
+   * Convert backstop tokens to shares
+   * @param backstopTokens - The number of backstop tokens to convert
+   * @returns - The number of shares as a fixed point number
+   */
+  public backstopTokensToShares(backstopTokens: bigint | number): bigint {
+    if (typeof backstopTokens === 'number') {
+      backstopTokens = FixedMath.toFixed(backstopTokens, 7);
+    }
+
+    if (this.poolBalance.shares === BigInt(0)) {
+      return backstopTokens;
+    }
+    return FixedMath.mulFloor(backstopTokens, this.poolBalance.shares, this.poolBalance.tokens);
+  }
+
+  /**
+   * Convert shares to backstop tokens
+   * @param shares - The number of shares to convert
+   * @returns - The number of backstop tokens as a fixed point number
+   */
+  public sharesToBackstopTokens(shares: bigint): bigint {
+    if (this.poolBalance.shares === BigInt(0)) {
+      return shares;
+    }
+    return FixedMath.mulFloor(shares, this.poolBalance.tokens, this.poolBalance.shares);
+  }
+
+  /**
+   * Convert shares to backstop tokens
+   * @param shares - The number of shares to convert
+   * @returns - The number of backstop tokens as a floating point number
+   */
+  public sharesToBackstopTokensFloat(shares: bigint): number {
+    return FixedMath.toFloat(this.sharesToBackstopTokens(shares), 7);
+  }
+}
+export class BackstopPoolV1 extends BackstopPool {
+  constructor(
+    public poolBalance: PoolBalance,
+    public toGulpEmissions: bigint,
+    public emissions: EmissionsV1 | undefined,
+    public latestLedger: number
+  ) {
+    super(poolBalance, emissions, latestLedger);
+  }
   static async load(
     network: Network,
     backstopId: string,
@@ -64,7 +130,7 @@ export class BackstopPool {
 
     let emissions: Emissions | undefined;
     if (emission_config != undefined && emission_data != undefined) {
-      emissions = new Emissions(
+      emissions = new EmissionsV1(
         emission_config,
         emission_data,
         backstopPoolDataEntries.latestLedger
@@ -72,63 +138,72 @@ export class BackstopPool {
       emissions.accrue(poolBalance.shares - poolBalance.q4w, 7, timestamp);
     }
 
-    return new BackstopPool(
+    return new BackstopPoolV1(
       poolBalance,
       toGulpEmissions,
       emissions,
       backstopPoolDataEntries.latestLedger
     );
   }
+}
 
-  /**
-   * Fetch the emission per year per non-Q4W backstop token
-   * @returns The emission per year per backstop token as a float
-   */
-  public emissionPerYearPerBackstopToken(): number {
-    if (this.emissions == undefined) {
-      return 0;
-    }
-    const tokensNotInQ4w = this.sharesToBackstopTokens(
-      this.poolBalance.shares - this.poolBalance.q4w
+export class BackstopPoolV2 extends BackstopPool {
+  constructor(
+    public poolBalance: PoolBalance,
+    public emissions: EmissionsV1 | undefined,
+    latestLedger: number
+  ) {
+    super(poolBalance, emissions, latestLedger);
+  }
+
+  static async load(
+    network: Network,
+    backstopId: string,
+    poolId: string,
+    timestamp?: number | undefined
+  ) {
+    const stellarRpc = new rpc.Server(network.rpc, network.opts);
+    const poolBalanceDataKey = PoolBalance.ledgerKey(backstopId, poolId);
+    const poolEmisDataKey = xdr.LedgerKey.contractData(
+      new xdr.LedgerKeyContractData({
+        contract: Address.fromString(backstopId).toScAddress(),
+        key: xdr.ScVal.scvVec([
+          xdr.ScVal.scvSymbol('PoolEmis'),
+          Address.fromString(poolId).toScVal(),
+        ]),
+        durability: xdr.ContractDataDurability.persistent(),
+      })
     );
-    return this.emissions.emissionsPerYearPerToken(tokensNotInQ4w, 7);
-  }
+    const backstopPoolDataEntries = await stellarRpc.getLedgerEntries(
+      poolBalanceDataKey,
+      poolEmisDataKey,
+      BackstopEmissionData.ledgerKey(backstopId, poolId)
+    );
 
-  /**
-   * Convert backstop tokens to shares
-   * @param backstopTokens - The number of backstop tokens to convert
-   * @returns - The number of shares as a fixed point number
-   */
-  public backstopTokensToShares(backstopTokens: bigint | number): bigint {
-    if (typeof backstopTokens === 'number') {
-      backstopTokens = FixedMath.toFixed(backstopTokens, 7);
+    let emission_data: EmissionDataV2 | undefined;
+    let poolBalance = new PoolBalance(BigInt(0), BigInt(0), BigInt(0));
+    for (const entry of backstopPoolDataEntries.entries) {
+      const ledgerData = entry.val;
+      const key = decodeEntryKey(ledgerData.contractData().key());
+      switch (key) {
+        case 'PoolBalance': {
+          poolBalance = PoolBalance.fromLedgerEntryData(ledgerData);
+          break;
+        }
+        case 'BEmisData':
+          emission_data = EmissionDataV2.fromLedgerEntryData(ledgerData);
+          break;
+        default:
+          throw new Error(`Invalid backstop pool key: should not contain ${key}`);
+      }
     }
 
-    if (this.poolBalance.shares === BigInt(0)) {
-      return backstopTokens;
+    let emissions: Emissions | undefined;
+    if (emission_data != undefined) {
+      emissions = new EmissionsV2(emission_data, backstopPoolDataEntries.latestLedger);
+      emissions.accrue(poolBalance.shares - poolBalance.q4w, 7, timestamp);
     }
-    return FixedMath.mulFloor(backstopTokens, this.poolBalance.shares, this.poolBalance.tokens);
-  }
-
-  /**
-   * Convert shares to backstop tokens
-   * @param shares - The number of shares to convert
-   * @returns - The number of backstop tokens as a fixed point number
-   */
-  public sharesToBackstopTokens(shares: bigint): bigint {
-    if (this.poolBalance.shares === BigInt(0)) {
-      return shares;
-    }
-    return FixedMath.mulFloor(shares, this.poolBalance.tokens, this.poolBalance.shares);
-  }
-
-  /**
-   * Convert shares to backstop tokens
-   * @param shares - The number of shares to convert
-   * @returns - The number of backstop tokens as a floating point number
-   */
-  public sharesToBackstopTokensFloat(shares: bigint): number {
-    return FixedMath.toFloat(this.sharesToBackstopTokens(shares), 7);
+    return new BackstopPoolV2(poolBalance, emissions, backstopPoolDataEntries.latestLedger);
   }
 }
 

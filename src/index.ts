@@ -7,7 +7,7 @@ export * from './pool/index.js';
 export * from './pool_factory/index.js';
 
 export * from './base_event.js';
-export { Emissions } from './emissions.js';
+export * from './emissions.js';
 export * as FixedMath from './math.js';
 export * from './oracle.js';
 export * from './response_parser.js';
@@ -20,6 +20,8 @@ export type i64 = bigint;
 export type u128 = bigint;
 export type i128 = bigint;
 export type Option<T> = T | undefined;
+
+export const I128MAX = BigInt('170141183460469231731687303715884105727');
 
 export interface Network {
   rpc: string;

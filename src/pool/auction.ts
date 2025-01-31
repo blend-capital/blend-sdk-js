@@ -1,4 +1,4 @@
-import { FixedMath, i128 } from '../index.js';
+import { FixedMath } from '../index.js';
 import { AuctionData, PoolEvent, PoolEventType } from './index.js';
 export enum AuctionType {
   Liquidation = 0,
