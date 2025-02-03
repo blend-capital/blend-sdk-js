@@ -1,6 +1,6 @@
 import { TokenMetadata } from '../../src/token.js';
 import { toFixed } from '../../src/math.js';
-import { Reserve } from '../../src/pool/reserve.js';
+import { ReserveV1 } from '../../src/pool/reserve.js';
 import { ReserveConfig, ReserveData } from '../../src/pool/reserve_types.js';
 
 test('reserve accrual', () => {
@@ -29,7 +29,7 @@ test('reserve accrual', () => {
 
   const timestamp = 123456 * 5;
   const take_rate = toFixed(0.2, 7);
-  const reserve = new Reserve(
+  const reserve = new ReserveV1(
     'poolId',
     'assetId',
     {} as TokenMetadata,
@@ -80,7 +80,7 @@ test('reserve accrual no supplied', () => {
 
   const timestamp = 123456 * 5;
   const take_rate = toFixed(0.2, 7);
-  const reserve = new Reserve(
+  const reserve = new ReserveV1(
     'poolId',
     'assetId',
     {} as TokenMetadata,
