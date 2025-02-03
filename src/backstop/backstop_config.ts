@@ -1,7 +1,6 @@
-import { Address, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
+import { Address, rpc, xdr } from '@stellar/stellar-sdk';
 import { Network } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
-import { LpTokenValue } from './index.js';
 
 export class BackstopConfig {
   constructor(
@@ -11,7 +10,6 @@ export class BackstopConfig {
     public backstopTkn: string,
     public poolFactory: string,
     public rewardZone: string[],
-    public backstopLpValue: LpTokenValue,
     public latestLedger: number
   ) {}
 
@@ -21,13 +19,6 @@ export class BackstopConfig {
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(backstopId).toScAddress(),
         key: xdr.ScVal.scvLedgerKeyContractInstance(),
-        durability: xdr.ContractDataDurability.persistent(),
-      })
-    );
-    const lpValueDataKey = xdr.LedgerKey.contractData(
-      new xdr.LedgerKeyContractData({
-        contract: Address.fromString(backstopId).toScAddress(),
-        key: xdr.ScVal.scvSymbol('LPTknVal'),
         durability: xdr.ContractDataDurability.persistent(),
       })
     );
@@ -44,29 +35,15 @@ export class BackstopConfig {
     let usdcTkn: string | undefined;
     let backstopTkn: string | undefined;
     let poolFactory: string | undefined;
-    let lpValue: LpTokenValue | undefined;
     const rewardZone: string[] = [];
     const backstopConfigEntries = await stellarRpc.getLedgerEntries(
       contractInstanceDataKey,
-      lpValueDataKey,
       rewardZoneDataKey
     );
     for (const entry of backstopConfigEntries.entries) {
       const ledgerData = entry.val.contractData();
       const key = decodeEntryKey(ledgerData.key());
       switch (key) {
-        case 'LPTknVal': {
-          const lpTknVector = ledgerData.val().vec();
-          if (lpTknVector.at(0) != undefined && lpTknVector.at(0) != undefined) {
-            lpValue = {
-              blndPerShare: scValToNative(lpTknVector.at(0)),
-              usdcPerShare: scValToNative(lpTknVector.at(1)),
-            };
-          } else {
-            throw new Error('Error: LP token value malformed');
-          }
-          break;
-        }
         case 'ContractInstance':
           ledgerData
             .val()
@@ -118,8 +95,7 @@ export class BackstopConfig {
       blndTkn == undefined ||
       usdcTkn == undefined ||
       backstopTkn == undefined ||
-      poolFactory == undefined ||
-      lpValue == undefined
+      poolFactory == undefined
     ) {
       throw Error('Unable to load backstop config undefined values');
     }
@@ -130,7 +106,6 @@ export class BackstopConfig {
       backstopTkn,
       poolFactory,
       rewardZone,
-      lpValue,
       backstopConfigEntries.latestLedger
     );
   }

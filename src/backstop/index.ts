@@ -34,11 +34,6 @@ export function PoolUserKeyToXDR(poolUserKey?: PoolUserKey): xdr.ScVal {
   return xdr.ScVal.scvMap(arr);
 }
 
-export interface LpTokenValue {
-  blndPerShare: i128;
-  usdcPerShare: i128;
-}
-
 /**
  * The pool's backstop data
  */
