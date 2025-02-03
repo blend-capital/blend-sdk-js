@@ -49,7 +49,6 @@ export abstract class BackstopContract extends Contract {
     'AAAAAAAAAAAAAAAEZHJvcAAAAAAAAAAA',
     'AAAAAAAAAAAAAAAEZHJhdwAAAAMAAAAAAAAADHBvb2xfYWRkcmVzcwAAABMAAAAAAAAABmFtb3VudAAAAAAACwAAAAAAAAACdG8AAAAAABMAAAAA',
     'AAAAAAAAAAAAAAAGZG9uYXRlAAAAAAADAAAAAAAAAARmcm9tAAAAEwAAAAAAAAAMcG9vbF9hZGRyZXNzAAAAEwAAAAAAAAAGYW1vdW50AAAAAAALAAAAAA==',
-    'AAAAAAAAAAAAAAAOdXBkYXRlX3Rrbl92YWwAAAAAAAAAAAABAAAD7QAAAAIAAAALAAAACw==',
     'AAAAAQAAADNUaGUgdXNlciBlbWlzc2lvbiBkYXRhIGZvciB0aGUgcmVzZXJ2ZSBiIG9yIGQgdG9rZW4AAAAAAAAAABBVc2VyRW1pc3Npb25EYXRhAAAAAgAAAAAAAAAHYWNjcnVlZAAAAAALAAAAAAAAAAVpbmRleAAAAAAAAAs=',
     'AAAAAQAAAAAAAAAAAAAAC1Bvb2xVc2VyS2V5AAAAAAIAAAAAAAAABHBvb2wAAAATAAAAAAAAAAR1c2VyAAAAEw==',
   ]);
@@ -71,8 +70,6 @@ export abstract class BackstopContract extends Contract {
     drop: () => {},
     draw: () => {},
     donate: () => {},
-    updateTknVal: (result: string): [i128, i128] =>
-      BackstopContract.spec.funcResToNative('update_tkn_val', result),
   };
 
   deposit(contractArgs: PoolBackstopActionArgs): string {
@@ -137,13 +134,6 @@ export abstract class BackstopContract extends Contract {
     ).toXDR('base64');
   }
 
-  updateTokenValue(): string {
-    return this.call(
-      'update_tkn_val',
-      ...BackstopContract.spec.funcArgsToScVals('update_tkn_val', {})
-    ).toXDR('base64');
-  }
-
   drop(): string {
     return this.call('drop', ...BackstopContract.spec.funcArgsToScVals('drop', {})).toXDR('base64');
   }
@@ -164,6 +154,7 @@ export class BackstopContractV1 extends BackstopContract {
       'AAAAAQAAAAAAAAAAAAAAFkJhY2tzdG9wRW1pc3Npb25Db25maWcAAAAAAAIAAAAAAAAAA2VwcwAAAAAGAAAAAAAAAApleHBpcmF0aW9uAAAAAAAG',
       'AAAAAQAAAAAAAAAAAAAAFUJhY2tzdG9wRW1pc3Npb25zRGF0YQAAAAAAAAIAAAAAAAAABWluZGV4AAAAAAAACwAAAAAAAAAJbGFzdF90aW1lAAAAAAAABg==',
       'AAAAAgAAAAAAAAAAAAAAD0JhY2tzdG9wRGF0YUtleQAAAAAHAAAAAQAAAAAAAAALVXNlckJhbGFuY2UAAAAAAQAAB9AAAAALUG9vbFVzZXJLZXkAAAAAAQAAAAAAAAALUG9vbEJhbGFuY2UAAAAAAQAAABMAAAABAAAAAAAAAAhQb29sVVNEQwAAAAEAAAATAAAAAQAAAAAAAAAIUG9vbEVtaXMAAAABAAAAEwAAAAEAAAAAAAAACEJFbWlzQ2ZnAAAAAQAAABMAAAABAAAAAAAAAAlCRW1pc0RhdGEAAAAAAAABAAAAEwAAAAEAAAAAAAAACVVFbWlzRGF0YQAAAAAAAAEAAAfQAAAAC1Bvb2xVc2VyS2V5AA==',
+      'AAAAAAAAAAAAAAAOdXBkYXRlX3Rrbl92YWwAAAAAAAAAAAABAAAD7QAAAAIAAAALAAAACw==',
     ]).entries,
   ]);
 
@@ -174,6 +165,8 @@ export class BackstopContractV1 extends BackstopContract {
     addReward: () => {},
     gulpPoolEmissions: (result: string): i128 =>
       BackstopContractV1.spec.funcResToNative('gulp_pool_emissions', result),
+    updateTknVal: (result: string): [i128, i128] =>
+      BackstopContractV1.spec.funcResToNative('update_tkn_val', result),
   };
 
   initialize(contractArgs: BackstopConstructorArgs): string {
@@ -193,6 +186,13 @@ export class BackstopContractV1 extends BackstopContract {
     return this.call(
       'add_reward',
       ...BackstopContractV1.spec.funcArgsToScVals('add_reward', { to_add, to_remove })
+    ).toXDR('base64');
+  }
+
+  updateTokenValue(): string {
+    return this.call(
+      'update_tkn_val',
+      ...BackstopContractV1.spec.funcArgsToScVals('update_tkn_val', {})
     ).toXDR('base64');
   }
 }
