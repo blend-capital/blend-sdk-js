@@ -77,7 +77,7 @@ export class PoolV2 extends Pool {
       poolContract.getMarket(),
       PoolContractV2.parsers.getMarket
     );
-    const reserves = new Map<string, Reserve>();
+    const reserves = new Map<string, ReserveV2>();
     const reserveList = await Promise.all(
       market.reserves.map((contractReserve) =>
         ReserveV2.loadWithMarketData(network, id, contractReserve)

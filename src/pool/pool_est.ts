@@ -30,7 +30,6 @@ export class PoolEstimate {
     for (const reserve of reserves.values()) {
       const oraclePrice = poolOracle.getPriceFloat(reserve.assetId);
       if (oraclePrice !== undefined) {
-        console.log(reserve.config.decimals);
         totalSupply += toFloat(reserve.totalSupply(), reserve.config.decimals) * oraclePrice;
         const reserveLiabilitiesBase =
           toFloat(reserve.totalLiabilities(), reserve.config.decimals) * oraclePrice;
