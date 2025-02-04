@@ -28,7 +28,6 @@ export abstract class Reserve {
   constructor(
     public poolId: string,
     public assetId: string,
-    public tokenMetadata: TokenMetadata,
     public config: ReserveConfig,
     public data: ReserveData,
     public borrowEmissions: Emissions | undefined,
@@ -339,7 +338,6 @@ export class ReserveV1 extends Reserve {
     const bTokenIndex = index * 2 + 1;
     const ledgerKeys: xdr.LedgerKey[] = [
       ReserveConfig.ledgerKey(poolId, assetId),
-      TokenMetadata.ledgerKey(assetId),
       ReserveData.ledgerKey(poolId, assetId),
       ReserveEmissionConfig.ledgerKey(poolId, bTokenIndex),
       ReserveEmissionData.ledgerKey(poolId, bTokenIndex),
@@ -355,7 +353,6 @@ export class ReserveV1 extends Reserve {
 
     let reserveConfig: ReserveConfig | undefined;
     let reserveData: ReserveData | undefined;
-    let tokenMetadata: TokenMetadata | undefined;
     let emissionBorrowConfig: EmissionConfig | undefined;
     let emissionBorrowData: EmissionData | undefined;
     let emissionSupplyConfig: EmissionConfig | undefined;
@@ -369,9 +366,6 @@ export class ReserveV1 extends Reserve {
           break;
         case 'ResData':
           reserveData = ReserveData.fromLedgerEntryData(ledgerEntry);
-          break;
-        case 'ContractInstance':
-          tokenMetadata = TokenMetadata.fromLedgerEntryData(ledgerEntry);
           break;
         case `EmisConfig`: {
           const token_type = getEmissionEntryTokenType(ledgerEntry);
@@ -396,7 +390,7 @@ export class ReserveV1 extends Reserve {
       }
     }
 
-    if (tokenMetadata == undefined || reserveConfig == undefined || reserveData == undefined) {
+    if (reserveConfig == undefined || reserveData == undefined) {
       throw new Error('Unable to load reserve: missing data.');
     }
 
@@ -423,7 +417,6 @@ export class ReserveV1 extends Reserve {
     const reserve = new ReserveV1(
       poolId,
       assetId,
-      tokenMetadata,
       reserveConfig,
       reserveData,
       borrowEmissions,
@@ -586,7 +579,6 @@ export class ReserveV2 extends Reserve {
     const dTokenIndex = index * 2;
     const bTokenIndex = index * 2 + 1;
     const ledgerKeys: xdr.LedgerKey[] = [
-      TokenMetadata.ledgerKey(assetId),
       ReserveData.ledgerKey(poolId, assetId),
       ReserveEmissionData.ledgerKey(poolId, bTokenIndex),
       ReserveEmissionData.ledgerKey(poolId, dTokenIndex),
@@ -598,16 +590,12 @@ export class ReserveV2 extends Reserve {
       throw new Error('Unable to load reserve: missing ledger entries.');
     }
 
-    let tokenMetadata: TokenMetadata | undefined;
     let emissionBorrowData: EmissionDataV2 | undefined;
     let emissionSupplyData: EmissionDataV2 | undefined;
     for (const entry of reserveLedgerEntries.entries) {
       const ledgerEntry = entry.val;
       const key = decodeEntryKey(ledgerEntry.contractData().key());
       switch (key) {
-        case 'ContractInstance':
-          tokenMetadata = TokenMetadata.fromLedgerEntryData(ledgerEntry);
-          break;
         case `EmisData`: {
           const token_type = getEmissionEntryTokenType(ledgerEntry);
           if (token_type == 0) {
@@ -622,7 +610,7 @@ export class ReserveV2 extends Reserve {
       }
     }
 
-    if (tokenMetadata == undefined || contractReserve == undefined) {
+    if (contractReserve == undefined) {
       throw new Error('Unable to load reserve: missing data.');
     }
 
@@ -649,7 +637,6 @@ export class ReserveV2 extends Reserve {
     const reserve = new ReserveV2(
       poolId,
       assetId,
-      tokenMetadata,
       contractReserve.config,
       contractReserve.data,
       borrowEmissions,
@@ -673,7 +660,6 @@ export class ReserveV2 extends Reserve {
     const dTokenIndex = contractReserve.config.index * 2;
     const bTokenIndex = contractReserve.config.index * 2 + 1;
     const ledgerKeys: xdr.LedgerKey[] = [
-      TokenMetadata.ledgerKey(contractReserve.asset),
       ReserveEmissionData.ledgerKey(poolId, bTokenIndex),
       ReserveEmissionData.ledgerKey(poolId, dTokenIndex),
     ];
@@ -684,16 +670,12 @@ export class ReserveV2 extends Reserve {
       throw new Error('Unable to load reserve: missing ledger entries.');
     }
 
-    let tokenMetadata: TokenMetadata | undefined;
     let emissionBorrowData: EmissionDataV2 | undefined;
     let emissionSupplyData: EmissionDataV2 | undefined;
     for (const entry of reserveLedgerEntries.entries) {
       const ledgerEntry = entry.val;
       const key = decodeEntryKey(ledgerEntry.contractData().key());
       switch (key) {
-        case 'ContractInstance':
-          tokenMetadata = TokenMetadata.fromLedgerEntryData(ledgerEntry);
-          break;
         case `EmisData`: {
           const token_type = getEmissionEntryTokenType(ledgerEntry);
           if (token_type == 0) {
@@ -706,10 +688,6 @@ export class ReserveV2 extends Reserve {
         default:
           throw Error(`Invalid reserve key: should not contain ${key}`);
       }
-    }
-
-    if (tokenMetadata == undefined) {
-      throw new Error('Unable to load reserve: missing data.');
     }
 
     let borrowEmissions: Emissions | undefined = undefined;
@@ -735,7 +713,6 @@ export class ReserveV2 extends Reserve {
     const reserve = new ReserveV2(
       poolId,
       contractReserve.asset,
-      tokenMetadata,
       contractReserve.config,
       contractReserve.data,
       borrowEmissions,
