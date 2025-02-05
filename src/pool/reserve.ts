@@ -10,7 +10,6 @@ import {
 import { Network, PoolContractV2 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 import * as FixedMath from '../math.js';
-import { TokenMetadata } from '../token.js';
 import {
   ContractReserve,
   getEmissionEntryTokenType,
@@ -36,6 +35,16 @@ export abstract class Reserve {
     public supplyApr: number,
     public latestLedger: number
   ) {}
+
+  /**
+   * The decimals used for b and d rate values
+   */
+  abstract readonly rateDecimals: number;
+
+  /**
+   * The decimals used for the IR modifier value
+   */
+  abstract readonly irmodDecimals: number;
 
   /********** Data Helpers **********/
 
@@ -177,7 +186,7 @@ export abstract class Reserve {
     if (dTokens === undefined) {
       return BigInt(0);
     }
-    return FixedMath.mulCeil(dTokens, this.data.dRate, FixedMath.SCALAR_9);
+    return FixedMath.mulCeil(dTokens, this.data.dRate, FixedMath.toFixed(1, this.rateDecimals));
   }
 
   /**
@@ -189,7 +198,7 @@ export abstract class Reserve {
     if (bTokens === undefined) {
       return BigInt(0);
     }
-    return FixedMath.mulFloor(bTokens, this.data.bRate, FixedMath.SCALAR_9);
+    return FixedMath.mulFloor(bTokens, this.data.bRate, FixedMath.toFixed(1, this.rateDecimals));
   }
 
   /**
@@ -273,7 +282,7 @@ export abstract class Reserve {
     if (asset === undefined) {
       return BigInt(0);
     }
-    return FixedMath.divFloor(asset, this.data.dRate, FixedMath.SCALAR_9);
+    return FixedMath.divFloor(asset, this.data.dRate, FixedMath.toFixed(1, this.rateDecimals));
   }
 
   /**
@@ -285,7 +294,7 @@ export abstract class Reserve {
     if (asset === undefined) {
       return BigInt(0);
     }
-    return FixedMath.divCeil(asset, this.data.dRate, FixedMath.SCALAR_9);
+    return FixedMath.divCeil(asset, this.data.dRate, FixedMath.toFixed(1, this.rateDecimals));
   }
 
   /**
@@ -297,7 +306,7 @@ export abstract class Reserve {
     if (asset === undefined) {
       return BigInt(0);
     }
-    return FixedMath.divFloor(asset, this.data.bRate, FixedMath.SCALAR_9);
+    return FixedMath.divFloor(asset, this.data.bRate, FixedMath.toFixed(1, this.rateDecimals));
   }
 
   /**
@@ -309,11 +318,164 @@ export abstract class Reserve {
     if (asset === undefined) {
       return BigInt(0);
     }
-    return FixedMath.divCeil(asset, this.data.bRate, FixedMath.SCALAR_9);
+    return FixedMath.divCeil(asset, this.data.bRate, FixedMath.toFixed(1, this.rateDecimals));
+  }
+
+  /********** Math Helpers **********/
+
+  /**
+   * Set the borrow and supply APRs based on the current state of the Reserve
+   * 
+   * Returns the APR as a bigint with 7 decimals.
+   */
+  public setAPR(): bigint {
+    const curUtil = this.getUtilization();
+    if (curUtil === BigInt(0)) {
+      this.borrowApr = FixedMath.toFloat(BigInt(this.config.r_base), 7);
+      this.supplyApr = 0;
+      return 0n;
+    }
+
+    const IR_MOD_SCALAR = FixedMath.toFixed(1, this.irmodDecimals);
+
+    let curIr: bigint;
+    const targetUtil = BigInt(this.config.util);
+    const fixed_95_percent = BigInt(9_500_000);
+    const fixed_5_percent = BigInt(500_000);
+
+    // calculate current IR
+    if (curUtil <= targetUtil) {
+      const utilScalar = FixedMath.divCeil(curUtil, targetUtil, FixedMath.SCALAR_7);
+      const baseRate =
+        FixedMath.mulCeil(utilScalar, BigInt(this.config.r_one), FixedMath.SCALAR_7) +
+        BigInt(this.config.r_base);
+      curIr = FixedMath.mulCeil(baseRate, this.data.interestRateModifier, IR_MOD_SCALAR);
+    } else if (curUtil <= fixed_95_percent) {
+      const utilScalar = FixedMath.divCeil(
+        curUtil - targetUtil,
+        fixed_95_percent - targetUtil,
+        FixedMath.SCALAR_7
+      );
+      const baseRate =
+        FixedMath.mulCeil(utilScalar, BigInt(this.config.r_two), FixedMath.SCALAR_7) +
+        BigInt(this.config.r_one) +
+        BigInt(this.config.r_base);
+      curIr = FixedMath.mulCeil(baseRate, this.data.interestRateModifier, IR_MOD_SCALAR);
+    } else {
+      const utilScalar = FixedMath.divCeil(
+        curUtil - fixed_95_percent,
+        fixed_5_percent,
+        FixedMath.SCALAR_7
+      );
+      const extraRate = FixedMath.mulCeil(
+        utilScalar,
+        BigInt(this.config.r_three),
+        FixedMath.SCALAR_7
+      );
+      const intersection = FixedMath.mulCeil(
+        this.data.interestRateModifier,
+        BigInt(this.config.r_two) + BigInt(this.config.r_one) + BigInt(this.config.r_base),
+        IR_MOD_SCALAR
+      );
+      curIr = extraRate + intersection;
+    }
+    this.borrowApr = FixedMath.toFloat(curIr, 7);
+    this.supplyApr = FixedMath.toFloat(FixedMath.mulFloor(curIr, curUtil, FixedMath.SCALAR_7), 7);
+    return curIr;
+  }
+
+  /**
+   * Accrue interest on the Reserve to the given timestamp, or now if no timestamp is provided.
+   *
+   * Calls `setApr` internally and updates ReserveData based on the accrual.
+   *
+   * @param backstopTakeRate - The backstop take rate (as a fixed point number)
+   * @param timestamp - The timestamp to accrue interest to (in seconds since epoch)
+   */
+  public accrue(backstopTakeRate: bigint, timestamp?: number | undefined): void {
+    if (timestamp === undefined) {
+      timestamp = Math.floor(Date.now() / 1000);
+    }
+
+    const curIr = this.setAPR();
+    const curUtil = this.getUtilization();
+    if (curUtil === BigInt(0)) {
+      this.data.lastTime = timestamp;
+      return;
+    }
+
+    const IR_MOD_SCALAR = FixedMath.toFixed(1, this.irmodDecimals);
+    const RATE_SCALAR = FixedMath.toFixed(1, this.rateDecimals);
+    const targetUtil = BigInt(this.config.util);
+
+    // update rate_modifier on reserve data
+    const deltaTime = timestamp - this.data.lastTime;
+    if (deltaTime <= 0) {
+      return;
+    }
+    if (curUtil > targetUtil) {
+      // rate modifier increasing - scale to IR_MOD_SCALAR
+      const utilDif = FixedMath.mulFloor(IR_MOD_SCALAR, curUtil - targetUtil, FixedMath.SCALAR_7);
+      // util and reactivity are 7 decimals
+      const utilError = BigInt(deltaTime) * utilDif;
+      const rateDif = FixedMath.mulFloor(
+        utilError,
+        BigInt(this.config.reactivity),
+        FixedMath.SCALAR_7
+      );
+      const nextIrMod = this.data.interestRateModifier + rateDif;
+      const irModMax = BigInt(10) * IR_MOD_SCALAR;
+      this.data.interestRateModifier = nextIrMod > irModMax ? irModMax : nextIrMod;
+    } else if (curUtil < targetUtil) {
+      // rate modifier decreasing - scale to IR_MOD_SCALAR
+      const utilDif = FixedMath.mulFloor(IR_MOD_SCALAR, targetUtil - curUtil, FixedMath.SCALAR_7);
+      // util and reactivity are 7 decimals
+      const utilError = BigInt(deltaTime) * utilDif;
+      const rateDif = FixedMath.mulCeil(
+        utilError,
+        BigInt(this.config.reactivity),
+        FixedMath.SCALAR_7
+      );
+      const nextIrMod = this.data.interestRateModifier - rateDif;
+      const irModMin = IR_MOD_SCALAR / 10n;
+      this.data.interestRateModifier = nextIrMod < irModMin ? irModMin : nextIrMod;
+    }
+
+    // calc accrual amount over blocks
+    // scale time weight to RATE_SCALAR
+    const timeWeight = (BigInt(deltaTime) * RATE_SCALAR) / BigInt(31536000);
+    // curIr is 7 decimals
+    const accrualRate =
+      RATE_SCALAR + FixedMath.mulCeil(timeWeight, curIr, FixedMath.SCALAR_7);
+
+    // apply accrual to reserveData
+    const preUpdateSupply = this.totalSupply();
+    const preUpdateLiabilities = this.totalLiabilities();
+
+    this.data.dRate = FixedMath.mulCeil(accrualRate, this.data.dRate, RATE_SCALAR);
+
+    const accruedInterest = this.totalLiabilities() - preUpdateLiabilities;
+    if (accruedInterest > 0) {
+      const newBackstopCredit = FixedMath.mulFloor(
+        accruedInterest,
+        backstopTakeRate,
+        FixedMath.SCALAR_7
+      );
+      this.data.backstopCredit += newBackstopCredit;
+      this.data.bRate = FixedMath.divFloor(
+        preUpdateSupply + accruedInterest - newBackstopCredit,
+        this.data.bSupply,
+        RATE_SCALAR
+      );
+    }
+    this.data.lastTime = timestamp;
   }
 }
 
 export class ReserveV1 extends Reserve {
+  readonly rateDecimals: number = 9;
+  readonly irmodDecimals: number = 9;
+
   /**
    * Load a Reserve from asset `assetId` from the pool `poolId` on the network `network`
    * @param network - The network configuration
@@ -346,8 +508,8 @@ export class ReserveV1 extends Reserve {
     ];
     const reserveLedgerEntries = await stellarRpc.getLedgerEntries(...ledgerKeys);
 
-    // not all reserves have emissions, but the first 3 entries are required
-    if (reserveLedgerEntries.entries.length < 3) {
+    // not all reserves have emissions, but the first 2 entries are required
+    if (reserveLedgerEntries.entries.length < 2) {
       throw new Error('Unable to load reserve: missing ledger entries.');
     }
 
@@ -428,129 +590,12 @@ export class ReserveV1 extends Reserve {
     reserve.accrue(backstopTakeRate, timestamp);
     return reserve;
   }
-
-  /**
-   * Accrue interest on the Reserve to the given timestamp, or now if no timestamp is provided.
-   *
-   * Updates ReserveData based on the accrual.
-   *
-   * @param backstopTakeRate - The backstop take rate (as a fixed point number)
-   * @param timestamp - The timestamp to accrue interest to (in seconds since epoch)
-   */
-  public accrue(backstopTakeRate: bigint, timestamp?: number | undefined): void {
-    if (timestamp === undefined) {
-      timestamp = Math.floor(Date.now() / 1000);
-    }
-
-    const curUtil = this.getUtilization();
-    if (curUtil === BigInt(0)) {
-      this.borrowApr = FixedMath.toFloat(BigInt(this.config.r_base), 7);
-      this.data.lastTime = timestamp;
-      return;
-    }
-
-    let curIr: bigint;
-    const targetUtil = BigInt(this.config.util);
-    const fixed_95_percent = BigInt(9_500_000);
-    const fixed_5_percent = BigInt(500_000);
-
-    // calculate current IR
-    if (curUtil <= targetUtil) {
-      const utilScalar = FixedMath.divCeil(curUtil, targetUtil, FixedMath.SCALAR_7);
-      const baseRate =
-        FixedMath.mulCeil(utilScalar, BigInt(this.config.r_one), FixedMath.SCALAR_7) +
-        BigInt(this.config.r_base);
-      curIr = FixedMath.mulCeil(baseRate, this.data.interestRateModifier, FixedMath.SCALAR_9);
-    } else if (curUtil <= fixed_95_percent) {
-      const utilScalar = FixedMath.divCeil(
-        curUtil - targetUtil,
-        fixed_95_percent - targetUtil,
-        FixedMath.SCALAR_7
-      );
-      const baseRate =
-        FixedMath.mulCeil(utilScalar, BigInt(this.config.r_two), FixedMath.SCALAR_7) +
-        BigInt(this.config.r_one) +
-        BigInt(this.config.r_base);
-      curIr = FixedMath.mulCeil(baseRate, this.data.interestRateModifier, FixedMath.SCALAR_9);
-    } else {
-      const utilScalar = FixedMath.divCeil(
-        curUtil - fixed_95_percent,
-        fixed_5_percent,
-        FixedMath.SCALAR_7
-      );
-      const extraRate = FixedMath.mulCeil(
-        utilScalar,
-        BigInt(this.config.r_three),
-        FixedMath.SCALAR_7
-      );
-      const intersection = FixedMath.mulCeil(
-        this.data.interestRateModifier,
-        BigInt(this.config.r_two) + BigInt(this.config.r_one) + BigInt(this.config.r_base),
-        FixedMath.SCALAR_9
-      );
-      curIr = extraRate + intersection;
-    }
-    this.borrowApr = FixedMath.toFloat(curIr, 7);
-    this.supplyApr = FixedMath.toFloat(FixedMath.mulFloor(curIr, curUtil, FixedMath.SCALAR_7), 7);
-
-    // update rate_modifier on reserve data
-    const deltaTimeScaled = FixedMath.toFixed(timestamp - this.data.lastTime, 9);
-    if (curUtil > targetUtil) {
-      // rate modifier increasing
-      const utilDifScaled = (curUtil - targetUtil) * BigInt(100);
-      const utilError = FixedMath.mulFloor(deltaTimeScaled, utilDifScaled, FixedMath.SCALAR_9);
-      const rateDif = FixedMath.mulFloor(
-        utilError,
-        BigInt(this.config.reactivity),
-        FixedMath.SCALAR_7
-      );
-      const nextIrMod = this.data.interestRateModifier + rateDif;
-      const irModMax = BigInt(10) * FixedMath.SCALAR_9;
-      this.data.interestRateModifier = nextIrMod > irModMax ? irModMax : nextIrMod;
-    } else if (curUtil < targetUtil) {
-      // rate modifier decreasing
-      const utilDifScaled = (targetUtil - curUtil) * BigInt(100);
-      const utilError = FixedMath.mulCeil(deltaTimeScaled, utilDifScaled, FixedMath.SCALAR_9);
-      const rateDif = FixedMath.mulCeil(
-        utilError,
-        BigInt(this.config.reactivity),
-        FixedMath.SCALAR_7
-      );
-      const nextIrMod = this.data.interestRateModifier - rateDif;
-      const irModMin = FixedMath.SCALAR_9 / 10n;
-      this.data.interestRateModifier = nextIrMod < irModMin ? irModMin : nextIrMod;
-    }
-
-    // calc accrual amount over blocks
-    const timeWeight = deltaTimeScaled / BigInt(31536000);
-    const accrualAmount =
-      FixedMath.SCALAR_9 + FixedMath.mulCeil(timeWeight, curIr * 100n, FixedMath.SCALAR_9);
-
-    // apply accrual to reserveData
-    const preUpdateSupply = this.totalSupply();
-    const preUpdateLiabilities = this.totalLiabilities();
-
-    this.data.dRate = FixedMath.mulCeil(accrualAmount, this.data.dRate, FixedMath.SCALAR_9);
-
-    const accruedInterest = this.totalLiabilities() - preUpdateLiabilities;
-    if (accruedInterest > 0) {
-      const newBackstopCredit = FixedMath.mulFloor(
-        accruedInterest,
-        backstopTakeRate,
-        FixedMath.SCALAR_7
-      );
-      this.data.backstopCredit += newBackstopCredit;
-      this.data.bRate = FixedMath.divFloor(
-        preUpdateSupply + accruedInterest - newBackstopCredit,
-        this.data.bSupply,
-        FixedMath.SCALAR_9
-      );
-    }
-    this.data.lastTime = timestamp;
-  }
 }
 
 export class ReserveV2 extends Reserve {
+  readonly rateDecimals: number = 12;
+  readonly irmodDecimals: number = 7;
+
   /**
    * Load a Reserve from asset `assetId` from the pool `poolId` on the network `network`
    * @param network - The network configuration
@@ -564,6 +609,7 @@ export class ReserveV2 extends Reserve {
   static async load(
     network: Network,
     poolId: string,
+    backstopTakeRate: bigint,
     assetId: string,
     index: number,
     timestamp?: number
@@ -579,16 +625,10 @@ export class ReserveV2 extends Reserve {
     const dTokenIndex = index * 2;
     const bTokenIndex = index * 2 + 1;
     const ledgerKeys: xdr.LedgerKey[] = [
-      ReserveData.ledgerKey(poolId, assetId),
       ReserveEmissionData.ledgerKey(poolId, bTokenIndex),
       ReserveEmissionData.ledgerKey(poolId, dTokenIndex),
     ];
     const reserveLedgerEntries = await stellarRpc.getLedgerEntries(...ledgerKeys);
-
-    // not all reserves have emissions, but the first 3 entries are required
-    if (reserveLedgerEntries.entries.length < 3) {
-      throw new Error('Unable to load reserve: missing ledger entries.');
-    }
 
     let emissionBorrowData: EmissionDataV2 | undefined;
     let emissionSupplyData: EmissionDataV2 | undefined;
@@ -645,7 +685,7 @@ export class ReserveV2 extends Reserve {
       0,
       reserveLedgerEntries.latestLedger
     );
-    reserve.calulateApr();
+    reserve.accrue(backstopTakeRate, timestamp);
     return reserve;
   }
 
@@ -664,11 +704,6 @@ export class ReserveV2 extends Reserve {
       ReserveEmissionData.ledgerKey(poolId, dTokenIndex),
     ];
     const reserveLedgerEntries = await stellarRpc.getLedgerEntries(...ledgerKeys);
-
-    // not all reserves have emissions, but the first 3 entries are required
-    if (reserveLedgerEntries.entries.length < 1) {
-      throw new Error('Unable to load reserve: missing ledger entries.');
-    }
 
     let emissionBorrowData: EmissionDataV2 | undefined;
     let emissionSupplyData: EmissionDataV2 | undefined;
@@ -721,139 +756,7 @@ export class ReserveV2 extends Reserve {
       0,
       reserveLedgerEntries.latestLedger
     );
-    reserve.calulateApr();
+    reserve.setAPR();
     return reserve;
-  }
-
-  /**
-   * Accrue interest on the Reserve to the given timestamp, or now if no timestamp is provided.
-   *
-   * Updates ReserveData based on the accrual.
-   *
-   * @param backstopTakeRate - The backstop take rate (as a fixed point number)
-   * @param timestamp - The timestamp to accrue interest to (in seconds since epoch)
-   */
-  public calulateApr(): void {
-    const curUtil = this.getUtilization();
-    if (curUtil === BigInt(0)) {
-      this.borrowApr = FixedMath.toFloat(BigInt(this.config.r_base), 7);
-      return;
-    }
-
-    let curIr: bigint;
-    const targetUtil = BigInt(this.config.util);
-    const fixed_95_percent = BigInt(9_500_000);
-    const fixed_5_percent = BigInt(500_000);
-
-    // calculate current IR
-    if (curUtil <= targetUtil) {
-      const utilScalar = FixedMath.divCeil(curUtil, targetUtil, FixedMath.SCALAR_7);
-      const baseRate =
-        FixedMath.mulCeil(utilScalar, BigInt(this.config.r_one), FixedMath.SCALAR_7) +
-        BigInt(this.config.r_base);
-      curIr = FixedMath.mulCeil(baseRate, this.data.interestRateModifier, FixedMath.SCALAR_9);
-    } else if (curUtil <= fixed_95_percent) {
-      const utilScalar = FixedMath.divCeil(
-        curUtil - targetUtil,
-        fixed_95_percent - targetUtil,
-        FixedMath.SCALAR_7
-      );
-      const baseRate =
-        FixedMath.mulCeil(utilScalar, BigInt(this.config.r_two), FixedMath.SCALAR_7) +
-        BigInt(this.config.r_one) +
-        BigInt(this.config.r_base);
-      curIr = FixedMath.mulCeil(baseRate, this.data.interestRateModifier, FixedMath.SCALAR_9);
-    } else {
-      const utilScalar = FixedMath.divCeil(
-        curUtil - fixed_95_percent,
-        fixed_5_percent,
-        FixedMath.SCALAR_7
-      );
-      const extraRate = FixedMath.mulCeil(
-        utilScalar,
-        BigInt(this.config.r_three),
-        FixedMath.SCALAR_7
-      );
-      const intersection = FixedMath.mulCeil(
-        this.data.interestRateModifier,
-        BigInt(this.config.r_two) + BigInt(this.config.r_one) + BigInt(this.config.r_base),
-        FixedMath.SCALAR_9
-      );
-      curIr = extraRate + intersection;
-    }
-    this.borrowApr = FixedMath.toFloat(curIr, 7);
-    this.supplyApr = FixedMath.toFloat(FixedMath.mulFloor(curIr, curUtil, FixedMath.SCALAR_7), 7);
-  }
-
-  /**
-   * Convert dTokens to assets
-   * @param dTokens - The number of dTokens to convert
-   * @returns The asset amount
-   */
-  public toAssetFromDToken(dTokens: bigint | undefined): bigint {
-    if (dTokens === undefined) {
-      return BigInt(0);
-    }
-    return FixedMath.mulCeil(dTokens, this.data.dRate, FixedMath.SCALAR_12);
-  }
-
-  /**
-   * Convert bTokens to assets
-   * @param bTokens - The number of bTokens to convert
-   * @returns The asset amount
-   */
-  public toAssetFromBToken(bTokens: bigint | undefined): bigint {
-    if (bTokens === undefined) {
-      return BigInt(0);
-    }
-    return FixedMath.mulFloor(bTokens, this.data.bRate, FixedMath.SCALAR_12);
-  }
-
-  /**
-   * Convert an asset amount to dTokens taking the floor
-   * @param asset - The asset amount to convert
-   * @returns The number of dTokens
-   */
-  public toDTokensFromAssetFloor(asset: bigint | undefined): bigint {
-    if (asset === undefined) {
-      return BigInt(0);
-    }
-    return FixedMath.divFloor(asset, this.data.dRate, FixedMath.SCALAR_12);
-  }
-
-  /**
-   * Convert an asset amount to dTokens taking the ceiling
-   * @param asset - The asset amount to convert
-   * @returns The number of dTokens
-   */
-  public toDTokensFromAssetCeil(asset: bigint | undefined): bigint {
-    if (asset === undefined) {
-      return BigInt(0);
-    }
-    return FixedMath.divCeil(asset, this.data.dRate, FixedMath.SCALAR_12);
-  }
-
-  /**
-   * Convert an asset amount to bTokens taking the floor
-   * @param asset - The asset amount to convert
-   * @returns The number of bTokens
-   */
-  public toBTokensFromAssetFloor(asset: bigint | undefined): bigint {
-    if (asset === undefined) {
-      return BigInt(0);
-    }
-    return FixedMath.divFloor(asset, this.data.bRate, FixedMath.SCALAR_12);
-  }
-
-  /**
-   * Convert an asset amount to bTokens taking the ceiling
-   * @param asset - The asset amount to convert
-   * @returns The number of bTokens
-   */
-  public toBTokensFromAssetCeil(asset: bigint | undefined): bigint {
-    if (asset === undefined) {
-      return BigInt(0);
-    }
-    return FixedMath.divCeil(asset, this.data.bRate, FixedMath.SCALAR_12);
   }
 }

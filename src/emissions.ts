@@ -17,6 +17,11 @@ export abstract class Emissions {
   ) {}
 
   /**
+   * The decimals of the index and eps values
+   */
+  abstract readonly epsDecimals: number;
+
+  /**
    * Accrue emissions to the provided timestamp
    * @param supply - The total supply of the token being emitted to
    * @param decimals - The decimals of the token being emitted to
@@ -56,7 +61,7 @@ export abstract class Emissions {
       return 0;
     }
     const supplyFloat = FixedMath.toFloat(supply, decimals);
-    const totalEmissions = FixedMath.toFloat(this.eps, 7) * 31536000;
+    const totalEmissions = FixedMath.toFloat(this.eps, this.epsDecimals) * 31536000;
     return totalEmissions / supplyFloat;
   }
 }
@@ -65,6 +70,8 @@ export class EmissionsV1 extends Emissions {
   constructor(config: EmissionConfig, data: EmissionData, latestLedger: number) {
     super(config.expiration, config.eps, data.index, data.lastTime, latestLedger);
   }
+
+  readonly epsDecimals: number = 7;
 
   /**
    * Fetch the emissions for a token.
@@ -129,6 +136,8 @@ export class EmissionsV2 extends Emissions {
   constructor(public data: EmissionDataV2, public latestLedger: number) {
     super(data.expiration, data.eps, data.index, data.lastTime, latestLedger);
   }
+
+  readonly epsDecimals: number = 14;
 
   /**
    * Fetch the emissions for a token.
@@ -371,7 +380,7 @@ export class UserEmissions {
    */
   estimateAccrual(emissions: Emissions, decimals: number, balance: bigint): number {
     const additional_index = emissions.index - this.index;
-    const toAccrue = FixedMath.mulFloor(balance, additional_index, FixedMath.SCALAR_7);
+    const toAccrue = FixedMath.mulFloor(balance, additional_index, FixedMath.toFixed(1, emissions.epsDecimals));
     return FixedMath.toFloat(toAccrue + this.accrued, decimals);
   }
 }
