@@ -11,6 +11,10 @@ export enum BackstopEventType {
   Claim = 'claim',
   Draw = 'draw',
   Donate = 'donate',
+  // V2 Events
+  Distribute = 'distribute',
+  RewardZoneAdd = 'rw_zone_add',
+  RewardZoneRemove = 'rw_zone_remove',
 }
 
 export interface BaseBackstopEvent extends BaseBlendEvent {
@@ -43,11 +47,12 @@ export interface BackstopDequeueEvent extends BaseBackstopEvent {
 export interface BackstopWithdrawEvent extends BaseBackstopEvent {
   eventType: BackstopEventType.Withdraw;
   poolAddress: string;
+  from: string;
   shares: bigint;
   tokensWithdrawn: bigint;
 }
 
-export interface BackstopGulpEmissionsEvent extends BaseBackstopEvent {
+export interface BackstopGulpEmissionsV1Event extends BaseBackstopEvent {
   eventType: BackstopEventType.GulpEmissions;
   newBLND: bigint;
 }
@@ -78,16 +83,42 @@ export interface BackstopDonateEvent extends BaseBackstopEvent {
   amount: bigint;
 }
 
+export interface BackstopGulpEmissionsV2Event extends BaseBackstopEvent {
+  eventType: BackstopEventType.GulpEmissions;
+  newBackstopEmissions: bigint;
+  newPoolEmissions: bigint;
+}
+
+export interface BackstopDistributeEvent extends BaseBackstopEvent {
+  eventType: BackstopEventType.Distribute;
+  newEmissions: bigint;
+}
+
+export interface BackstopRewardZoneAddEvent extends BaseBackstopEvent {
+  eventType: BackstopEventType.RewardZoneAdd;
+  toAdd: string;
+  toRemove: string | undefined;
+}
+
+export interface BackstopRewardZoneRemoveEvent extends BaseBackstopEvent {
+  eventType: BackstopEventType.RewardZoneRemove;
+  toRemove: string;
+}
+
 export type BackstopEvent =
   | BackstopDepositEvent
   | BackstopQ4WEvent
   | BackstopDequeueEvent
   | BackstopWithdrawEvent
-  | BackstopGulpEmissionsEvent
+  | BackstopGulpEmissionsV1Event
   | BackstopRewardZoneEvent
   | BackstopClaimEvent
   | BackstopDrawEvent
-  | BackstopDonateEvent;
+  | BackstopDonateEvent
+  | BackstopGulpEmissionsV2Event
+  | BackstopDistributeEvent
+  | BackstopRewardZoneAddEvent
+  | BackstopRewardZoneRemoveEvent;
 
 /**
  * Create a BackstopEvent from a RawEventResponse.
@@ -181,30 +212,47 @@ export function backstopEventFromEventResponse(
       }
       case BackstopEventType.Withdraw: {
         const valueAsVec = value_scval.vec();
-        if (topic_scval.length !== 2 || valueAsVec.length !== 2) {
+        if (topic_scval.length !== 3 || valueAsVec.length !== 2) {
           return undefined;
         }
         const pool_address = Address.fromScVal(topic_scval[1]).toString();
+        const from = Address.fromScVal(topic_scval[2]).toString();
         const shares = BigInt(scValToNative(valueAsVec[0]));
         const tokensWithdrawn = BigInt(scValToNative(valueAsVec[1]));
         return {
           ...baseEvent,
           eventType: BackstopEventType.Withdraw,
           poolAddress: pool_address,
+          from: from,
           shares: shares,
           tokensWithdrawn: tokensWithdrawn,
         } as BackstopWithdrawEvent;
       }
       case BackstopEventType.GulpEmissions: {
-        if (topic_scval.length !== 1) {
+        if (topic_scval.length !== 1 && topic_scval.length !== 2) {
           return undefined;
         }
-        const newBLND = BigInt(scValToNative(value_scval));
-        return {
-          ...baseEvent,
-          eventType: BackstopEventType.GulpEmissions,
-          newBLND: newBLND,
-        } as BackstopGulpEmissionsEvent;
+        if (value_scval.vec() === null) {
+          const newBLND = BigInt(scValToNative(value_scval));
+          return {
+            ...baseEvent,
+            eventType: BackstopEventType.GulpEmissions,
+            newBLND: newBLND,
+          } as BackstopGulpEmissionsV1Event;
+        } else {
+          const valueAsVec = value_scval.vec();
+          if (valueAsVec.length != 2) {
+            return undefined;
+          }
+          const newBackstopEmissions = BigInt(scValToNative(valueAsVec[0]));
+          const newPoolEmissions = BigInt(scValToNative(valueAsVec[1]));
+          return {
+            ...baseEvent,
+            eventType: BackstopEventType.GulpEmissions,
+            newBackstopEmissions: newBackstopEmissions,
+            newPoolEmissions: newPoolEmissions,
+          } as BackstopGulpEmissionsV2Event;
+        }
       }
       case BackstopEventType.RewardZone: {
         const valueAsVec = value_scval.vec();
@@ -263,6 +311,43 @@ export function backstopEventFromEventResponse(
           from: from,
           amount: amount,
         } as BackstopDonateEvent;
+      }
+      case BackstopEventType.Distribute: {
+        if (topic_scval.length !== 1) {
+          return undefined;
+        }
+        const newEmissions = BigInt(scValToNative(value_scval));
+        return {
+          ...baseEvent,
+          eventType: BackstopEventType.Distribute,
+          newEmissions: newEmissions,
+        } as BackstopDistributeEvent;
+      }
+      case BackstopEventType.RewardZoneAdd: {
+        const valueAsVec = value_scval.vec();
+        if (topic_scval.length !== 1 || valueAsVec.length !== 2) {
+          return undefined;
+        }
+        const toAdd = Address.fromScVal(valueAsVec[0]).toString();
+        const toRemove = scValToNative(valueAsVec[1]);
+        return {
+          ...baseEvent,
+          eventType: BackstopEventType.RewardZoneAdd,
+          toAdd: toAdd,
+          toRemove: toRemove,
+        } as BackstopRewardZoneAddEvent;
+      }
+      case BackstopEventType.RewardZoneRemove: {
+        const valueAsVec = value_scval.vec();
+        if (topic_scval.length !== 1) {
+          return undefined;
+        }
+        const toRemove = Address.fromScVal(valueAsVec[0]).toString();
+        return {
+          ...baseEvent,
+          eventType: BackstopEventType.RewardZoneRemove,
+          toRemove: toRemove,
+        } as BackstopRewardZoneRemoveEvent;
       }
       default:
         return undefined;

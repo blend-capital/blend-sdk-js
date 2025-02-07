@@ -1,4 +1,4 @@
-import { EmissionConfig, EmissionData, Emissions, UserEmissions } from '../src/emissions.js';
+import { EmissionConfig, EmissionData, EmissionsV1, UserEmissions } from '../src/emissions.js';
 
 test('load emissions for pool and user', () => {
   const config_xdr_string =
@@ -10,7 +10,7 @@ test('load emissions for pool and user', () => {
 
   const config = EmissionConfig.fromLedgerEntryData(config_xdr_string);
   const data = EmissionData.fromLedgerEntryData(data_xdr_string);
-  const emissions = new Emissions(config, data, 1);
+  const emissions = new EmissionsV1(config, data, 1);
   const user = UserEmissions.fromLedgerEntryData(user_xdr_string);
 
   expect(config.eps).toEqual(BigInt(900000));

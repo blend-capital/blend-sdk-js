@@ -1,6 +1,6 @@
 import { Address, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { EmissionConfig, EmissionData } from '../emissions.js';
-import { Network, u32 } from '../index.js';
+import { i128, Network, u32 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export class ReserveConfig {
@@ -132,6 +132,7 @@ export class ReserveConfig {
     ) {
       throw Error('ReserveConfig scvMap value malformed');
     }
+
     return new ReserveConfig(
       index,
       decimals,
@@ -144,6 +145,154 @@ export class ReserveConfig {
       r_two,
       r_three,
       reactivity
+    );
+  }
+}
+
+export class ReserveConfigV2 extends ReserveConfig {
+  constructor(
+    public index: number,
+    public decimals: number,
+    public c_factor: number,
+    public l_factor: number,
+    public util: number,
+    public max_util: number,
+    public r_base: number,
+    public r_one: number,
+    public r_two: number,
+    public r_three: number,
+    public reactivity: number,
+    public collateral_cap: bigint,
+    public enabled: boolean
+  ) {
+    super(
+      index,
+      decimals,
+      c_factor,
+      l_factor,
+      util,
+      max_util,
+      r_base,
+      r_one,
+      r_two,
+      r_three,
+      reactivity
+    );
+  }
+
+  static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): ReserveConfigV2 {
+    if (typeof ledger_entry_data == 'string') {
+      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+    }
+
+    const as_scval = ledger_entry_data.contractData().val();
+    if (as_scval === undefined) {
+      throw Error('ReserveConfig contract data value invalid');
+    }
+    return this.fromScVal(as_scval);
+  }
+
+  static fromScVal(scval_data: xdr.ScVal | string): ReserveConfigV2 {
+    if (typeof scval_data == 'string') {
+      scval_data = xdr.ScVal.fromXDR(scval_data, 'base64');
+    }
+    const data_entry_map = scval_data.map();
+    if (data_entry_map == undefined) {
+      throw Error('ReserveConfig contract data value is not a map');
+    }
+
+    let index: number | undefined;
+    let decimals: number | undefined;
+    let c_factor: number | undefined;
+    let l_factor: number | undefined;
+    let util: number | undefined;
+    let max_util: number | undefined;
+    let r_base: number | undefined;
+    let r_one: number | undefined;
+    let r_two: number | undefined;
+    let r_three: number | undefined;
+    let reactivity: number | undefined;
+    let collateral_cap: bigint | undefined;
+    let enabled: boolean | undefined;
+    for (const map_entry of data_entry_map) {
+      const key = decodeEntryKey(map_entry.key());
+      switch (key) {
+        case 'index':
+          index = scValToNative(map_entry.val());
+          break;
+        case 'decimals':
+          decimals = scValToNative(map_entry.val());
+          break;
+        case 'c_factor':
+          c_factor = scValToNative(map_entry.val());
+          break;
+        case 'l_factor':
+          l_factor = scValToNative(map_entry.val());
+          break;
+        case 'util':
+          util = scValToNative(map_entry.val());
+          break;
+        case 'max_util':
+          max_util = scValToNative(map_entry.val());
+          break;
+        case 'r_base':
+          r_base = scValToNative(map_entry.val());
+          break;
+        case 'r_one':
+          r_one = scValToNative(map_entry.val());
+          break;
+        case 'r_two':
+          r_two = scValToNative(map_entry.val());
+          break;
+        case 'r_three':
+          r_three = scValToNative(map_entry.val());
+          break;
+        case 'reactivity':
+          reactivity = scValToNative(map_entry.val());
+          break;
+        case 'collateral_cap':
+          collateral_cap = scValToNative(map_entry.val());
+          break;
+        case 'enabled':
+          enabled = scValToNative(map_entry.val());
+          break;
+        default:
+          throw Error(`Invalid ReserveConfig key should not contain ${key}`);
+      }
+    }
+
+    if (
+      index == undefined ||
+      c_factor == undefined ||
+      decimals == undefined ||
+      index == undefined ||
+      l_factor == undefined ||
+      max_util == undefined ||
+      r_one == undefined ||
+      r_three == undefined ||
+      r_two == undefined ||
+      reactivity == undefined ||
+      util == undefined ||
+      collateral_cap == undefined ||
+      enabled == undefined
+    ) {
+      throw Error('ReserveConfig scvMap value malformed');
+    }
+
+    return new ReserveConfigV2(
+      index,
+      decimals,
+      c_factor,
+      l_factor,
+      util,
+      max_util,
+      r_base,
+      r_one,
+      r_two,
+      r_three,
+      reactivity,
+      collateral_cap,
+      enabled
     );
   }
 }
@@ -189,7 +338,18 @@ export class ReserveData {
       ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
     }
 
-    const data_entry_map = ledger_entry_data.contractData().val().map();
+    const reserve_scval = ledger_entry_data.contractData().val();
+    const reserveData = ReserveData.fromScVal(reserve_scval);
+
+    return reserveData;
+  }
+
+  static fromScVal(sc_val: xdr.ScVal | string): ReserveData {
+    if (typeof sc_val == 'string') {
+      sc_val = xdr.ScVal.fromXDR(sc_val, 'base64');
+    }
+
+    const data_entry_map = sc_val.map();
 
     if (data_entry_map == undefined) {
       throw Error('ReserveData contract data value is not a map');
@@ -270,6 +430,55 @@ export class ReserveEmissionData extends EmissionData {
         durability: xdr.ContractDataDurability.persistent(),
       })
     );
+  }
+}
+
+/**
+ * A object representing the reserve object on the contract
+ */
+export class ContractReserve {
+  constructor(
+    public asset: string,
+    public config: ReserveConfigV2,
+    public data: ReserveData,
+    public scalar: i128
+  ) {}
+
+  static fromScVal(sc_val: xdr.ScVal | string): ContractReserve {
+    if (typeof sc_val == 'string') {
+      sc_val = xdr.ScVal.fromXDR(sc_val, 'base64');
+    }
+    const data_entry_map = sc_val.map();
+    if (data_entry_map == undefined) {
+      throw Error('Reserve contract data value is not a map');
+    }
+    let asset: string | undefined;
+    let config: ReserveConfigV2 | undefined;
+    let data: ReserveData | undefined;
+    let scalar: i128 | undefined;
+    for (const map_entry of data_entry_map) {
+      const key = decodeEntryKey(map_entry.key());
+      switch (key) {
+        case 'asset':
+          asset = Address.fromScVal(map_entry.val()).toString();
+          break;
+        case 'config':
+          config = ReserveConfigV2.fromScVal(map_entry.val());
+          break;
+        case 'data':
+          data = ReserveData.fromScVal(map_entry.val());
+          break;
+        case 'scalar':
+          scalar = scValToNative(map_entry.val());
+          break;
+        default:
+          throw Error(`Invalid Reserve key: should not contain ${key}`);
+      }
+    }
+    if (asset == undefined || config == undefined || data == undefined) {
+      throw Error('Invalid Reserve: missing fields');
+    }
+    return new ContractReserve(asset, config, data, scalar);
   }
 }
 

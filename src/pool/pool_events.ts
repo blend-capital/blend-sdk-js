@@ -1,6 +1,6 @@
 import { Address, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { BaseBlendEvent, BlendContractType } from '../base_event.js';
-import { AuctionData, PoolContract } from './index.js';
+import { AuctionData } from './index.js';
 import { ReserveConfig } from './reserve_types.js';
 
 export enum PoolEventType {
@@ -24,8 +24,12 @@ export enum PoolEventType {
   Repay = 'repay',
   FillAuction = 'fill_auction',
   DeleteLiquidationAuction = 'delete_liquidation_auction',
-}
 
+  // V2 Events
+  GulpEmissions = 'gulp_emissions',
+  Gulp = 'gulp',
+  DefaultedDebt = 'defaulted_debt',
+}
 export interface BasePoolEvent extends BaseBlendEvent {
   contractType: BlendContractType.Pool;
 }
@@ -93,7 +97,7 @@ export interface PoolNewLiquidationAuctionEvent extends BasePoolEvent {
   auctionData: AuctionData;
 }
 
-export interface PoolNewAuctionEvent extends BasePoolEvent {
+export interface PoolNewAuctionV1Event extends BasePoolEvent {
   eventType: PoolEventType.NewAuction;
   auctionType: number;
   auctionData: AuctionData;
@@ -154,7 +158,7 @@ export interface PoolRepayEvent extends BasePoolEvent {
   dTokensBurned: bigint;
 }
 
-export interface PoolFillAuctionEvent extends BasePoolEvent {
+export interface PoolFillAuctionV1Event extends BasePoolEvent {
   eventType: PoolEventType.FillAuction;
   user: string;
   auctionType: number;
@@ -165,6 +169,41 @@ export interface PoolFillAuctionEvent extends BasePoolEvent {
 export interface PoolDeleteLiquidationAuctionEvent extends BasePoolEvent {
   eventType: PoolEventType.DeleteLiquidationAuction;
   user: string;
+}
+
+export interface PoolGulpEmissionsEvent extends BasePoolEvent {
+  eventType: PoolEventType.GulpEmissions;
+  newBLND: bigint;
+}
+
+export interface PoolDefaultedDebtEvent extends BasePoolEvent {
+  eventType: PoolEventType.DefaultedDebt;
+  assetId: string;
+  dTokens: bigint;
+}
+
+export interface PoolGulpEvent extends BasePoolEvent {
+  eventType: PoolEventType.Gulp;
+  assetId: string;
+  tokenDelta: bigint;
+  newBRate: bigint;
+}
+
+export interface PoolNewAuctionV2Event extends BasePoolEvent {
+  eventType: PoolEventType.NewAuction;
+  auctionType: number;
+  user: string;
+  percent: number;
+  auctionData: AuctionData;
+}
+
+export interface PoolFillAuctionV2Event extends BasePoolEvent {
+  eventType: PoolEventType.FillAuction;
+  user: string;
+  auctionType: number;
+  filler: string;
+  fillAmount: bigint;
+  filledAuctionData: AuctionData;
 }
 
 export type PoolEvent =
@@ -178,7 +217,7 @@ export type PoolEvent =
   | PoolReserveEmissionUpdateEvent
   | PoolClaimEvent
   | PoolNewLiquidationAuctionEvent
-  | PoolNewAuctionEvent
+  | PoolNewAuctionV1Event
   | PoolBadDebtEvent
   | PoolSupplyEvent
   | PoolWithdrawEvent
@@ -186,8 +225,13 @@ export type PoolEvent =
   | PoolWithdrawCollateralEvent
   | PoolBorrowEvent
   | PoolRepayEvent
-  | PoolFillAuctionEvent
-  | PoolDeleteLiquidationAuctionEvent;
+  | PoolFillAuctionV1Event
+  | PoolDeleteLiquidationAuctionEvent
+  | PoolDefaultedDebtEvent
+  | PoolGulpEvent
+  | PoolGulpEmissionsEvent
+  | PoolNewAuctionV2Event
+  | PoolFillAuctionV2Event;
 
 /**
  * Create a PoolEvent from a RawEventResponse.
@@ -320,16 +364,28 @@ export function poolEventFromEventResponse(
           status: status,
         } as PoolSetStatusEvent;
       }
-      case PoolEventType.UpdateEmissions: {
+      case PoolEventType.UpdateEmissions:
+      case PoolEventType.GulpEmissions: {
         if (topic_scval.length !== 1) {
           return undefined;
         }
         const new_blnd = BigInt(scValToNative(value_scval));
-        return {
-          ...baseEvent,
-          eventType: PoolEventType.UpdateEmissions,
-          newBLND: new_blnd,
-        } as PoolUpdateEmissionsEvent;
+        switch (eventString) {
+          case PoolEventType.UpdateEmissions:
+            return {
+              ...baseEvent,
+              eventType: PoolEventType.UpdateEmissions,
+              newBLND: new_blnd,
+            } as PoolUpdateEmissionsEvent;
+          case PoolEventType.GulpEmissions:
+            return {
+              ...baseEvent,
+              eventType: PoolEventType.GulpEmissions,
+              newBLND: new_blnd,
+            } as PoolGulpEmissionsEvent;
+          default:
+            return;
+        }
       }
       case PoolEventType.ReserveEmissionUpdate: {
         const valueAsVec = value_scval.vec();
@@ -377,7 +433,7 @@ export function poolEventFromEventResponse(
           return undefined;
         }
         const user = Address.fromScVal(topic_scval[1]).toString();
-        const auctionData = PoolContract.spec.funcResToNative('get_auction', value_scval);
+        const auctionData = AuctionData.fromScVal(value_scval);
         return {
           ...baseEvent,
           eventType: PoolEventType.NewLiquidationAuction,
@@ -386,36 +442,68 @@ export function poolEventFromEventResponse(
         } as PoolNewLiquidationAuctionEvent;
       }
       case PoolEventType.NewAuction: {
-        if (topic_scval.length !== 2) {
+        const valueAsVec = value_scval.vec();
+        if (topic_scval.length !== 2 && topic_scval.length !== 3) {
           return undefined;
         }
         const auctionType = Number(scValToNative(topic_scval[1]));
         if (isNaN(auctionType)) {
           return undefined;
         }
-        const auctionData = PoolContract.spec.funcResToNative('get_auction', value_scval);
-        return {
-          ...baseEvent,
-          eventType: PoolEventType.NewAuction,
-          auctionType: auctionType,
-          auctionData: auctionData,
-        } as PoolNewAuctionEvent;
+        if (valueAsVec === null) {
+          const auctionData = AuctionData.fromScVal(value_scval);
+          return {
+            ...baseEvent,
+            eventType: PoolEventType.NewAuction,
+            auctionType: auctionType,
+            auctionData: auctionData,
+          } as PoolNewAuctionV1Event;
+        } else {
+          if (valueAsVec.length !== 2 || topic_scval.length !== 3) {
+            return undefined;
+          }
+          const auctionData = AuctionData.fromScVal(value_scval);
+          const percent = Number(scValToNative(valueAsVec[0]));
+          return {
+            ...baseEvent,
+            eventType: PoolEventType.NewAuction,
+            user: Address.fromScVal(topic_scval[2]).toString(),
+            auctionType: auctionType,
+            auctionData: auctionData,
+            percent: percent,
+          } as PoolNewAuctionV2Event;
+        }
       }
       case PoolEventType.BadDebt: {
-        const valueAsVec = value_scval.vec();
-        if (topic_scval.length !== 2 || valueAsVec?.length !== 2) {
+        if (topic_scval.length == 2) {
+          const valueAsVec = value_scval.vec();
+          if (valueAsVec?.length !== 2) {
+            return undefined;
+          }
+          const backstop = Address.fromScVal(topic_scval[1]).toString();
+          const assetId = Address.fromScVal(valueAsVec[0]).toString();
+          const dTokens = BigInt(scValToNative(valueAsVec[1]));
+          return {
+            ...baseEvent,
+            eventType: PoolEventType.BadDebt,
+            user: backstop,
+            assetId: assetId,
+            dTokens: dTokens,
+          } as PoolBadDebtEvent;
+        } else if (topic_scval.length == 3) {
+          const user = Address.fromScVal(topic_scval[1]).toString();
+          const assetId = Address.fromScVal(topic_scval[2]).toString();
+          const dTokens = BigInt(scValToNative(value_scval));
+          return {
+            ...baseEvent,
+            eventType: PoolEventType.BadDebt,
+            user: user,
+            assetId: assetId,
+            dTokens: dTokens,
+          } as PoolBadDebtEvent;
+        } else {
           return undefined;
         }
-        const user = Address.fromScVal(topic_scval[1]).toString();
-        const assetId = Address.fromScVal(valueAsVec[0]).toString();
-        const dTokens = BigInt(scValToNative(valueAsVec[1]));
-        return {
-          ...baseEvent,
-          eventType: PoolEventType.BadDebt,
-          user: user,
-          assetId: assetId,
-          dTokens: dTokens,
-        } as PoolBadDebtEvent;
       }
       case PoolEventType.Supply:
       case PoolEventType.Withdraw:
@@ -492,24 +580,46 @@ export function poolEventFromEventResponse(
       }
       case PoolEventType.FillAuction: {
         const valueAsVec = value_scval.vec();
-        if (topic_scval.length !== 3 || valueAsVec?.length !== 2) {
+        if (topic_scval.length !== 3 || valueAsVec === null) {
           return undefined;
         }
-        const user = Address.fromScVal(topic_scval[1]).toString();
-        const auctionType = Number(scValToNative(topic_scval[2]));
-        if (isNaN(auctionType)) {
+        if (valueAsVec.length == 2) {
+          const user = Address.fromScVal(topic_scval[1]).toString();
+          const auctionType = Number(scValToNative(topic_scval[2]));
+          if (isNaN(auctionType)) {
+            return undefined;
+          }
+          const from = Address.fromScVal(valueAsVec[0]).toString();
+          const fillAmount = BigInt(scValToNative(valueAsVec[1]));
+          return {
+            ...baseEvent,
+            eventType: PoolEventType.FillAuction,
+            user: user,
+            auctionType: auctionType,
+            from: from,
+            fillAmount: fillAmount,
+          } as PoolFillAuctionV1Event;
+        } else if (valueAsVec.length == 3) {
+          const auctionType = Number(scValToNative(topic_scval[1]));
+          const user = Address.fromScVal(topic_scval[2]).toString();
+          if (isNaN(auctionType)) {
+            return undefined;
+          }
+          const filler = Address.fromScVal(valueAsVec[0]).toString();
+          const fillAmount = BigInt(scValToNative(valueAsVec[1]));
+          const filledAuctionData = AuctionData.fromScVal(valueAsVec[2]);
+          return {
+            ...baseEvent,
+            eventType: PoolEventType.FillAuction,
+            user: user,
+            auctionType: auctionType,
+            filler: filler,
+            fillAmount: fillAmount,
+            filledAuctionData: filledAuctionData,
+          } as PoolFillAuctionV2Event;
+        } else {
           return undefined;
         }
-        const from = Address.fromScVal(valueAsVec[0]).toString();
-        const fillAmount = BigInt(scValToNative(valueAsVec[1]));
-        return {
-          ...baseEvent,
-          eventType: PoolEventType.FillAuction,
-          user: user,
-          auctionType: auctionType,
-          from: from,
-          fillAmount: fillAmount,
-        } as PoolFillAuctionEvent;
       }
       case PoolEventType.DeleteLiquidationAuction: {
         if (topic_scval.length !== 2) {
@@ -521,6 +631,35 @@ export function poolEventFromEventResponse(
           eventType: PoolEventType.DeleteLiquidationAuction,
           user: user,
         } as PoolDeleteLiquidationAuctionEvent;
+      }
+      case PoolEventType.DefaultedDebt: {
+        if (topic_scval.length !== 2) {
+          return undefined;
+        }
+        const assetId = Address.fromScVal(topic_scval[1]).toString();
+        const dTokens = BigInt(scValToNative(value_scval));
+        return {
+          ...baseEvent,
+          eventType: PoolEventType.DefaultedDebt,
+          assetId: assetId,
+          dTokens: dTokens,
+        } as PoolDefaultedDebtEvent;
+      }
+      case PoolEventType.Gulp: {
+        const valueAsVec = value_scval.vec();
+        if (topic_scval.length !== 2 || valueAsVec?.length !== 2) {
+          return undefined;
+        }
+        const assetId = Address.fromScVal(topic_scval[1]).toString();
+        const tokenDelta = BigInt(scValToNative(valueAsVec[0]));
+        const newBRate = BigInt(scValToNative(valueAsVec[1]));
+        return {
+          ...baseEvent,
+          eventType: PoolEventType.Gulp,
+          assetId: assetId,
+          tokenDelta: tokenDelta,
+          newBRate: newBRate,
+        } as PoolGulpEvent;
       }
       default:
         return undefined;

@@ -88,6 +88,9 @@ export enum ContractErrorType {
   InvalidShareMintAmount = 1005,
   InvalidTokenWithdrawAmount = 1006,
   TooManyQ4WEntries = 1007,
+  NotInRewardZone = 1008,
+  RewardZoneFull = 1009,
+  MaxBackfillEmissions = 1010,
 
   // Pool Request Errors (start at 1200)
   PoolBadRequest = 1200,
@@ -102,6 +105,12 @@ export enum ContractErrorType {
   InvalidUtilRate = 1207,
   MaxPositionsExceeded = 1208,
   InternalReserveNotFound = 1209,
+  InvalidBTokenMintAmount = 1216,
+  InvalidBTokenBurnAmount = 1217,
+  InvalidDTokenMintAmount = 1218,
+  InvalidDTokenBurnAmount = 1219,
+  ExceededCollateralCap = 1220,
+  ReserveDisabled = 1223,
 
   // Oracle Errors
   StalePrice = 1210,
@@ -112,6 +121,8 @@ export enum ContractErrorType {
   InvalidLiqTooLarge = 1213,
   InvalidLiqTooSmall = 1214,
   InterestTooSmall = 1215,
+  InvalidBid = 1221,
+  InvalidLot = 1222,
 
   // Pool Factory
   InvalidPoolFactoryInitArgs = 1300,

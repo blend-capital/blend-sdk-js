@@ -1,7 +1,8 @@
 import { rpc, xdr } from '@stellar/stellar-sdk';
-import { Network, Pool, Reserve } from '../index.js';
+import { Network, Reserve } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 import { PoolUserEmissionData, Positions } from './user_types.js';
+import { Pool } from './pool.js';
 
 export class PoolUser {
   constructor(

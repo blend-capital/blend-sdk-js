@@ -34,6 +34,37 @@ export class TokenMetadata {
     this.asset = asset;
   }
 
+  static async load(network: Network, tokenId: string): Promise<TokenMetadata> {
+    const stellarRpc = new rpc.Server(network.rpc, network.opts);
+
+    const ledgerKeys: xdr.LedgerKey[] = [this.ledgerKey(tokenId)];
+    const tokenMetadataEntry = await stellarRpc.getLedgerEntries(...ledgerKeys);
+
+    // not all reserves have emissions, but the first 3 entries are required
+    if (tokenMetadataEntry.entries.length < 1) {
+      throw new Error('Unable to load token metadata entry: failed to return entry.');
+    }
+
+    let tokenMetadata: TokenMetadata | undefined = undefined;
+    for (const entry of tokenMetadataEntry.entries) {
+      const ledgerEntry = entry.val;
+      const key = decodeEntryKey(ledgerEntry.contractData().key());
+      switch (key) {
+        case 'ContractInstance':
+          tokenMetadata = this.fromLedgerEntryData(ledgerEntry);
+          break;
+        default:
+          throw Error(`Invalid metadata key: should not contain ${key}`);
+      }
+    }
+
+    if (tokenMetadata == undefined) {
+      throw new Error('Unable to load the token metadata.');
+    }
+
+    return tokenMetadata;
+  }
+
   /**
    * Create the ledgerKey for the token contract instance
    * @param assetId - The contractId for the asset

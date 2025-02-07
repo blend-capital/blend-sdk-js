@@ -1,4 +1,4 @@
-import { FixedMath, i128 } from '../index.js';
+import { FixedMath } from '../index.js';
 import { AuctionData, PoolEvent, PoolEventType } from './index.js';
 export enum AuctionType {
   Liquidation = 0,
@@ -40,25 +40,58 @@ export function getAuctionsfromEvents(events: PoolEvent[], backstopId: string): 
         auctions.ongoing.push(new Auction(event.user, AuctionType.Liquidation, event.auctionData));
         break;
       case PoolEventType.NewAuction:
-        auctions.ongoing.push(new Auction(backstopId, event.auctionType, event.auctionData));
+        if ('user' in event) {
+          auctions.ongoing.push(new Auction(event.user, event.auctionType, event.auctionData));
+        } else {
+          auctions.ongoing.push(
+            new Auction(backstopId, AuctionType.Liquidation, event.auctionData)
+          );
+        }
         break;
       case PoolEventType.FillAuction: {
         const index = auctions.ongoing.findIndex(
           (auction) => auction.user === event.user && auction.type === event.auctionType
         );
         if (index !== -1) {
-          const auction = auctions.ongoing[index];
-          const [filledAuction, remainingAuction] = auction.scale(
-            event.ledger,
-            Number(event.fillAmount)
-          );
-          filledAuction.filled = true;
-          filledAuction.fillHash = event.txHash;
-          auctions.filled.push(filledAuction);
-          if (remainingAuction !== undefined) {
-            auctions.ongoing[index] = remainingAuction;
+          if ('filledAuctionData' in event) {
+            const filledAuction: ScaledAuction = {
+              type: event.auctionType,
+              user: event.user,
+              data: event.filledAuctionData,
+              scaleBlock: event.ledger,
+              filled: true,
+              fillHash: event.txHash,
+            };
+            auctions.filled.push(filledAuction);
+
+            if (event.fillAmount === 100n) {
+              auctions.ongoing.splice(index, 1);
+            } else {
+              const auction = auctions.ongoing[index];
+              for (const [asset, filledAmount] of event.filledAuctionData.lot) {
+                const preFillAmount = auction.data.lot.get(asset) ?? 0n;
+                auction.data.lot.set(asset, preFillAmount - filledAmount);
+              }
+              for (const [asset, filledAmount] of event.filledAuctionData.bid) {
+                const preFillAmount = auction.data.bid.get(asset) ?? 0n;
+                auction.data.bid.set(asset, preFillAmount - filledAmount);
+              }
+              auctions.ongoing[index] = auction;
+            }
           } else {
-            auctions.ongoing.splice(index, 1);
+            const auction = auctions.ongoing[index];
+            const [filledAuction, remainingAuction] = auction.scale(
+              event.ledger,
+              Number(event.fillAmount)
+            );
+            filledAuction.filled = true;
+            filledAuction.fillHash = event.txHash;
+            auctions.filled.push(filledAuction);
+            if (remainingAuction !== undefined) {
+              auctions.ongoing[index] = remainingAuction;
+            } else {
+              auctions.ongoing.splice(index, 1);
+            }
           }
         }
         break;
