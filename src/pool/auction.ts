@@ -43,9 +43,7 @@ export function getAuctionsfromEvents(events: PoolEvent[], backstopId: string): 
         if ('user' in event) {
           auctions.ongoing.push(new Auction(event.user, event.auctionType, event.auctionData));
         } else {
-          auctions.ongoing.push(
-            new Auction(backstopId, AuctionType.Liquidation, event.auctionData)
-          );
+          auctions.ongoing.push(new Auction(backstopId, event.auctionType, event.auctionData));
         }
         break;
       case PoolEventType.FillAuction: {
