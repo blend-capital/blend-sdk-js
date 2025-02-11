@@ -1,4 +1,4 @@
-import { Network, PoolContractV2 } from '../index.js';
+import { Network, PoolContractV2, ReserveEmissions } from '../index.js';
 import { simulateAndParse } from '../simulation_helper.js';
 import { PoolOracle } from './pool_oracle.js';
 import { PoolUser } from './pool_user.js';
@@ -30,8 +30,8 @@ export class Pool {
    * @param userId - The address of the user to load
    * @returns The pool user
    */
-  public async loadUser(userId: string): Promise<PoolUser> {
-    return PoolUser.load(this.network, this, userId);
+  public async loadUser(userId: string, emissions: ReserveEmissions[]): Promise<PoolUser> {
+    return PoolUser.load(this.network, this.id, emissions, userId);
   }
 }
 
@@ -72,20 +72,26 @@ export class PoolV2 extends Pool {
     const timestamp = Math.floor(Date.now() / 1000);
 
     const poolContract = new PoolContractV2(id);
-    const market = await simulateAndParse(
+    const { result: market, latestLedger } = await simulateAndParse(
       network,
       poolContract.getMarket(),
       PoolContractV2.parsers.getMarket
     );
     const reserves = new Map<string, ReserveV2>();
-    const reserveList = await Promise.all(
-      market.reserves.map((contractReserve) =>
-        ReserveV2.loadWithMarketData(network, id, contractReserve)
-      )
-    );
-    for (const reserve of reserveList) {
+
+    market.reserves.map((contractReserve) => {
+      const reserve = new ReserveV2(
+        id,
+        contractReserve.asset,
+        contractReserve.config,
+        contractReserve.data,
+        0,
+        0,
+        latestLedger
+      );
+      reserve.setAPR();
       reserves.set(reserve.assetId, reserve);
-    }
+    });
 
     return new Pool(network, id, poolMetadata, reserves, timestamp);
   }

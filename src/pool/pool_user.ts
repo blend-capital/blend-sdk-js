@@ -1,5 +1,5 @@
 import { rpc, xdr } from '@stellar/stellar-sdk';
-import { Network, Reserve } from '../index.js';
+import { Network, Reserve, ReserveEmissions } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 import { PoolUserEmissionData, Positions } from './user_types.js';
 import { Pool } from './pool.js';
@@ -11,17 +11,22 @@ export class PoolUser {
     public emissions: Map<number, PoolUserEmissionData>
   ) {}
 
-  public static async load(network: Network, pool: Pool, userId: string): Promise<PoolUser> {
-    const ledgerKeys: xdr.LedgerKey[] = [Positions.ledgerKey(pool.id, userId)];
-    for (const reserve of pool.reserves.values()) {
-      if (reserve.borrowEmissions) {
+  public static async load(
+    network: Network,
+    poolId: string,
+    reserveEmissions: ReserveEmissions[],
+    userId: string
+  ): Promise<PoolUser> {
+    const ledgerKeys: xdr.LedgerKey[] = [Positions.ledgerKey(poolId, userId)];
+    for (const emission of reserveEmissions) {
+      if (emission.borrowEmissions) {
         ledgerKeys.push(
-          PoolUserEmissionData.ledgerKey(pool.id, userId, reserve.getDTokenEmissionIndex())
+          PoolUserEmissionData.ledgerKey(poolId, userId, emission.reserve.getDTokenEmissionIndex())
         );
       }
-      if (reserve.supplyEmissions) {
+      if (emission.supplyEmissions) {
         ledgerKeys.push(
-          PoolUserEmissionData.ledgerKey(pool.id, userId, reserve.getBTokenEmissionIndex())
+          PoolUserEmissionData.ledgerKey(poolId, userId, emission.reserve.getBTokenEmissionIndex())
         );
       }
     }
@@ -155,28 +160,31 @@ export class PoolUser {
    * Estimate the total emissions for the user as a floating point number
    * @returns The estimated emissions
    */
-  public estimateEmissions(pool: Pool): { emissions: number; claimedTokens: number[] } {
+  public estimateEmissions(
+    pool: Pool,
+    emissions: ReserveEmissions[]
+  ): { emissions: number; claimedTokens: number[] } {
     let totalEmissions = 0;
     const claimedTokens: number[] = [];
-    for (const reserve of pool.reserves.values()) {
+    for (const emission of emissions) {
       // handle dToken emissions
-      const d_token_id = reserve.getDTokenEmissionIndex();
+      const d_token_id = emission.reserve.getDTokenEmissionIndex();
       const d_token_data = this.emissions.get(d_token_id);
-      const d_token_position = this.getLiabilityDTokens(reserve);
-      if (reserve.borrowEmissions && (d_token_data || d_token_position > BigInt(0))) {
+      const d_token_position = this.getLiabilityDTokens(emission.reserve);
+      if (emission.borrowEmissions && (d_token_data || d_token_position > BigInt(0))) {
         let dTokenAccrual = 0;
         if (d_token_data) {
           dTokenAccrual = d_token_data.estimateAccrual(
-            reserve.borrowEmissions,
-            reserve.config.decimals,
+            emission.borrowEmissions,
+            emission.reserve.config.decimals,
             d_token_position
           );
         } else if (d_token_position > BigInt(0)) {
           // emissions began after user position was created, accrue all emissions
           const temp_d_token_data = new PoolUserEmissionData(BigInt(0), BigInt(0));
           dTokenAccrual = temp_d_token_data.estimateAccrual(
-            reserve.borrowEmissions,
-            reserve.config.decimals,
+            emission.borrowEmissions,
+            emission.reserve.config.decimals,
             d_token_position
           );
         }
@@ -187,23 +195,24 @@ export class PoolUser {
       }
 
       // handle bToken emissions
-      const b_token_id = reserve.getBTokenEmissionIndex();
+      const b_token_id = emission.reserve.getBTokenEmissionIndex();
       const b_token_data = this.emissions.get(b_token_id);
-      const b_token_position = this.getSupplyBTokens(reserve) + this.getCollateralBTokens(reserve);
-      if (reserve.supplyEmissions && (b_token_data || b_token_position > BigInt(0))) {
+      const b_token_position =
+        this.getSupplyBTokens(emission.reserve) + this.getCollateralBTokens(emission.reserve);
+      if (emission.supplyEmissions && (b_token_data || b_token_position > BigInt(0))) {
         let bTokenAccrual = 0;
         if (b_token_data) {
           bTokenAccrual = b_token_data.estimateAccrual(
-            reserve.supplyEmissions,
-            reserve.config.decimals,
+            emission.supplyEmissions,
+            emission.reserve.config.decimals,
             b_token_position
           );
         } else if (b_token_position > BigInt(0)) {
           // emissions began after user position was created, accrue all emissions
           const temp_b_token_data = new PoolUserEmissionData(BigInt(0), BigInt(0));
           bTokenAccrual = temp_b_token_data.estimateAccrual(
-            reserve.supplyEmissions,
-            reserve.config.decimals,
+            emission.supplyEmissions,
+            emission.reserve.config.decimals,
             b_token_position
           );
         }
