@@ -442,7 +442,6 @@ export function poolEventFromEventResponse(
         } as PoolNewLiquidationAuctionEvent;
       }
       case PoolEventType.NewAuction: {
-        const valueAsVec = value_scval.vec();
         if (topic_scval.length !== 2 && topic_scval.length !== 3) {
           return undefined;
         }
@@ -450,7 +449,7 @@ export function poolEventFromEventResponse(
         if (isNaN(auctionType)) {
           return undefined;
         }
-        if (valueAsVec === null) {
+        if (topic_scval.length === 2) {
           const auctionData = AuctionData.fromScVal(value_scval);
           return {
             ...baseEvent,
@@ -459,10 +458,11 @@ export function poolEventFromEventResponse(
             auctionData: auctionData,
           } as PoolNewAuctionV1Event;
         } else {
+          const valueAsVec = value_scval.vec();
           if (valueAsVec.length !== 2 || topic_scval.length !== 3) {
             return undefined;
           }
-          const auctionData = AuctionData.fromScVal(value_scval);
+          const auctionData = AuctionData.fromScVal(valueAsVec[1]);
           const percent = Number(scValToNative(valueAsVec[0]));
           return {
             ...baseEvent,
