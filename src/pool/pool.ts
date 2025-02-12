@@ -1,4 +1,4 @@
-import { Network, PoolContractV2, ReserveEmissions } from '../index.js';
+import { Network, PoolContractV2 } from '../index.js';
 import { simulateAndParse } from '../simulation_helper.js';
 import { PoolOracle } from './pool_oracle.js';
 import { PoolUser } from './pool_user.js';
@@ -30,8 +30,8 @@ export class Pool {
    * @param userId - The address of the user to load
    * @returns The pool user
    */
-  public async loadUser(userId: string, emissions: ReserveEmissions[]): Promise<PoolUser> {
-    return PoolUser.load(this.network, this.id, emissions, userId);
+  public async loadUser(userId: string): Promise<PoolUser> {
+    return PoolUser.load(this.network, this.id, this, userId);
   }
 }
 

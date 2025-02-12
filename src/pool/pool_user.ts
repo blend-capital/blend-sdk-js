@@ -14,21 +14,18 @@ export class PoolUser {
   public static async load(
     network: Network,
     poolId: string,
-    reserveEmissions: ReserveEmissions[],
+    pool: Pool,
     userId: string
   ): Promise<PoolUser> {
     const ledgerKeys: xdr.LedgerKey[] = [Positions.ledgerKey(poolId, userId)];
-    for (const emission of reserveEmissions) {
-      if (emission.borrowEmissions) {
-        ledgerKeys.push(
-          PoolUserEmissionData.ledgerKey(poolId, userId, emission.reserve.getDTokenEmissionIndex())
-        );
-      }
-      if (emission.supplyEmissions) {
-        ledgerKeys.push(
-          PoolUserEmissionData.ledgerKey(poolId, userId, emission.reserve.getBTokenEmissionIndex())
-        );
-      }
+    for (const reserve of pool.reserves.values()) {
+      ledgerKeys.push(
+        PoolUserEmissionData.ledgerKey(poolId, userId, reserve.getDTokenEmissionIndex())
+      );
+
+      ledgerKeys.push(
+        PoolUserEmissionData.ledgerKey(poolId, userId, reserve.getDTokenEmissionIndex())
+      );
     }
     const stellarRpc = new rpc.Server(network.rpc, network.opts);
     const ledgerEntries = await stellarRpc.getLedgerEntries(...ledgerKeys);
@@ -163,20 +160,24 @@ export class PoolUser {
   public estimateEmissions(
     pool: Pool,
     emissions: ReserveEmissions[]
-  ): { emissions: number; claimedTokens: number[] } {
+  ): {
+    emissions: number;
+    claimedTokens: number[];
+  } {
     let totalEmissions = 0;
     const claimedTokens: number[] = [];
     for (const emission of emissions) {
       // handle dToken emissions
-      const d_token_id = emission.reserve.getDTokenEmissionIndex();
+      const reserve = pool.reserves.get(emission.assetId);
+      const d_token_id = reserve.getDTokenEmissionIndex();
       const d_token_data = this.emissions.get(d_token_id);
-      const d_token_position = this.getLiabilityDTokens(emission.reserve);
+      const d_token_position = this.getLiabilityDTokens(reserve);
       if (emission.borrowEmissions && (d_token_data || d_token_position > BigInt(0))) {
         let dTokenAccrual = 0;
         if (d_token_data) {
           dTokenAccrual = d_token_data.estimateAccrual(
             emission.borrowEmissions,
-            emission.reserve.config.decimals,
+            reserve.config.decimals,
             d_token_position
           );
         } else if (d_token_position > BigInt(0)) {
@@ -184,7 +185,7 @@ export class PoolUser {
           const temp_d_token_data = new PoolUserEmissionData(BigInt(0), BigInt(0));
           dTokenAccrual = temp_d_token_data.estimateAccrual(
             emission.borrowEmissions,
-            emission.reserve.config.decimals,
+            reserve.config.decimals,
             d_token_position
           );
         }
@@ -195,16 +196,15 @@ export class PoolUser {
       }
 
       // handle bToken emissions
-      const b_token_id = emission.reserve.getBTokenEmissionIndex();
+      const b_token_id = reserve.getBTokenEmissionIndex();
       const b_token_data = this.emissions.get(b_token_id);
-      const b_token_position =
-        this.getSupplyBTokens(emission.reserve) + this.getCollateralBTokens(emission.reserve);
+      const b_token_position = this.getSupplyBTokens(reserve) + this.getCollateralBTokens(reserve);
       if (emission.supplyEmissions && (b_token_data || b_token_position > BigInt(0))) {
         let bTokenAccrual = 0;
         if (b_token_data) {
           bTokenAccrual = b_token_data.estimateAccrual(
             emission.supplyEmissions,
-            emission.reserve.config.decimals,
+            reserve.config.decimals,
             b_token_position
           );
         } else if (b_token_position > BigInt(0)) {
@@ -212,7 +212,7 @@ export class PoolUser {
           const temp_b_token_data = new PoolUserEmissionData(BigInt(0), BigInt(0));
           bTokenAccrual = temp_b_token_data.estimateAccrual(
             emission.supplyEmissions,
-            emission.reserve.config.decimals,
+            reserve.config.decimals,
             b_token_position
           );
         }

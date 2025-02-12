@@ -61,6 +61,9 @@ export abstract class Emissions {
       return 0;
     }
     const supplyFloat = FixedMath.toFloat(supply, decimals);
+    if (supplyFloat === 0) {
+      return 0;
+    }
     const totalEmissions = FixedMath.toFloat(this.eps, this.epsDecimals) * 31536000;
     return totalEmissions / supplyFloat;
   }
@@ -380,7 +383,11 @@ export class UserEmissions {
    */
   estimateAccrual(emissions: Emissions, decimals: number, balance: bigint): number {
     const additional_index = emissions.index - this.index;
-    const toAccrue = FixedMath.mulFloor(balance, additional_index, FixedMath.toFixed(1, emissions.epsDecimals));
+    const toAccrue = FixedMath.mulFloor(
+      balance,
+      additional_index,
+      FixedMath.toFixed(1, emissions.epsDecimals)
+    );
     return FixedMath.toFloat(toAccrue + this.accrued, decimals);
   }
 }

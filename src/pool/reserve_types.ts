@@ -441,7 +441,8 @@ export class ReserveEmissionData extends EmissionData {
 
 export class ReserveEmissions {
   constructor(
-    public reserve: Reserve,
+    public poolId: string,
+    public assetId: string,
     public supplyEmissions: Emissions | undefined,
     public borrowEmissions: Emissions | undefined
   ) {}
@@ -454,7 +455,12 @@ export class ReserveEmissions {
     switch (reserve.version) {
       case Version.V1: {
         const reserveV1 = reserve as ReserveV1;
-        return new ReserveEmissions(reserve, reserveV1.supplyEmissions, reserveV1.borrowEmissions);
+        return new ReserveEmissions(
+          reserve.poolId,
+          reserve.assetId,
+          reserveV1.supplyEmissions,
+          reserveV1.borrowEmissions
+        );
       }
       case Version.V2: {
         const stellarRpc = new rpc.Server(network.rpc, network.opts);
@@ -498,37 +504,16 @@ export class ReserveEmissions {
           supplyEmissions.accrue(reserve.data.bSupply, reserve.config.decimals, timestamp);
         }
 
-        return new ReserveEmissions(reserve, supplyEmissions, borrowEmissions);
+        return new ReserveEmissions(
+          reserve.poolId,
+          reserve.assetId,
+          supplyEmissions,
+          borrowEmissions
+        );
       }
       default:
         throw new Error('Unsupported reserve version');
     }
-  }
-
-  /**
-   * Get the BLND per year currently being emitted to each borrowed asset
-   */
-  public emissionsPerYearPerBorrowedAsset(): number {
-    if (this.borrowEmissions === undefined) {
-      return 0;
-    }
-    return this.borrowEmissions.emissionsPerYearPerToken(
-      this.reserve.totalLiabilities(),
-      this.reserve.config.decimals
-    );
-  }
-
-  /**
-   * Get the BLND per year currently being emitted to each supplied asset
-   */
-  public emissionsPerYearPerSuppliedAsset(): number {
-    if (this.supplyEmissions === undefined) {
-      return 0;
-    }
-    return this.supplyEmissions.emissionsPerYearPerToken(
-      this.reserve.totalSupply(),
-      this.reserve.config.decimals
-    );
   }
 }
 
