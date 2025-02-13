@@ -1,6 +1,12 @@
 import { Address, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
-import { EmissionConfig, EmissionData } from '../emissions.js';
-import { i128, Network, u32 } from '../index.js';
+import {
+  EmissionConfig,
+  EmissionData,
+  EmissionDataV2,
+  Emissions,
+  EmissionsV2,
+} from '../emissions.js';
+import { i128, Network, Reserve, ReserveV1, u32, Version } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export class ReserveConfig {
@@ -430,6 +436,84 @@ export class ReserveEmissionData extends EmissionData {
         durability: xdr.ContractDataDurability.persistent(),
       })
     );
+  }
+}
+
+export class ReserveEmissions {
+  constructor(
+    public poolId: string,
+    public assetId: string,
+    public supplyEmissions: Emissions | undefined,
+    public borrowEmissions: Emissions | undefined
+  ) {}
+
+  static async load(
+    network: Network,
+    reserve: Reserve,
+    timestamp?: number
+  ): Promise<ReserveEmissions> {
+    switch (reserve.version) {
+      case Version.V1: {
+        const reserveV1 = reserve as ReserveV1;
+        return new ReserveEmissions(
+          reserve.poolId,
+          reserve.assetId,
+          reserveV1.supplyEmissions,
+          reserveV1.borrowEmissions
+        );
+      }
+      case Version.V2: {
+        const stellarRpc = new rpc.Server(network.rpc, network.opts);
+
+        const dTokenIndex = reserve.config.index * 2;
+        const bTokenIndex = reserve.config.index * 2 + 1;
+        const ledgerKeys: xdr.LedgerKey[] = [
+          ReserveEmissionData.ledgerKey(reserve.poolId, bTokenIndex),
+          ReserveEmissionData.ledgerKey(reserve.poolId, dTokenIndex),
+        ];
+        const reserveLedgerEntries = await stellarRpc.getLedgerEntries(...ledgerKeys);
+
+        let emissionBorrowData: EmissionDataV2 | undefined;
+        let emissionSupplyData: EmissionDataV2 | undefined;
+        for (const entry of reserveLedgerEntries.entries) {
+          const ledgerEntry = entry.val;
+          const key = decodeEntryKey(ledgerEntry.contractData().key());
+          switch (key) {
+            case `EmisData`: {
+              const token_type = getEmissionEntryTokenType(ledgerEntry);
+              if (token_type == 0) {
+                emissionBorrowData = EmissionDataV2.fromLedgerEntryData(ledgerEntry);
+              } else if (token_type == 1) {
+                emissionSupplyData = EmissionDataV2.fromLedgerEntryData(ledgerEntry);
+              }
+              break;
+            }
+            default:
+              throw Error(`Invalid reserve key: should not contain ${key}`);
+          }
+        }
+        let borrowEmissions: Emissions | undefined = undefined;
+        if (emissionBorrowData) {
+          borrowEmissions = new EmissionsV2(emissionBorrowData, reserveLedgerEntries.latestLedger);
+          borrowEmissions.accrue(reserve.data.dSupply, reserve.config.decimals, timestamp);
+        }
+
+        let supplyEmissions: Emissions | undefined = undefined;
+        if (emissionSupplyData) {
+          supplyEmissions = new EmissionsV2(emissionSupplyData, reserveLedgerEntries.latestLedger);
+          supplyEmissions.accrue(reserve.data.bSupply, reserve.config.decimals, timestamp);
+        }
+
+        return new ReserveEmissions(
+          reserve.poolId,
+          reserve.assetId,
+          supplyEmissions,
+          borrowEmissions
+        );
+      }
+      default:
+        throw new Error('Unsupported reserve version');
+    }
   }
 }
 
