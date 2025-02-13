@@ -24,8 +24,12 @@ export type Option<T> = T | undefined;
 export const I128MAX = BigInt('170141183460469231731687303715884105727');
 
 export enum Version {
-  V1 = 'v1',
-  V2 = 'v2',
+  V1 = 'V1',
+  V2 = 'V2',
+}
+
+export enum ErrorTypes {
+  LedgerEntryParseError = 'LedgerEntryParseError',
 }
 
 export interface Network {
