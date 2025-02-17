@@ -39,7 +39,6 @@ export class PoolMetadata {
     let poolConfig: PoolConfig | undefined;
     let reserveList: string[] | undefined;
 
-
     const poolConfigEntries = await stellarRpc.getLedgerEntries(
       contractInstanceKey,
       reserveListDataKey
@@ -50,33 +49,32 @@ export class PoolMetadata {
       switch (key) {
         case 'ContractInstance': {
           const instance = ledgerData.val().instance();
-          instance.storage()
-            ?.map((entry) => {
-              const instanceKey = decodeEntryKey(entry.key());
-              switch (instanceKey) {
-                case 'Admin':
-                  admin = Address.fromScVal(entry.val()).toString();
-                  return;
-                case 'Backstop':
-                  backstop = Address.fromScVal(entry.val()).toString();
-                  return;
-                case 'BLNDTkn':
-                  return;
-                case 'Config':
-                  poolConfig = PoolConfig.fromScVal(entry.val());
-                  return;
-                case 'Name':
-                  name = entry.val().str().toString();
-                  return;
-                case 'IsInit':
-                  // do nothing
-                  break;
-                default:
-                  throw Error(
-                    `${ErrorTypes.LedgerEntryParseError}: pool instance storage key: should not contain ${instanceKey}`
-                  );
-              }
-            });
+          instance.storage()?.map((entry) => {
+            const instanceKey = decodeEntryKey(entry.key());
+            switch (instanceKey) {
+              case 'Admin':
+                admin = Address.fromScVal(entry.val()).toString();
+                return;
+              case 'Backstop':
+                backstop = Address.fromScVal(entry.val()).toString();
+                return;
+              case 'BLNDTkn':
+                return;
+              case 'Config':
+                poolConfig = PoolConfig.fromScVal(entry.val());
+                return;
+              case 'Name':
+                name = entry.val().str().toString();
+                return;
+              case 'IsInit':
+                // do nothing
+                break;
+              default:
+                throw Error(
+                  `${ErrorTypes.LedgerEntryParseError}: pool instance storage key: should not contain ${instanceKey}`
+                );
+            }
+          });
           washHash = instance.executable()?.wasmHash()?.toString('hex');
           break;
         }
@@ -84,7 +82,9 @@ export class PoolMetadata {
           reserveList = scValToNative(ledgerData.val());
           break;
         default:
-          throw Error(`${ErrorTypes.LedgerEntryParseError}: Invalid PoolConfig key: should not contain ${key}`);
+          throw Error(
+            `${ErrorTypes.LedgerEntryParseError}: Invalid PoolConfig key: should not contain ${key}`
+          );
       }
     }
     if (

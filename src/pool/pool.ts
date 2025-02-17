@@ -2,14 +2,14 @@ import { Network, PoolContractV2, Version } from '../index.js';
 import { simulateAndParse } from '../simulation_helper.js';
 import { PoolOracle } from './pool_oracle.js';
 import { PoolUser } from './pool_user.js';
-import { PoolMetadata} from './pool_metadata.js';
+import { PoolMetadata } from './pool_metadata.js';
 import { Reserve, ReserveV1, ReserveV2 } from './reserve.js';
 
 /**
  * Manage ledger data for a Blend pool
  */
 export abstract class Pool {
-  constructor( 
+  constructor(
     private network: Network,
     public id: string,
     public metadata: PoolMetadata,
@@ -58,7 +58,11 @@ export class PoolV1 extends Pool {
    * @param metadata - The metadata for the pool
    * @returns - The pool object
    */
-  public static async loadWithMetadata(network: Network, id: string, metadata: PoolMetadata): Promise<PoolV1> {
+  public static async loadWithMetadata(
+    network: Network,
+    id: string,
+    metadata: PoolMetadata
+  ): Promise<PoolV1> {
     const timestamp = Math.floor(Date.now() / 1000);
 
     const reserveList = await Promise.all(
@@ -96,7 +100,11 @@ export class PoolV2 extends Pool {
    * @param metadata - The metadata for the pool
    * @returns - The pool object
    */
-  public static async loadWithMetadata(network: Network, id: string, metadata: PoolMetadata): Promise<PoolV2> {
+  public static async loadWithMetadata(
+    network: Network,
+    id: string,
+    metadata: PoolMetadata
+  ): Promise<PoolV2> {
     const timestamp = Math.floor(Date.now() / 1000);
 
     const poolContract = new PoolContractV2(id);
