@@ -251,6 +251,12 @@ export class Market {
   }
 }
 
+export enum AuctionType {
+  Liquidation = 0,
+  BadDebt = 1,
+  Interest = 2,
+}
+
 export type PoolDataKey =
   | { tag: 'Admin' }
   | { tag: 'Name' }
