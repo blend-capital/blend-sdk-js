@@ -11,6 +11,7 @@ import {
   ReserveEmissionMetadata,
 } from './index.js';
 import { EmissionDataV2, UserEmissions } from '../emissions.js';
+import { AuctionType } from './auction.js';
 
 // @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
 
@@ -53,7 +54,7 @@ export interface NewLiqudiationAuctionArgs {
 }
 
 export interface NewAuctionArgs {
-  auction_type: u32;
+  auction_type: AuctionType;
   user: string;
   bid: Array<string>;
   lot: Array<string>;
