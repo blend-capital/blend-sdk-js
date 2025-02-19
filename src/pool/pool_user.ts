@@ -24,7 +24,7 @@ export class PoolUser {
       );
 
       ledgerKeys.push(
-        PoolUserEmissionData.ledgerKey(poolId, userId, reserve.getDTokenEmissionIndex())
+        PoolUserEmissionData.ledgerKey(poolId, userId, reserve.getBTokenEmissionIndex())
       );
     }
     const stellarRpc = new rpc.Server(network.rpc, network.opts);
