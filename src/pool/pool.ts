@@ -65,10 +65,12 @@ export class PoolV1 extends Pool {
   ): Promise<PoolV1> {
     const timestamp = Math.floor(Date.now() / 1000);
 
-    const reserveList = await Promise.all(
-      metadata.reserveList.map((asset, index) =>
-        ReserveV1.load(network, id, BigInt(metadata.backstopRate), asset, index, timestamp)
-      )
+    const reserveList = await ReserveV1.loadList(
+      network,
+      id,
+      BigInt(metadata.backstopRate),
+      metadata.reserveList,
+      timestamp
     );
     const reserves = new Map<string, Reserve>();
     for (const reserve of reserveList) {

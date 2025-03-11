@@ -4,7 +4,8 @@ import { Network, PoolContractV2, Version } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 import * as FixedMath from '../math.js';
 import {
-  getEmissionEntryTokenType,
+  getEmissionIndex,
+  getReserveId,
   ReserveConfig,
   ReserveData,
   ReserveEmissionConfig,
@@ -516,19 +517,19 @@ export class ReserveV1 extends Reserve {
           reserveData = ReserveData.fromLedgerEntryData(ledgerEntry);
           break;
         case `EmisConfig`: {
-          const token_type = getEmissionEntryTokenType(ledgerEntry);
-          if (token_type == 0) {
+          const index = getEmissionIndex(ledgerEntry);
+          if (index % 2 == 0) {
             emissionBorrowConfig = EmissionConfig.fromLedgerEntryData(ledgerEntry);
-          } else if (token_type == 1) {
+          } else {
             emissionSupplyConfig = EmissionConfig.fromLedgerEntryData(ledgerEntry);
           }
           break;
         }
         case `EmisData`: {
-          const token_type = getEmissionEntryTokenType(ledgerEntry);
-          if (token_type == 0) {
+          const index = getEmissionIndex(ledgerEntry);
+          if (index % 2 == 0) {
             emissionBorrowData = EmissionData.fromLedgerEntryData(ledgerEntry);
-          } else if (token_type == 1) {
+          } else {
             emissionSupplyData = EmissionData.fromLedgerEntryData(ledgerEntry);
           }
           break;
@@ -575,6 +576,116 @@ export class ReserveV1 extends Reserve {
     );
     reserve.accrue(backstopTakeRate, timestamp);
     return reserve;
+  }
+
+  static async loadList(
+    network: Network,
+    poolId: string,
+    backstopTakeRate: bigint,
+    reserveList: string[],
+    timestamp?: number
+  ): Promise<Reserve[]> {
+    const reserves = new Array<Reserve>();
+    const stellarRpc = new rpc.Server(network.rpc, network.opts);
+
+    const ledgerKeys: xdr.LedgerKey[] = [];
+    for (const [index, reserveId] of reserveList.entries()) {
+      const dTokenIndex = index * 2;
+      const bTokenIndex = index * 2 + 1;
+      ledgerKeys.push(
+        ...[
+          ReserveConfig.ledgerKey(poolId, reserveId),
+          ReserveData.ledgerKey(poolId, reserveId),
+          ReserveEmissionConfig.ledgerKey(poolId, bTokenIndex),
+          ReserveEmissionData.ledgerKey(poolId, bTokenIndex),
+          ReserveEmissionConfig.ledgerKey(poolId, dTokenIndex),
+          ReserveEmissionData.ledgerKey(poolId, dTokenIndex),
+        ]
+      );
+    }
+
+    const reserveLedgerEntries = await stellarRpc.getLedgerEntries(...ledgerKeys);
+
+    const reserveConfigMap: Map<string, ReserveConfig> = new Map();
+    const reserveDataMap: Map<string, ReserveData> = new Map();
+    const emissionConfigMap: Map<number, EmissionConfig> = new Map();
+    const emissionDataMap: Map<number, EmissionData> = new Map();
+
+    for (const entry of reserveLedgerEntries.entries) {
+      const ledgerEntry = entry.val;
+      const key = decodeEntryKey(ledgerEntry.contractData().key());
+      switch (key) {
+        case 'ResConfig': {
+          const reserveId = getReserveId(ledgerEntry);
+          reserveConfigMap.set(reserveId, ReserveConfig.fromLedgerEntryData(ledgerEntry));
+          break;
+        }
+        case 'ResData': {
+          const reserveId = getReserveId(ledgerEntry);
+          reserveDataMap.set(reserveId, ReserveData.fromLedgerEntryData(ledgerEntry));
+          break;
+        }
+        case `EmisConfig`: {
+          const emissionIndex = getEmissionIndex(ledgerEntry);
+          emissionConfigMap.set(emissionIndex, EmissionConfig.fromLedgerEntryData(ledgerEntry));
+          break;
+        }
+        case `EmisData`: {
+          const emissionIndex = getEmissionIndex(ledgerEntry);
+          emissionDataMap.set(emissionIndex, EmissionData.fromLedgerEntryData(ledgerEntry));
+          break;
+        }
+        default:
+          throw Error(`Invalid reserve key: should not contain ${key}`);
+      }
+    }
+
+    for (const [index, reserveId] of reserveList.entries()) {
+      const reserveConfig = reserveConfigMap.get(reserveId);
+      const reserveData = reserveDataMap.get(reserveId);
+      if (reserveConfig == undefined || reserveData == undefined) {
+        throw new Error('Unable to load reserve: missing data.');
+      }
+      const dTokenIndex = index * 2;
+      const bTokenIndex = index * 2 + 1;
+      const emissionBorrowConfig = emissionConfigMap.get(dTokenIndex);
+      const emissionBorrowData = emissionDataMap.get(dTokenIndex);
+      const emissionSupplyConfig = emissionConfigMap.get(bTokenIndex);
+      const emissionSupplyData = emissionDataMap.get(bTokenIndex);
+
+      let borrowEmissions: Emissions | undefined = undefined;
+      if (emissionBorrowConfig && emissionBorrowData) {
+        borrowEmissions = new EmissionsV1(
+          emissionBorrowConfig,
+          emissionBorrowData,
+          reserveLedgerEntries.latestLedger
+        );
+        borrowEmissions.accrue(reserveData.dSupply, reserveConfig.decimals, timestamp);
+      }
+      let supplyEmissions: Emissions | undefined = undefined;
+      if (emissionSupplyConfig && emissionSupplyData) {
+        supplyEmissions = new EmissionsV1(
+          emissionSupplyConfig,
+          emissionSupplyData,
+          reserveLedgerEntries.latestLedger
+        );
+        supplyEmissions.accrue(reserveData.bSupply, reserveConfig.decimals, timestamp);
+      }
+      const reserve = new ReserveV1(
+        poolId,
+        reserveId,
+        reserveConfig,
+        reserveData,
+        borrowEmissions,
+        supplyEmissions,
+        0,
+        0,
+        reserveLedgerEntries.latestLedger
+      );
+      reserve.accrue(backstopTakeRate, timestamp);
+      reserves.push(reserve);
+    }
+    return reserves;
   }
 }
 
