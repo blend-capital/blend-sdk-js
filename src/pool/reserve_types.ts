@@ -480,10 +480,10 @@ export class ReserveEmissions {
           const key = decodeEntryKey(ledgerEntry.contractData().key());
           switch (key) {
             case `EmisData`: {
-              const token_type = getEmissionEntryTokenType(ledgerEntry);
-              if (token_type == 0) {
+              const token_type = getEmissionIndex(ledgerEntry);
+              if (token_type % 2 == 0) {
                 emissionBorrowData = EmissionDataV2.fromLedgerEntryData(ledgerEntry);
-              } else if (token_type == 1) {
+              } else {
                 emissionSupplyData = EmissionDataV2.fromLedgerEntryData(ledgerEntry);
               }
               break;
@@ -569,7 +569,7 @@ export class ContractReserve {
 /**
  * Decode the reserve token type (0 = dToken, 1 = bToken) from a Reserve Emission LedgerEntryData
  */
-export function getEmissionEntryTokenType(ledger_entry_data: xdr.LedgerEntryData | string): number {
+export function getEmissionIndex(ledger_entry_data: xdr.LedgerEntryData | string): number {
   if (typeof ledger_entry_data == 'string') {
     ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
   }
@@ -577,5 +577,18 @@ export function getEmissionEntryTokenType(ledger_entry_data: xdr.LedgerEntryData
   if (ledgerEntryKey == undefined) {
     throw new Error('Unable to parse emission entry token type');
   }
-  return ledgerEntryKey % 2;
+  return ledgerEntryKey;
+}
+
+export function getReserveId(ledger_entry_data: xdr.LedgerEntryData | string): string {
+  if (typeof ledger_entry_data == 'string') {
+    ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+  }
+  const ledgerEntryKey = Address.fromScAddress(
+    ledger_entry_data.contractData()?.key()?.vec()?.at(1)?.address()
+  ).toString();
+  if (ledgerEntryKey == undefined) {
+    throw new Error('Unable to parse asset id from ledger entry data');
+  }
+  return ledgerEntryKey;
 }
