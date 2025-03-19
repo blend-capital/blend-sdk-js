@@ -18,12 +18,43 @@ import { simulateAndParse } from '../simulation_helper.js';
  */
 export abstract class Reserve {
   constructor(
+    /**
+     * The contract address of the Pool the reserve belongs to
+     */
     public poolId: string,
+    /**
+     * The contract address of the Reserve asset
+     */
     public assetId: string,
+    /**
+     * The configuration of the Reserve
+     */
     public config: ReserveConfig,
+    /**
+     * The data of the Reserve
+     */
     public data: ReserveData,
+    /**
+     * The current APR being charged to borrowers
+     */
     public borrowApr: number,
+    /**
+     * The estimated APY for borrowers based on the current APR and
+     * a daily compounding period
+     */
+    public estBorrowApy: number,
+    /**
+     * The current APR being earned by suppliers
+     */
     public supplyApr: number,
+    /**
+     * The estimated APY for suppliers based on the current APR and 
+     * a weekly compounding period
+     */
+    public estSupplyApy: number,
+    /**
+     * The ledger number of the latest ledger entry
+     */
     public latestLedger: number
   ) {}
 
@@ -297,11 +328,12 @@ export abstract class Reserve {
   /********** Math Helpers **********/
 
   /**
-   * Set the borrow and supply APRs based on the current state of the Reserve
+   * Set the borrow and supply APRs and APYs based on the current state of the Reserve
    *
-   * Returns the APR as a bigint with 7 decimals.
+   * @param backstopTakeRate - The backstop take rate (as a fixed point number w/ 7 decimals)
+   * @returns the APR as a bigint with 7 decimals.
    */
-  public setAPR(): bigint {
+  public setRates(backstopTakeRate: bigint): bigint {
     const curUtil = this.getUtilization();
     if (curUtil === BigInt(0)) {
       this.borrowApr = FixedMath.toFloat(BigInt(this.config.r_base), 7);
@@ -352,15 +384,26 @@ export abstract class Reserve {
       );
       curIr = extraRate + intersection;
     }
-    this.borrowApr = FixedMath.toFloat(curIr, 7);
-    this.supplyApr = FixedMath.toFloat(FixedMath.mulFloor(curIr, curUtil, FixedMath.SCALAR_7), 7);
+    let borrowApr = FixedMath.toFloat(curIr, 7);
+    const supplyCapture = FixedMath.mulFloor((FixedMath.SCALAR_7 - backstopTakeRate), curUtil, FixedMath.SCALAR_7);
+    let supplyApr = FixedMath.toFloat(FixedMath.mulFloor(curIr, supplyCapture, FixedMath.SCALAR_7), 7);
+
+    // est borrow apy at a higher compounding rate than supply such that each is a "safer" estimate
+    // for the user
+    let estBorrowApy = (1+ borrowApr / 365) ** 365 - 1;
+    let estSupplyApy = (1+ supplyApr / 52) ** 52 - 1;
+
+    this.borrowApr = borrowApr;
+    this.supplyApr = supplyApr;
+    this.estBorrowApy = estBorrowApy;
+    this.estSupplyApy = estSupplyApy;
     return curIr;
   }
 
   /**
    * Accrue interest on the Reserve to the given timestamp, or now if no timestamp is provided.
    *
-   * Calls `setApr` internally and updates ReserveData based on the accrual.
+   * Calls `setRates` internally and updates ReserveData based on the accrual.
    *
    * @param backstopTakeRate - The backstop take rate (as a fixed point number)
    * @param timestamp - The timestamp to accrue interest to (in seconds since epoch)
@@ -370,7 +413,7 @@ export abstract class Reserve {
       timestamp = Math.floor(Date.now() / 1000);
     }
 
-    const curIr = this.setAPR();
+    const curIr = this.setRates(backstopTakeRate);
     const curUtil = this.getUtilization();
     if (curUtil === BigInt(0)) {
       this.data.lastTime = timestamp;
@@ -453,10 +496,12 @@ export class ReserveV1 extends Reserve {
     public borrowEmissions: Emissions | undefined,
     public supplyEmissions: Emissions | undefined,
     borrowApr: number,
+    estBorrowApy: number,
     supplyApr: number,
-    latestLedger: number
+    estSupplyApy: number,
+    latestLedger: number,
   ) {
-    super(poolId, assetId, config, data, borrowApr, supplyApr, latestLedger);
+    super(poolId, assetId, config, data, borrowApr, estBorrowApy, supplyApr, estSupplyApy, latestLedger);
   }
 
   readonly rateDecimals: number = 9;
@@ -572,6 +617,8 @@ export class ReserveV1 extends Reserve {
       supplyEmissions,
       0,
       0,
+      0,
+      0,
       reserveLedgerEntries.latestLedger
     );
     reserve.accrue(backstopTakeRate, timestamp);
@@ -680,6 +727,8 @@ export class ReserveV1 extends Reserve {
         supplyEmissions,
         0,
         0,
+        0,
+        0,
         reserveLedgerEntries.latestLedger
       );
       reserve.accrue(backstopTakeRate, timestamp);
@@ -698,10 +747,11 @@ export class ReserveV2 extends Reserve {
    * Load a Reserve from asset `assetId` from the pool `poolId` on the network `network`
    * @param network - The network configuration
    * @param poolId - The contract address of the Pool
+   * @param backstopTakeRate - The backstop take rate of the pool
    * @param assetId - The contract address of the Reserve asset
    * @returns A Reserve object
    */
-  static async load(network: Network, poolId: string, assetId: string): Promise<Reserve> {
+  static async load(network: Network, poolId: string, backstopTakeRate: bigint, assetId: string): Promise<Reserve> {
     const poolContract = new PoolContractV2(poolId);
     const { result: contractReserve, latestLedger } = await simulateAndParse(
       network,
@@ -720,9 +770,11 @@ export class ReserveV2 extends Reserve {
       contractReserve.data,
       0,
       0,
+      0,
+      0,
       latestLedger
     );
-    reserve.setAPR();
+    reserve.setRates(backstopTakeRate);
     return reserve;
   }
 }

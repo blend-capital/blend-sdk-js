@@ -125,9 +125,11 @@ export class PoolV2 extends Pool {
         contractReserve.data,
         0,
         0,
+        0,
+        0,
         latestLedger
       );
-      reserve.setAPR();
+      reserve.setRates(BigInt(metadata.backstopRate));
       reserves.set(reserve.assetId, reserve);
     });
 

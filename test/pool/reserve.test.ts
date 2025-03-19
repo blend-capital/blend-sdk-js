@@ -28,7 +28,7 @@ test('reserve accrual', () => {
 
   const timestamp = 123456 * 5;
   const take_rate = toFixed(0.2, 7);
-  const reserve = new ReserveV1('poolId', 'assetId', config, data, undefined, undefined, 0, 0, 123);
+  const reserve = new ReserveV1('poolId', 'assetId', config, data, undefined, undefined, 0, 0, 0, 0, 123);
   reserve.accrue(take_rate, timestamp);
 
   expect(reserve.data.dRate).toEqual(BigInt(1_349_657_800));
@@ -39,7 +39,9 @@ test('reserve accrual', () => {
   expect(reserve.data.backstopCredit).toEqual(BigInt(517358));
   expect(reserve.data.lastTime).toEqual(617280);
   expect(reserve.borrowApr).toEqual(0.1510883);
-  expect(reserve.supplyApr).toEqual(0.1188211);
+  expect(reserve.estBorrowApy).toBeCloseTo(0.163064, 4);
+  expect(reserve.supplyApr).toEqual(0.0950569);
+  expect(reserve.estSupplyApy).toBeCloseTo(0.099626, 4);
 });
 
 test('reserve accrual no supplied', () => {
@@ -68,7 +70,7 @@ test('reserve accrual no supplied', () => {
 
   const timestamp = 123456 * 5;
   const take_rate = toFixed(0.2, 7);
-  const reserve = new ReserveV1('poolId', 'assetId', config, data, undefined, undefined, 0, 0, 123);
+  const reserve = new ReserveV1('poolId', 'assetId', config, data, undefined, undefined, 0, 0, 0, 0, 123);
   reserve.accrue(take_rate, timestamp);
 
   expect(reserve.data.dRate).toEqual(BigInt(0));
@@ -108,7 +110,7 @@ test('reserve accrual v2', () => {
 
   const timestamp = 123456 * 5;
   const take_rate = toFixed(0.2, 7);
-  const reserve = new ReserveV2('poolId', 'assetId', config, data, 0, 0, 123);
+  const reserve = new ReserveV2('poolId', 'assetId', config, data, 0, 0, 0, 0, 123);
   reserve.accrue(take_rate, timestamp);
 
   expect(reserve.data.dRate).toEqual(BigInt(1_349_657_798_173));
@@ -119,5 +121,7 @@ test('reserve accrual v2', () => {
   expect(reserve.data.backstopCredit).toEqual(BigInt(517357));
   expect(reserve.data.lastTime).toEqual(617280);
   expect(reserve.borrowApr).toEqual(0.1510883);
-  expect(reserve.supplyApr).toEqual(0.1188211);
+  expect(reserve.estBorrowApy).toBeCloseTo(0.163064, 4);
+  expect(reserve.supplyApr).toEqual(0.0950569);
+  expect(reserve.estSupplyApy).toBeCloseTo(0.099626, 4);
 });

@@ -29,17 +29,17 @@ export class PositionsEstimate {
      */
     public borrowLimit: number,
     /**
-     * The net APR of the user's position
+     * The net APY of the user's position
      */
-    public netApr: number,
+    public netApy: number,
     /**
-     * The average APR accrued by all supplied tokens
+     * The average estimated APY accrued by all supplied tokens
      */
-    public supplyApr: number,
+    public supplyApy: number,
     /**
-     * The average APR accrued by all borrowed tokens
+     * The average estimated APY accrued by all borrowed tokens
      */
-    public borrowApr: number
+    public borrowApy: number
   ) {}
 
   public static build(pool: Pool, poolOracle: PoolOracle, positions: Positions): PositionsEstimate {
@@ -52,8 +52,8 @@ export class PositionsEstimate {
     let totalSupplied = 0;
     let totalEffectiveLiabilities = 0;
     let totalEffectiveCollateral = 0;
-    let supplyApr = 0;
-    let borrowApr = 0;
+    let supplyApy = 0;
+    let borrowApy = 0;
 
     // translate ledger liabilities to floating point values
     for (const [key, value] of positions.liabilities) {
@@ -73,7 +73,7 @@ export class PositionsEstimate {
       const base_e_liability = asset_e_liability * oraclePrice;
       totalBorrowed += base_liability;
       totalEffectiveLiabilities += base_e_liability;
-      borrowApr += base_liability * reserve.borrowApr;
+      borrowApy += base_liability * reserve.estBorrowApy;
       liabilities.set(reserve.assetId, asset_liability);
     }
 
@@ -95,7 +95,7 @@ export class PositionsEstimate {
       const base_e_collateral = asset_e_collateral * oraclePrice;
       totalSupplied += base_collateral;
       totalEffectiveCollateral += base_e_collateral;
-      supplyApr += base_collateral * reserve.supplyApr;
+      supplyApy += base_collateral * reserve.estSupplyApy;
       collateral.set(reserve.assetId, asset_collateral);
     }
 
@@ -112,19 +112,19 @@ export class PositionsEstimate {
       const asset_supply = reserve.toAssetFromBTokenFloat(value);
       const base_supply = asset_supply * oraclePrice;
       totalSupplied += base_supply;
-      supplyApr += base_supply * reserve.supplyApr;
+      supplyApy += base_supply * reserve.estSupplyApy;
       supply.set(reserve.assetId, asset_supply);
     }
 
     const borrowCap = totalEffectiveCollateral - totalEffectiveLiabilities;
     const borrowLimit =
       totalEffectiveCollateral == 0 ? 0 : totalEffectiveLiabilities / totalEffectiveCollateral;
-    const netApr =
+    const netApy =
       totalBorrowed + totalSupplied == 0
         ? 0
-        : (supplyApr - borrowApr) / (totalBorrowed + totalSupplied);
-    supplyApr = totalSupplied == 0 ? 0 : supplyApr / totalSupplied;
-    borrowApr = totalBorrowed == 0 ? 0 : borrowApr / totalBorrowed;
+        : (supplyApy - borrowApy) / (totalBorrowed + totalSupplied);
+    supplyApy = totalSupplied == 0 ? 0 : supplyApy / totalSupplied;
+    borrowApy = totalBorrowed == 0 ? 0 : borrowApy / totalBorrowed;
 
     return new PositionsEstimate(
       totalBorrowed,
@@ -133,9 +133,9 @@ export class PositionsEstimate {
       totalEffectiveCollateral,
       borrowCap,
       borrowLimit,
-      netApr,
-      supplyApr,
-      borrowApr
+      netApy,
+      supplyApy,
+      borrowApy
     );
   }
 }
