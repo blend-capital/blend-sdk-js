@@ -17,9 +17,9 @@ export class PoolEstimate {
      */
     public totalBorrowed: number,
     /**
-     * The average APR accrued by all borrowed tokens
+     * The average APY accrued by all borrowed tokens
      */
-    public avgBorrowApr: number
+    public avgBorrowApy: number
   ) {}
 
   static build(reserves: Map<string, Reserve>, poolOracle: PoolOracle): PoolEstimate {
@@ -34,11 +34,11 @@ export class PoolEstimate {
         const reserveLiabilitiesBase =
           toFloat(reserve.totalLiabilities(), reserve.config.decimals) * oraclePrice;
         totalBorrowed += reserveLiabilitiesBase;
-        totalInterestInYear += reserveLiabilitiesBase * reserve.borrowApr;
+        totalInterestInYear += reserveLiabilitiesBase * reserve.estBorrowApy;
       }
     }
-    const avgBorrowApr = totalBorrowed != 0 ? totalInterestInYear / totalBorrowed : 0;
+    const avgBorrowApy = totalBorrowed != 0 ? totalInterestInYear / totalBorrowed : 0;
 
-    return new PoolEstimate(totalSupply, totalBorrowed, avgBorrowApr);
+    return new PoolEstimate(totalSupply, totalBorrowed, avgBorrowApy);
   }
 }
