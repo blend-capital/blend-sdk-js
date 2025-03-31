@@ -110,8 +110,9 @@ export enum ContractErrorType {
   InvalidBTokenBurnAmount = 1217,
   InvalidDTokenMintAmount = 1218,
   InvalidDTokenBurnAmount = 1219,
-  ExceededCollateralCap = 1220,
+  ExceededSupplyCap = 1220,
   ReserveDisabled = 1223,
+  MinCollateralNotMet = 1224,
 
   // Oracle Errors
   StalePrice = 1210,
