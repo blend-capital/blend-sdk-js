@@ -1,5 +1,4 @@
-import { Network, PoolContractV2, Version } from '../index.js';
-import { simulateAndParse } from '../simulation_helper.js';
+import { Network, Version } from '../index.js';
 import { PoolOracle } from './pool_oracle.js';
 import { PoolUser } from './pool_user.js';
 import { PoolMetadata } from './pool_metadata.js';
@@ -109,29 +108,17 @@ export class PoolV2 extends Pool {
   ): Promise<PoolV2> {
     const timestamp = Math.floor(Date.now() / 1000);
 
-    const poolContract = new PoolContractV2(id);
-    const { result: market, latestLedger } = await simulateAndParse(
+    const reserveList = await ReserveV2.loadList(
       network,
-      poolContract.getMarket(),
-      PoolContractV2.parsers.getMarket
+      id,
+      BigInt(metadata.backstopRate),
+      metadata.reserveList,
+      timestamp
     );
-    const reserves = new Map<string, ReserveV2>();
-
-    market.reserves.map((contractReserve) => {
-      const reserve = new ReserveV2(
-        id,
-        contractReserve.asset,
-        contractReserve.config,
-        contractReserve.data,
-        0,
-        0,
-        0,
-        0,
-        latestLedger
-      );
-      reserve.setRates(BigInt(metadata.backstopRate));
+    const reserves = new Map<string, Reserve>();
+    for (const reserve of reserveList) {
       reserves.set(reserve.assetId, reserve);
-    });
+    }
 
     return new PoolV2(network, id, metadata, reserves, timestamp);
   }
