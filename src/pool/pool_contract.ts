@@ -502,4 +502,11 @@ export class PoolContractV2 extends PoolContract {
       ...PoolContractV2.spec.funcArgsToScVals('get_user_emissions', { user, reserve_token_id })
     ).toXDR('base64');
   }
+
+  getReserveList(): string {
+    return this.call(
+      'get_reserve_list',
+      ...PoolContractV2.spec.funcArgsToScVals('get_reserve_list', {})
+    ).toXDR('base64');
+  }
 }
