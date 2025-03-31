@@ -29,6 +29,7 @@ export enum PoolEventType {
   GulpEmissions = 'gulp_emissions',
   Gulp = 'gulp',
   DefaultedDebt = 'defaulted_debt',
+  DeleteAuction = 'delete_auction',
 }
 export interface BasePoolEvent extends BaseBlendEvent {
   contractType: BlendContractType.Pool;
@@ -206,6 +207,12 @@ export interface PoolFillAuctionV2Event extends BasePoolEvent {
   filledAuctionData: AuctionData;
 }
 
+export interface PoolDeleteAuction extends BasePoolEvent {
+  eventType: PoolEventType.DeleteAuction;
+  user: string;
+  auctionType: number;
+}
+
 export type PoolEvent =
   | PoolSetAdminEvent
   | PoolUpdatePoolEvent
@@ -231,7 +238,8 @@ export type PoolEvent =
   | PoolGulpEvent
   | PoolGulpEmissionsEvent
   | PoolNewAuctionV2Event
-  | PoolFillAuctionV2Event;
+  | PoolFillAuctionV2Event
+  | PoolDeleteAuction;
 
 /**
  * Create a PoolEvent from a RawEventResponse.
@@ -660,6 +668,23 @@ export function poolEventFromEventResponse(
           tokenDelta: tokenDelta,
           newBRate: newBRate,
         } as PoolGulpEvent;
+      }
+      case PoolEventType.DeleteAuction: {
+        if (topic_scval.length !== 3) {
+          return undefined;
+        }
+        const auctionType = Number(scValToNative(topic_scval[1]));
+        const user = Address.fromScVal(topic_scval[2]).toString();
+
+        if (isNaN(auctionType)) {
+          return undefined;
+        }
+        return {
+          ...baseEvent,
+          eventType: PoolEventType.DeleteAuction,
+          user: user,
+          auctionType: auctionType,
+        } as PoolDeleteAuction;
       }
       default:
         return undefined;
