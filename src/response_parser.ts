@@ -91,6 +91,7 @@ export enum ContractErrorType {
   NotInRewardZone = 1008,
   RewardZoneFull = 1009,
   MaxBackfillEmissions = 1010,
+  BadDebtExists = 1011,
 
   // Pool Request Errors (start at 1200)
   PoolBadRequest = 1200,

@@ -48,7 +48,7 @@ export abstract class Reserve {
      */
     public supplyApr: number,
     /**
-     * The estimated APY for suppliers based on the current APR and 
+     * The estimated APY for suppliers based on the current APR and
      * a weekly compounding period
      */
     public estSupplyApy: number,
@@ -384,14 +384,21 @@ export abstract class Reserve {
       );
       curIr = extraRate + intersection;
     }
-    let borrowApr = FixedMath.toFloat(curIr, 7);
-    const supplyCapture = FixedMath.mulFloor((FixedMath.SCALAR_7 - backstopTakeRate), curUtil, FixedMath.SCALAR_7);
-    let supplyApr = FixedMath.toFloat(FixedMath.mulFloor(curIr, supplyCapture, FixedMath.SCALAR_7), 7);
+    const borrowApr = FixedMath.toFloat(curIr, 7);
+    const supplyCapture = FixedMath.mulFloor(
+      FixedMath.SCALAR_7 - backstopTakeRate,
+      curUtil,
+      FixedMath.SCALAR_7
+    );
+    const supplyApr = FixedMath.toFloat(
+      FixedMath.mulFloor(curIr, supplyCapture, FixedMath.SCALAR_7),
+      7
+    );
 
     // est borrow apy at a higher compounding rate than supply such that each is a "safer" estimate
     // for the user
-    let estBorrowApy = (1+ borrowApr / 365) ** 365 - 1;
-    let estSupplyApy = (1+ supplyApr / 52) ** 52 - 1;
+    const estBorrowApy = (1 + borrowApr / 365) ** 365 - 1;
+    const estSupplyApy = (1 + supplyApr / 52) ** 52 - 1;
 
     this.borrowApr = borrowApr;
     this.supplyApr = supplyApr;
@@ -499,9 +506,19 @@ export class ReserveV1 extends Reserve {
     estBorrowApy: number,
     supplyApr: number,
     estSupplyApy: number,
-    latestLedger: number,
+    latestLedger: number
   ) {
-    super(poolId, assetId, config, data, borrowApr, estBorrowApy, supplyApr, estSupplyApy, latestLedger);
+    super(
+      poolId,
+      assetId,
+      config,
+      data,
+      borrowApr,
+      estBorrowApy,
+      supplyApr,
+      estSupplyApy,
+      latestLedger
+    );
   }
 
   readonly rateDecimals: number = 9;
@@ -751,7 +768,12 @@ export class ReserveV2 extends Reserve {
    * @param assetId - The contract address of the Reserve asset
    * @returns A Reserve object
    */
-  static async load(network: Network, poolId: string, backstopTakeRate: bigint, assetId: string): Promise<Reserve> {
+  static async load(
+    network: Network,
+    poolId: string,
+    backstopTakeRate: bigint,
+    assetId: string
+  ): Promise<Reserve> {
     const poolContract = new PoolContractV2(poolId);
     const { result: contractReserve, latestLedger } = await simulateAndParse(
       network,

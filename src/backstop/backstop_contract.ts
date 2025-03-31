@@ -1,6 +1,6 @@
 import { Address, Contract, contract, Operation, scValToNative, xdr } from '@stellar/stellar-sdk';
-import { i128 } from '../index.js';
-import { PoolBackstopData, Q4W, UserBalance } from './index.js';
+import { i128, PoolBackstopDataV2 } from '../index.js';
+import { PoolBackstopDataV1, Q4W, UserBalance } from './index.js';
 
 // @dev ENCODING REQUIRES PROPERTY NAMES TO MATCH RUST NAMES
 
@@ -19,10 +19,16 @@ export interface PoolBackstopActionArgs {
   amount: i128;
 }
 
-export interface BackstopClaimArgs {
+export interface BackstopClaimV1Args {
   from: Address | string;
   pool_addresses: Array<Address | string>;
   to: Address | string;
+}
+
+export interface BackstopClaimV2Args {
+  from: Address | string;
+  pool_addresses: Array<Address | string>;
+  minLPTokens: i128; // Minimum amount of LP tokens to receive from the claim
 }
 
 export interface DrawArgs {
@@ -34,7 +40,6 @@ export interface DrawArgs {
 export abstract class BackstopContract extends Contract {
   // @dev: Generated from soroban-cli Typescript bindings
   static spec: contract.Spec = new contract.Spec([
-    'AAAAAQAAABhUaGUgcG9vbCdzIGJhY2tzdG9wIGRhdGEAAAAAAAAAEFBvb2xCYWNrc3RvcERhdGEAAAAEAAAAAAAAAARibG5kAAAACwAAAAAAAAAHcTR3X3BjdAAAAAALAAAAAAAAAAZ0b2tlbnMAAAAAAAsAAAAAAAAABHVzZGMAAAAL',
     'AAAAAQAAABxUaGUgcG9vbCdzIGJhY2tzdG9wIGJhbGFuY2VzAAAAAAAAAAtQb29sQmFsYW5jZQAAAAADAAAAAAAAAANxNHcAAAAACwAAAAAAAAAGc2hhcmVzAAAAAAALAAAAAAAAAAZ0b2tlbnMAAAAAAAs=',
     'AAAAAQAAACdBIGRlcG9zaXQgdGhhdCBpcyBxdWV1ZWQgZm9yIHdpdGhkcmF3YWwAAAAAAAAAAANRNFcAAAAAAgAAAAAAAAAGYW1vdW50AAAAAAALAAAAAAAAAANleHAAAAAABg==',
     'AAAAAQAAACdBIGRlcG9zaXQgdGhhdCBpcyBxdWV1ZWQgZm9yIHdpdGhkcmF3YWwAAAAAAAAAAAtVc2VyQmFsYW5jZQAAAAACAAAAAAAAAANxNHcAAAAD6gAAB9AAAAADUTRXAAAAAAAAAAAGc2hhcmVzAAAAAAAL',
@@ -45,12 +50,12 @@ export abstract class BackstopContract extends Contract {
     'AAAAAAAAAAAAAAAMdXNlcl9iYWxhbmNlAAAAAgAAAAAAAAAEcG9vbAAAABMAAAAAAAAABHVzZXIAAAATAAAAAQAAB9AAAAALVXNlckJhbGFuY2UA',
     'AAAAAAAAAAAAAAAJcG9vbF9kYXRhAAAAAAAAAQAAAAAAAAAEcG9vbAAAABMAAAABAAAH0AAAABBQb29sQmFja3N0b3BEYXRh',
     'AAAAAAAAAAAAAAAOYmFja3N0b3BfdG9rZW4AAAAAAAAAAAABAAAAEw==',
-    'AAAAAAAAAAAAAAAFY2xhaW0AAAAAAAADAAAAAAAAAARmcm9tAAAAEwAAAAAAAAAOcG9vbF9hZGRyZXNzZXMAAAAAA+oAAAATAAAAAAAAAAJ0bwAAAAAAEwAAAAEAAAAL',
     'AAAAAAAAAAAAAAAEZHJvcAAAAAAAAAAA',
     'AAAAAAAAAAAAAAAEZHJhdwAAAAMAAAAAAAAADHBvb2xfYWRkcmVzcwAAABMAAAAAAAAABmFtb3VudAAAAAAACwAAAAAAAAACdG8AAAAAABMAAAAA',
     'AAAAAAAAAAAAAAAGZG9uYXRlAAAAAAADAAAAAAAAAARmcm9tAAAAEwAAAAAAAAAMcG9vbF9hZGRyZXNzAAAAEwAAAAAAAAAGYW1vdW50AAAAAAALAAAAAA==',
     'AAAAAQAAADNUaGUgdXNlciBlbWlzc2lvbiBkYXRhIGZvciB0aGUgcmVzZXJ2ZSBiIG9yIGQgdG9rZW4AAAAAAAAAABBVc2VyRW1pc3Npb25EYXRhAAAAAgAAAAAAAAAHYWNjcnVlZAAAAAALAAAAAAAAAAVpbmRleAAAAAAAAAs=',
     'AAAAAQAAAAAAAAAAAAAAC1Bvb2xVc2VyS2V5AAAAAAIAAAAAAAAABHBvb2wAAAATAAAAAAAAAAR1c2VyAAAAEw==',
+    'AAAAAAAAAAAAAAAJcG9vbF9kYXRhAAAAAAAAAQAAAAAAAAAEcG9vbAAAABMAAAABAAAH0AAAABBQb29sQmFja3N0b3BEYXRh',
   ]);
 
   static readonly parsers = {
@@ -61,8 +66,6 @@ export abstract class BackstopContract extends Contract {
     withdraw: (result: string): i128 => BackstopContract.spec.funcResToNative('withdraw', result),
     userBalance: (result: string): UserBalance =>
       BackstopContract.spec.funcResToNative('user_balance', result),
-    poolData: (result: string): PoolBackstopData =>
-      BackstopContract.spec.funcResToNative('pool_data', result),
     backstopToken: (result: string): string =>
       BackstopContract.spec.funcResToNative('backstop_token', result),
     addReward: () => {},
@@ -97,13 +100,6 @@ export abstract class BackstopContract extends Contract {
     return this.call(
       'withdraw',
       ...BackstopContract.spec.funcArgsToScVals('withdraw', contractArgs)
-    ).toXDR('base64');
-  }
-
-  claim(contractArgs: BackstopClaimArgs): string {
-    return this.call(
-      'claim',
-      ...BackstopContract.spec.funcArgsToScVals('claim', contractArgs)
     ).toXDR('base64');
   }
 
@@ -146,6 +142,7 @@ export class BackstopContractV1 extends BackstopContract {
   static readonly spec = new contract.Spec([
     ...BackstopContract.spec.entries,
     ...new contract.Spec([
+      'AAAAAQAAABhUaGUgcG9vbCdzIGJhY2tzdG9wIGRhdGEAAAAAAAAAEFBvb2xCYWNrc3RvcERhdGEAAAAEAAAAAAAAAARibG5kAAAACwAAAAAAAAAHcTR3X3BjdAAAAAALAAAAAAAAAAZ0b2tlbnMAAAAAAAsAAAAAAAAABHVzZGMAAAAL',
       'AAAAAAAAAAAAAAAKaW5pdGlhbGl6ZQAAAAAABgAAAAAAAAAOYmFja3N0b3BfdG9rZW4AAAAAABMAAAAAAAAAB2VtaXR0ZXIAAAAAEwAAAAAAAAAKdXNkY190b2tlbgAAAAAAEwAAAAAAAAAKYmxuZF90b2tlbgAAAAAAEwAAAAAAAAAMcG9vbF9mYWN0b3J5AAAAEwAAAAAAAAAJZHJvcF9saXN0AAAAAAAD6gAAA+0AAAACAAAAEwAAAAsAAAAA',
       'AAAAAAAAAAAAAAAOZ3VscF9lbWlzc2lvbnMAAAAAAAAAAAAA',
       'AAAAAAAAAAAAAAAKYWRkX3Jld2FyZAAAAAAAAgAAAAAAAAAGdG9fYWRkAAAAAAATAAAAAAAAAAl0b19yZW1vdmUAAAAAAAATAAAAAA==',
@@ -155,6 +152,7 @@ export class BackstopContractV1 extends BackstopContract {
       'AAAAAQAAAAAAAAAAAAAAFUJhY2tzdG9wRW1pc3Npb25zRGF0YQAAAAAAAAIAAAAAAAAABWluZGV4AAAAAAAACwAAAAAAAAAJbGFzdF90aW1lAAAAAAAABg==',
       'AAAAAgAAAAAAAAAAAAAAD0JhY2tzdG9wRGF0YUtleQAAAAAHAAAAAQAAAAAAAAALVXNlckJhbGFuY2UAAAAAAQAAB9AAAAALUG9vbFVzZXJLZXkAAAAAAQAAAAAAAAALUG9vbEJhbGFuY2UAAAAAAQAAABMAAAABAAAAAAAAAAhQb29sVVNEQwAAAAEAAAATAAAAAQAAAAAAAAAIUG9vbEVtaXMAAAABAAAAEwAAAAEAAAAAAAAACEJFbWlzQ2ZnAAAAAQAAABMAAAABAAAAAAAAAAlCRW1pc0RhdGEAAAAAAAABAAAAEwAAAAEAAAAAAAAACVVFbWlzRGF0YQAAAAAAAAEAAAfQAAAAC1Bvb2xVc2VyS2V5AA==',
       'AAAAAAAAAAAAAAAOdXBkYXRlX3Rrbl92YWwAAAAAAAAAAAABAAAD7QAAAAIAAAALAAAACw==',
+      'AAAAAAAAAAAAAAAFY2xhaW0AAAAAAAADAAAAAAAAAARmcm9tAAAAEwAAAAAAAAAOcG9vbF9hZGRyZXNzZXMAAAAAA+oAAAATAAAAAAAAAAJ0bwAAAAAAEwAAAAEAAAAL',
     ]).entries,
   ]);
 
@@ -163,6 +161,8 @@ export class BackstopContractV1 extends BackstopContract {
     initialize: () => {},
     gulpEmissions: () => {},
     addReward: () => {},
+    poolData: (result: string): PoolBackstopDataV1 =>
+      BackstopContractV1.spec.funcResToNative('pool_data', result),
     gulpPoolEmissions: (result: string): i128 =>
       BackstopContractV1.spec.funcResToNative('gulp_pool_emissions', result),
     updateTknVal: (result: string): [i128, i128] =>
@@ -195,6 +195,12 @@ export class BackstopContractV1 extends BackstopContract {
       ...BackstopContractV1.spec.funcArgsToScVals('update_tkn_val', {})
     ).toXDR('base64');
   }
+  claim(contractArgs: BackstopClaimV1Args): string {
+    return this.call(
+      'claim',
+      ...BackstopContractV1.spec.funcArgsToScVals('claim', contractArgs)
+    ).toXDR('base64');
+  }
 }
 
 export class BackstopContractV2 extends BackstopContract {
@@ -205,6 +211,7 @@ export class BackstopContractV2 extends BackstopContract {
   static readonly spec = new contract.Spec([
     ...BackstopContract.spec.entries,
     ...new contract.Spec([
+      'AAAAAQAAABhUaGUgcG9vbCdzIGJhY2tzdG9wIGRhdGEAAAAAAAAAEFBvb2xCYWNrc3RvcERhdGEAAAAGAAAAAAAAAARibG5kAAAACwAAAAAAAAAHcTR3X3BjdAAAAAALAAAAAAAAAAZzaGFyZXMAAAAAAAsAAAAAAAAAEHRva2VuX3Nwb3RfcHJpY2UAAAALAAAAAAAAAAZ0b2tlbnMAAAAAAAsAAAAAAAAABHVzZGMAAAAL',
       'AAAAAAAAAY5Db25zdHJ1Y3QgdGhlIGJhY2tzdG9wIGNvbnRyYWN0CgojIyMgQXJndW1lbnRzCiogYGJhY2tzdG9wX3Rva2VuYCAtIFRoZSBiYWNrc3RvcCB0b2tlbiBJRCAtIGFuIExQIHRva2VuIHdpdGggdGhlIHBhaXIgQkxORDpVU0RDCiogYGVtaXR0ZXJgIC0gVGhlIEVtaXR0ZXIgY29udHJhY3QgSUQKKiBgYmxuZF90b2tlbmAgLSBUaGUgQkxORCB0b2tlbiBJRAoqIGB1c2RjX3Rva2VuYCAtIFRoZSBVU0RDIHRva2VuIElECiogYHBvb2xfZmFjdG9yeWAgLSBUaGUgcG9vbCBmYWN0b3J5IElECiogYGRyb3BfbGlzdGAgLSBUaGUgbGlzdCBvZiBhZGRyZXNzZXMgdG8gZGlzdHJpYnV0ZSBpbml0aWFsIEJMTkQgdG8gYW5kIHRoZSBwZXJjZW50IG9mIHRoZSBkaXN0cmlidXRpb24gdGhleSBzaG91bGQgcmVjZWl2ZQAAAAAADV9fY29uc3RydWN0b3IAAAAAAAAGAAAAAAAAAA5iYWNrc3RvcF90b2tlbgAAAAAAEwAAAAAAAAAHZW1pdHRlcgAAAAATAAAAAAAAAApibG5kX3Rva2VuAAAAAAATAAAAAAAAAAp1c2RjX3Rva2VuAAAAAAATAAAAAAAAAAxwb29sX2ZhY3RvcnkAAAATAAAAAAAAAAlkcm9wX2xpc3QAAAAAAAPqAAAD7QAAAAIAAAATAAAACwAAAAA=',
       'AAAAAAAAAAAAAAAKZGlzdHJpYnV0ZQAAAAAAAAAAAAEAAAAL',
       'AAAAAAAAAAAAAAAOZ3VscF9lbWlzc2lvbnMAAAAAAAEAAAAAAAAABHBvb2wAAAATAAAAAQAAAAs=',
@@ -214,12 +221,19 @@ export class BackstopContractV2 extends BackstopContract {
       'AAAAAQAAAAAAAAAAAAAADlJ6RW1pc3Npb25EYXRhAAAAAAACAAAAAAAAAAdhY2NydWVkAAAAAAsAAAAAAAAABWluZGV4AAAAAAAACw==',
       'AAAAAQAAAAAAAAAAAAAAFEJhY2tzdG9wRW1pc3Npb25EYXRhAAAABAAAAAAAAAADZXBzAAAAAAYAAAAAAAAACmV4cGlyYXRpb24AAAAAAAYAAAAAAAAABWluZGV4AAAAAAAACwAAAAAAAAAJbGFzdF90aW1lAAAAAAAABg==',
       'AAAAAgAAAAAAAAAAAAAAD0JhY2tzdG9wRGF0YUtleQAAAAAGAAAAAQAAAAAAAAALVXNlckJhbGFuY2UAAAAAAQAAB9AAAAALUG9vbFVzZXJLZXkAAAAAAQAAAAAAAAALUG9vbEJhbGFuY2UAAAAAAQAAABMAAAABAAAAAAAAAAhQb29sVVNEQwAAAAEAAAATAAAAAQAAAAAAAAAKUnpFbWlzRGF0YQAAAAAAAQAAABMAAAABAAAAAAAAAAlCRW1pc0RhdGEAAAAAAAABAAAAEwAAAAEAAAAAAAAACVVFbWlzRGF0YQAAAAAAAAEAAAfQAAAAC1Bvb2xVc2VyS2V5AA==',
+      'AAAAAAAAAAAAAAALcmV3YXJkX3pvbmUAAAAAAAAAAAEAAAPqAAAAEw==',
+      'AAAAAAAAAAAAAAAFY2xhaW0AAAAAAAADAAAAAAAAAARmcm9tAAAAEwAAAAAAAAAOcG9vbF9hZGRyZXNzZXMAAAAAA+oAAAATAAAAAAAAABFtaW5fbHBfdG9rZW5zX291dAAAAAAAAAsAAAABAAAACw==',
+      'AAAAAQAAADNUaGUgYWNjcnVlZCBlbWlzc2lvbnMgZm9yIHBvb2wncyBpbiB0aGUgcmV3YXJkIHpvbmUAAAAAAAAAAAtSekVtaXNzaW9ucwAAAAACAAAAAAAAAAdhY2NydWVkAAAAAAsAAAAAAAAACWxhc3RfdGltZQAAAAAAAAY=',
+      'AAAAAQAAACdUaGUgZW1pc3Npb24gZGF0YSBmb3IgYSBwb29sJ3MgYmFja3N0b3AAAAAAAAAAABRCYWNrc3RvcEVtaXNzaW9uRGF0YQAAAAQAAAAAAAAAA2VwcwAAAAAGAAAAAAAAAApleHBpcmF0aW9uAAAAAAAGAAAAAAAAAAVpbmRleAAAAAAAAAsAAAAAAAAACWxhc3RfdGltZQAAAAAAAAY=',
+      'AAAAAQAAAC1UaGUgdXNlciBlbWlzc2lvbiBkYXRhIHBvb2wncyBiYWNrc3RvcCB0b2tlbnMAAAAAAAAAAAAAEFVzZXJFbWlzc2lvbkRhdGEAAAACAAAAAAAAAAdhY2NydWVkAAAAAAsAAAAAAAAABWluZGV4AAAAAAAACw==',
     ]).entries,
   ]);
 
   static readonly parsers = {
     ...BackstopContract.parsers,
     deploy: (result: string): string => scValToNative(xdr.ScVal.fromXDR(result, 'base64')),
+    poolData: (result: string): PoolBackstopDataV2 =>
+      BackstopContractV2.spec.funcResToNative('pool_data', result),
     distribute: (result: string): i128 =>
       BackstopContractV2.spec.funcResToNative('distribute', result),
     removeReward: () => {},
@@ -261,6 +275,13 @@ export class BackstopContractV2 extends BackstopContract {
     return this.call(
       'remove_reward',
       ...BackstopContractV2.spec.funcArgsToScVals('remove_reward', { poolToRemove })
+    ).toXDR('base64');
+  }
+
+  claim(contractArgs: BackstopClaimV2Args): string {
+    return this.call(
+      'claim',
+      ...BackstopContractV2.spec.funcArgsToScVals('claim', contractArgs)
     ).toXDR('base64');
   }
 }
