@@ -28,7 +28,7 @@ export interface BackstopClaimV1Args {
 export interface BackstopClaimV2Args {
   from: Address | string;
   pool_addresses: Array<Address | string>;
-  minLPTokens: i128; // Minimum amount of LP tokens to receive from the claim
+  min_lp_tokens_out: i128; // Minimum amount of LP tokens to receive from the claim
 }
 
 export interface DrawArgs {
