@@ -26,6 +26,8 @@ export enum PoolEventType {
   DeleteLiquidationAuction = 'delete_liquidation_auction',
 
   // V2 Events
+  NewAuctionV2 = 'new_auction_v2',
+  FillAuctionV2 = 'fill_auction_v2',
   GulpEmissions = 'gulp_emissions',
   Gulp = 'gulp',
   DefaultedDebt = 'defaulted_debt',
@@ -191,7 +193,7 @@ export interface PoolGulpEvent extends BasePoolEvent {
 }
 
 export interface PoolNewAuctionV2Event extends BasePoolEvent {
-  eventType: PoolEventType.NewAuction;
+  eventType: PoolEventType.NewAuctionV2;
   auctionType: number;
   user: string;
   percent: number;
@@ -199,7 +201,7 @@ export interface PoolNewAuctionV2Event extends BasePoolEvent {
 }
 
 export interface PoolFillAuctionV2Event extends BasePoolEvent {
-  eventType: PoolEventType.FillAuction;
+  eventType: PoolEventType.FillAuctionV2;
   user: string;
   auctionType: number;
   filler: string;
@@ -271,7 +273,6 @@ export function poolEventFromEventResponse(
       id: eventResponse.id,
       contractId: eventResponse.contractId,
       contractType: BlendContractType.Pool,
-      eventType: eventString as PoolEventType,
       ledger: eventResponse.ledger,
       ledgerClosedAt: eventResponse.ledgerClosedAt,
       txHash: eventResponse.txHash,
@@ -474,7 +475,7 @@ export function poolEventFromEventResponse(
           const percent = Number(scValToNative(valueAsVec[0]));
           return {
             ...baseEvent,
-            eventType: PoolEventType.NewAuction,
+            eventType: PoolEventType.NewAuctionV2,
             user: Address.fromScVal(topic_scval[2]).toString(),
             auctionType: auctionType,
             auctionData: auctionData,
@@ -618,7 +619,7 @@ export function poolEventFromEventResponse(
           const filledAuctionData = AuctionData.fromScVal(valueAsVec[2]);
           return {
             ...baseEvent,
-            eventType: PoolEventType.FillAuction,
+            eventType: PoolEventType.FillAuctionV2,
             user: user,
             auctionType: auctionType,
             filler: filler,
