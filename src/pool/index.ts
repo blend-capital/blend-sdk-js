@@ -1,5 +1,5 @@
 import { Address, scValToNative, xdr } from '@stellar/stellar-sdk';
-import { ContractReserve, i128, u32, u64 } from '../index.js';
+import { i128, u32, u64 } from '../index.js';
 import { decodeEntryKey } from '../ledger_entry_helper.js';
 
 export * from './pool.js';
@@ -186,7 +186,8 @@ export class PoolConfig {
     public backstopRate: number,
     public maxPositions: number,
     public oracle: string,
-    public status: number
+    public status: number,
+    public minCollateral?: i128
   ) {}
 
   static fromScVal(sc_val: xdr.ScVal | string): PoolConfig {
@@ -197,6 +198,7 @@ export class PoolConfig {
     let oracle: string | undefined;
     let status: number | undefined;
     let maxPositions: number | undefined;
+    let minCollateral: i128 | undefined;
     sc_val.map()?.map((config_entry) => {
       const poolConfigKey = decodeEntryKey(config_entry.key());
       switch (poolConfigKey) {
@@ -212,6 +214,9 @@ export class PoolConfig {
         case 'max_positions':
           maxPositions = Number(config_entry.val().u32().toString());
           return;
+        case 'min_collateral':
+          minCollateral = scValToNative(config_entry.val());
+          return;
         default:
           throw Error(`Invalid pool config key: should not contain ${poolConfigKey}`);
       }
@@ -224,30 +229,7 @@ export class PoolConfig {
     ) {
       throw new Error();
     }
-    return new PoolConfig(backstopRate, maxPositions, oracle, status);
-  }
-}
-
-export class Market {
-  constructor(public poolConfig: PoolConfig, public reserves: ContractReserve[]) {}
-
-  static fromScVal(sc_val: xdr.ScVal | string): Market {
-    if (typeof sc_val == 'string') {
-      sc_val = xdr.ScVal.fromXDR(sc_val, 'base64');
-    }
-    const vec = sc_val.vec();
-    if (vec == undefined) {
-      throw Error('Market contract data value is not a vec');
-    }
-    const poolConfig: PoolConfig = PoolConfig.fromScVal(vec[0]);
-    const reserves: ContractReserve[] = vec[1]
-      .vec()
-      .map((reserve) => ContractReserve.fromScVal(reserve));
-
-    if (poolConfig == undefined || reserves == undefined) {
-      throw Error('Unable to load market data');
-    }
-    return new Market(poolConfig, reserves);
+    return new PoolConfig(backstopRate, maxPositions, oracle, status, minCollateral);
   }
 }
 

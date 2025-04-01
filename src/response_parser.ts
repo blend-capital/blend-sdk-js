@@ -91,6 +91,7 @@ export enum ContractErrorType {
   NotInRewardZone = 1008,
   RewardZoneFull = 1009,
   MaxBackfillEmissions = 1010,
+  BadDebtExists = 1011,
 
   // Pool Request Errors (start at 1200)
   PoolBadRequest = 1200,
@@ -109,8 +110,9 @@ export enum ContractErrorType {
   InvalidBTokenBurnAmount = 1217,
   InvalidDTokenMintAmount = 1218,
   InvalidDTokenBurnAmount = 1219,
-  ExceededCollateralCap = 1220,
+  ExceededSupplyCap = 1220,
   ReserveDisabled = 1223,
+  MinCollateralNotMet = 1224,
 
   // Oracle Errors
   StalePrice = 1210,

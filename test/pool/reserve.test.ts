@@ -28,7 +28,19 @@ test('reserve accrual', () => {
 
   const timestamp = 123456 * 5;
   const take_rate = toFixed(0.2, 7);
-  const reserve = new ReserveV1('poolId', 'assetId', config, data, undefined, undefined, 0, 0, 0, 0, 123);
+  const reserve = new ReserveV1(
+    'poolId',
+    'assetId',
+    config,
+    data,
+    undefined,
+    undefined,
+    0,
+    0,
+    0,
+    0,
+    123
+  );
   reserve.accrue(take_rate, timestamp);
 
   expect(reserve.data.dRate).toEqual(BigInt(1_349_657_800));
@@ -70,7 +82,19 @@ test('reserve accrual no supplied', () => {
 
   const timestamp = 123456 * 5;
   const take_rate = toFixed(0.2, 7);
-  const reserve = new ReserveV1('poolId', 'assetId', config, data, undefined, undefined, 0, 0, 0, 0, 123);
+  const reserve = new ReserveV1(
+    'poolId',
+    'assetId',
+    config,
+    data,
+    undefined,
+    undefined,
+    0,
+    0,
+    0,
+    0,
+    123
+  );
   reserve.accrue(take_rate, timestamp);
 
   expect(reserve.data.dRate).toEqual(BigInt(0));
@@ -110,7 +134,19 @@ test('reserve accrual v2', () => {
 
   const timestamp = 123456 * 5;
   const take_rate = toFixed(0.2, 7);
-  const reserve = new ReserveV2('poolId', 'assetId', config, data, 0, 0, 0, 0, 123);
+  const reserve = new ReserveV2(
+    'poolId',
+    'assetId',
+    config,
+    data,
+    undefined,
+    undefined,
+    0,
+    0,
+    0,
+    0,
+    123
+  );
   reserve.accrue(take_rate, timestamp);
 
   expect(reserve.data.dRate).toEqual(BigInt(1_349_657_798_173));

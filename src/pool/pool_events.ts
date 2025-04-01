@@ -26,9 +26,12 @@ export enum PoolEventType {
   DeleteLiquidationAuction = 'delete_liquidation_auction',
 
   // V2 Events
+  NewAuctionV2 = 'new_auction_v2',
+  FillAuctionV2 = 'fill_auction_v2',
   GulpEmissions = 'gulp_emissions',
   Gulp = 'gulp',
   DefaultedDebt = 'defaulted_debt',
+  DeleteAuction = 'delete_auction',
 }
 export interface BasePoolEvent extends BaseBlendEvent {
   contractType: BlendContractType.Pool;
@@ -190,7 +193,7 @@ export interface PoolGulpEvent extends BasePoolEvent {
 }
 
 export interface PoolNewAuctionV2Event extends BasePoolEvent {
-  eventType: PoolEventType.NewAuction;
+  eventType: PoolEventType.NewAuctionV2;
   auctionType: number;
   user: string;
   percent: number;
@@ -198,12 +201,18 @@ export interface PoolNewAuctionV2Event extends BasePoolEvent {
 }
 
 export interface PoolFillAuctionV2Event extends BasePoolEvent {
-  eventType: PoolEventType.FillAuction;
+  eventType: PoolEventType.FillAuctionV2;
   user: string;
   auctionType: number;
   filler: string;
   fillAmount: bigint;
   filledAuctionData: AuctionData;
+}
+
+export interface PoolDeleteAuction extends BasePoolEvent {
+  eventType: PoolEventType.DeleteAuction;
+  user: string;
+  auctionType: number;
 }
 
 export type PoolEvent =
@@ -231,7 +240,8 @@ export type PoolEvent =
   | PoolGulpEvent
   | PoolGulpEmissionsEvent
   | PoolNewAuctionV2Event
-  | PoolFillAuctionV2Event;
+  | PoolFillAuctionV2Event
+  | PoolDeleteAuction;
 
 /**
  * Create a PoolEvent from a RawEventResponse.
@@ -263,7 +273,6 @@ export function poolEventFromEventResponse(
       id: eventResponse.id,
       contractId: eventResponse.contractId,
       contractType: BlendContractType.Pool,
-      eventType: eventString as PoolEventType,
       ledger: eventResponse.ledger,
       ledgerClosedAt: eventResponse.ledgerClosedAt,
       txHash: eventResponse.txHash,
@@ -466,7 +475,7 @@ export function poolEventFromEventResponse(
           const percent = Number(scValToNative(valueAsVec[0]));
           return {
             ...baseEvent,
-            eventType: PoolEventType.NewAuction,
+            eventType: PoolEventType.NewAuctionV2,
             user: Address.fromScVal(topic_scval[2]).toString(),
             auctionType: auctionType,
             auctionData: auctionData,
@@ -610,7 +619,7 @@ export function poolEventFromEventResponse(
           const filledAuctionData = AuctionData.fromScVal(valueAsVec[2]);
           return {
             ...baseEvent,
-            eventType: PoolEventType.FillAuction,
+            eventType: PoolEventType.FillAuctionV2,
             user: user,
             auctionType: auctionType,
             filler: filler,
@@ -660,6 +669,23 @@ export function poolEventFromEventResponse(
           tokenDelta: tokenDelta,
           newBRate: newBRate,
         } as PoolGulpEvent;
+      }
+      case PoolEventType.DeleteAuction: {
+        if (topic_scval.length !== 3) {
+          return undefined;
+        }
+        const auctionType = Number(scValToNative(topic_scval[1]));
+        const user = Address.fromScVal(topic_scval[2]).toString();
+
+        if (isNaN(auctionType)) {
+          return undefined;
+        }
+        return {
+          ...baseEvent,
+          eventType: PoolEventType.DeleteAuction,
+          user: user,
+          auctionType: auctionType,
+        } as PoolDeleteAuction;
       }
       default:
         return undefined;

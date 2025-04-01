@@ -37,11 +37,20 @@ export function PoolUserKeyToXDR(poolUserKey?: PoolUserKey): xdr.ScVal {
 /**
  * The pool's backstop data
  */
-export interface PoolBackstopData {
+export interface PoolBackstopDataV1 {
   blnd: i128;
-  q4wPercent: i128;
+  q4w_percent: i128;
   tokens: i128;
   usdc: i128;
+}
+
+export interface PoolBackstopDataV2 {
+  blnd: i128;
+  q4w_percent: i128;
+  tokens: i128;
+  shares: i128; // The total shares of the pool
+  usdc: i128;
+  token_spot_price: i128; // The spot price of the token in terms of USDC
 }
 
 export interface Q4W {
