@@ -1,5 +1,5 @@
-import { Auction, AuctionType, getAuctionsfromEvents } from '../../src/pool/auction.js';
-import { BlendContractType, PoolEvent, PoolEventType } from '../../src/index.js';
+import { Auction, AuctionType, getAuctionsfromV1Events } from '../../src/pool/auction.js';
+import { BlendContractType, PoolV1Event, PoolEventType } from '../../src/index.js';
 import { i128 } from '../../src/index.js';
 
 describe('Auction', () => {
@@ -129,9 +129,9 @@ describe('Auction', () => {
   });
 });
 
-describe('getAuctionsFromEvents', () => {
+describe('getAuctionsFromV1Events', () => {
   it('should create an array of auctions from events', () => {
-    const events: PoolEvent[] = [
+    const events: PoolV1Event[] = [
       {
         contractId: 'id',
         contractType: BlendContractType.Pool,
@@ -177,7 +177,7 @@ describe('getAuctionsFromEvents', () => {
         ledger: 300,
       },
     ];
-    const auctions = getAuctionsfromEvents(events, 'backstopId');
+    const auctions = getAuctionsfromV1Events(events, 'backstopId');
     const expectedFill_1 = {
       block: 100,
       bid: new Map<string, i128>([['asset2', 25_000_0000n]]),

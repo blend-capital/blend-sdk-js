@@ -1,5 +1,5 @@
 import { FixedMath } from '../index.js';
-import { AuctionData, PoolEvent, PoolEventType } from './index.js';
+import { AuctionData, PoolEventType, PoolV1Event, PoolV2Event } from './index.js';
 export enum AuctionType {
   Liquidation = 0,
   BadDebt = 1,
@@ -32,7 +32,7 @@ export interface ScaledAuction {
  * @param backstopId - The address of the backstop
  * @returns An array of scaled auctions sorted by filled status and block
  */
-export function getAuctionsfromEvents(events: PoolEvent[], backstopId: string): Auctions {
+export function getAuctionsfromV1Events(events: PoolV1Event[], backstopId: string): Auctions {
   const auctions: Auctions = { filled: [], ongoing: [] };
   for (const event of events ?? []) {
     switch (event.eventType) {
@@ -41,10 +41,6 @@ export function getAuctionsfromEvents(events: PoolEvent[], backstopId: string): 
         break;
       case PoolEventType.NewAuction:
         auctions.ongoing.push(new Auction(backstopId, event.auctionType, event.auctionData));
-
-        break;
-      case PoolEventType.NewAuctionV2:
-        auctions.ongoing.push(new Auction(event.user, event.auctionType, event.auctionData));
         break;
       case PoolEventType.FillAuction: {
         const index = auctions.ongoing.findIndex(
@@ -67,7 +63,27 @@ export function getAuctionsfromEvents(events: PoolEvent[], backstopId: string): 
         }
         break;
       }
-      case PoolEventType.FillAuctionV2: {
+      case PoolEventType.DeleteLiquidationAuction: {
+        const deleteIndex = auctions.ongoing.findIndex((auction) => auction.user === event.user);
+        if (deleteIndex !== -1) {
+          auctions.ongoing.splice(deleteIndex, 1);
+        }
+        break;
+      }
+    }
+  }
+  return auctions;
+}
+
+export function getAuctionsfromV2Events(events: PoolV2Event[]): Auctions {
+  const auctions: Auctions = { filled: [], ongoing: [] };
+  for (const event of events ?? []) {
+    switch (event.eventType) {
+      case PoolEventType.NewAuction:
+        auctions.ongoing.push(new Auction(event.user, event.auctionType, event.auctionData));
+        break;
+
+      case PoolEventType.FillAuction: {
         const index = auctions.ongoing.findIndex(
           (auction) => auction.user === event.user && auction.type === event.auctionType
         );
