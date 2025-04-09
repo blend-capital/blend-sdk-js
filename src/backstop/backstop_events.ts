@@ -161,6 +161,18 @@ export function backstopEventV1FromEventResponse(
         txHash: eventResponse.txHash,
       };
       switch (eventString) {
+        case BackstopEventType.GulpEmissions: {
+          if (topic_scval.length !== 1) {
+            return undefined;
+          }
+          const newBLND = BigInt(scValToNative(value_scval));
+          return {
+            ...baseEvent,
+            contractType: BlendContractType.Backstop,
+            eventType: BackstopEventType.GulpEmissions,
+            newBLND: newBLND,
+          };
+        }
         case BackstopEventType.RewardZone: {
           const valueAsVec = value_scval.vec();
           if (topic_scval.length !== 1 || valueAsVec.length !== 2) {
