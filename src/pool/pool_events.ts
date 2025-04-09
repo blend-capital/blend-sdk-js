@@ -1,7 +1,7 @@
 import { Address, rpc, scValToNative, xdr } from '@stellar/stellar-sdk';
 import { BaseBlendEvent, BlendContractType } from '../base_event.js';
 import { AuctionData } from './index.js';
-import { ReserveConfig } from './reserve_types.js';
+import { ReserveConfig, ReserveConfigV2 } from './reserve_types.js';
 
 export enum PoolEventType {
   SetAdmin = 'set_admin',
@@ -41,18 +41,33 @@ export interface PoolSetAdminEvent extends BasePoolEvent {
   newAdmin: string;
 }
 
-export interface PoolUpdatePoolEvent extends BasePoolEvent {
+export interface PoolUpdatePoolV1Event extends BasePoolEvent {
   eventType: PoolEventType.UpdatePool;
   admin: string;
   backstopTakeRate: number;
   maxPositions: number;
 }
 
-export interface PoolQueueSetReserveEvent extends BasePoolEvent {
+export interface PoolUpdatePoolV2Event extends BasePoolEvent {
+  eventType: PoolEventType.UpdatePool;
+  admin: string;
+  backstopTakeRate: number;
+  maxPositions: number;
+  minCollateral: bigint;
+}
+
+export interface PoolQueueSetReserveV1Event extends BasePoolEvent {
   eventType: PoolEventType.QueueSetReserve;
   admin: string;
   assetId: string;
   reserveConfig: ReserveConfig;
+}
+
+export interface PoolQueueSetReserveV2Event extends BasePoolEvent {
+  eventType: PoolEventType.QueueSetReserve;
+  admin: string;
+  assetId: string;
+  reserveConfig: ReserveConfigV2;
 }
 
 export interface PoolCancelSetReserveEvent extends BasePoolEvent {
@@ -224,8 +239,6 @@ export interface PoolFlashLoanEvent extends BasePoolEvent {
 
 export type BasePoolEvents =
   | PoolSetAdminEvent
-  | PoolUpdatePoolEvent
-  | PoolQueueSetReserveEvent
   | PoolCancelSetReserveEvent
   | PoolSetReserveEvent
   | PoolSetStatusEvent
@@ -242,6 +255,8 @@ export type BasePoolEvents =
 
 export type PoolV1Event =
   | BasePoolEvents
+  | PoolUpdatePoolV1Event
+  | PoolQueueSetReserveV1Event
   | PoolNewAuctionV1Event
   | PoolFillAuctionV1Event
   | PoolUpdateEmissionsEvent
@@ -249,6 +264,8 @@ export type PoolV1Event =
 
 export type PoolV2Event =
   | BasePoolEvents
+  | PoolUpdatePoolV2Event
+  | PoolQueueSetReserveV2Event
   | PoolNewAuctionV2Event
   | PoolFillAuctionV2Event
   | PoolDeleteAuctionEvent
@@ -272,6 +289,7 @@ export function poolEventV1FromEventResponse(
   ) {
     return undefined;
   }
+
   const baseEvent = poolEventFromEventResponse(eventResponse);
   if (baseEvent === undefined) {
     try {
@@ -293,6 +311,43 @@ export function poolEventV1FromEventResponse(
         txHash: eventResponse.txHash,
       };
       switch (eventString) {
+        case PoolEventType.UpdatePool: {
+          const valueAsVec = value_scval.vec();
+          if (topic_scval.length !== 2 || valueAsVec?.length !== 2) {
+            return undefined;
+          }
+
+          const admin = Address.fromScVal(topic_scval[1]).toString();
+          const backstopTakeRate = Number(scValToNative(valueAsVec[0]));
+          const maxPositions = Number(scValToNative(valueAsVec[1]));
+
+          if (isNaN(backstopTakeRate) || isNaN(maxPositions)) {
+            return undefined;
+          }
+          return {
+            ...baseEvent,
+            eventType: PoolEventType.UpdatePool,
+            admin: admin,
+            backstopTakeRate: backstopTakeRate,
+            maxPositions: maxPositions,
+          } as PoolUpdatePoolV1Event;
+        }
+        case PoolEventType.QueueSetReserve: {
+          const valueAsVec = value_scval.vec();
+          if (topic_scval.length !== 2 || valueAsVec?.length !== 2) {
+            return undefined;
+          }
+          const admin = Address.fromScVal(topic_scval[1]).toString();
+          const asset_id = Address.fromScVal(valueAsVec[0]).toString();
+          const reserve_config = ReserveConfig.fromScVal(valueAsVec[1]);
+          return {
+            ...baseEvent,
+            eventType: PoolEventType.QueueSetReserve,
+            admin: admin,
+            assetId: asset_id,
+            reserveConfig: reserve_config,
+          } as PoolQueueSetReserveV1Event;
+        }
         case PoolEventType.UpdateEmissions: {
           if (topic_scval.length !== 1) {
             return undefined;
@@ -408,6 +463,44 @@ export function poolEventV2FromEventResponse(
         txHash: eventResponse.txHash,
       };
       switch (eventString) {
+        case PoolEventType.UpdatePool: {
+          const valueAsVec = value_scval.vec();
+          if (topic_scval.length !== 2 || valueAsVec?.length !== 3) {
+            return undefined;
+          }
+
+          const admin = Address.fromScVal(topic_scval[1]).toString();
+          const backstopTakeRate = Number(scValToNative(valueAsVec[0]));
+          const maxPositions = Number(scValToNative(valueAsVec[1]));
+          const minCollateral = scValToNative(valueAsVec[2]);
+          if (isNaN(backstopTakeRate) || isNaN(maxPositions) || typeof minCollateral !== 'bigint') {
+            return undefined;
+          }
+          return {
+            ...baseEvent,
+            eventType: PoolEventType.UpdatePool,
+            admin: admin,
+            backstopTakeRate: backstopTakeRate,
+            maxPositions: maxPositions,
+            minCollateral: BigInt(minCollateral),
+          } as PoolUpdatePoolV2Event;
+        }
+        case PoolEventType.QueueSetReserve: {
+          const valueAsVec = value_scval.vec();
+          if (topic_scval.length !== 2 || valueAsVec?.length !== 2) {
+            return undefined;
+          }
+          const admin = Address.fromScVal(topic_scval[1]).toString();
+          const asset_id = Address.fromScVal(valueAsVec[0]).toString();
+          const reserve_config = ReserveConfigV2.fromScVal(valueAsVec[1]);
+          return {
+            ...baseEvent,
+            eventType: PoolEventType.QueueSetReserve,
+            admin: admin,
+            assetId: asset_id,
+            reserveConfig: reserve_config,
+          } as PoolQueueSetReserveV2Event;
+        }
         case PoolEventType.GulpEmissions: {
           if (topic_scval.length !== 1) {
             return undefined;
@@ -604,41 +697,6 @@ function poolEventFromEventResponse(
           oldAdmin: old_admin,
           newAdmin: new_admin,
         } as PoolSetAdminEvent;
-      }
-      case PoolEventType.UpdatePool: {
-        const valueAsVec = value_scval.vec();
-        if (topic_scval.length !== 2 || valueAsVec?.length !== 2) {
-          return undefined;
-        }
-        const admin = Address.fromScVal(topic_scval[1]).toString();
-        const backstopTakeRate = Number(scValToNative(valueAsVec[0]));
-        const maxPositions = Number(scValToNative(valueAsVec[1]));
-        if (isNaN(backstopTakeRate) || isNaN(maxPositions)) {
-          return undefined;
-        }
-        return {
-          ...baseEvent,
-          eventType: PoolEventType.UpdatePool,
-          admin: admin,
-          backstopTakeRate: backstopTakeRate,
-          maxPositions: maxPositions,
-        } as PoolUpdatePoolEvent;
-      }
-      case PoolEventType.QueueSetReserve: {
-        const valueAsVec = value_scval.vec();
-        if (topic_scval.length !== 2 || valueAsVec?.length !== 2) {
-          return undefined;
-        }
-        const admin = Address.fromScVal(topic_scval[1]).toString();
-        const asset_id = Address.fromScVal(valueAsVec[0]).toString();
-        const reserve_config = ReserveConfig.fromScVal(valueAsVec[1]);
-        return {
-          ...baseEvent,
-          eventType: PoolEventType.QueueSetReserve,
-          admin: admin,
-          assetId: asset_id,
-          reserveConfig: reserve_config,
-        } as PoolQueueSetReserveEvent;
       }
       case PoolEventType.CancelSetReserve: {
         if (topic_scval.length !== 2) {
