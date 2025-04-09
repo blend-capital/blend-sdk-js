@@ -8,6 +8,7 @@ import {
   Request,
   ReserveConfig,
   ReserveEmissionMetadata,
+  ReserveConfigV2,
 } from './index.js';
 import { EmissionDataV2, UserEmissions } from '../emissions.js';
 import { AuctionType } from './auction.js';
@@ -42,11 +43,19 @@ export interface UpdatePoolV2Args {
   min_collateral: i128; // The maximum number of bTokens that can be minted
 }
 
-export interface SetReserveArgs {
+export interface SetReserveV1Args {
   asset: Address | string;
   metadata: ReserveConfig;
 }
 
+export interface SetReserveV2Args {
+  asset: Address | string;
+  metadata: ReserveConfigV2;
+}
+export interface SetReserveV1Args {
+  asset: Address | string;
+  metadata: ReserveConfig;
+}
 export interface PoolClaimArgs {
   from: Address | string;
   reserve_token_ids: Array<u32>;
@@ -431,7 +440,7 @@ export class PoolContractV1 extends PoolContract {
    *
    * @returns A base64-encoded string representing the operation.
    */
-  queueSetReserve(contractArgs: SetReserveArgs): string {
+  queueSetReserve(contractArgs: SetReserveV1Args): string {
     return this.call(
       'queue_set_reserve',
       ...PoolContractV1.spec.funcArgsToScVals('queue_set_reserve', contractArgs)
@@ -629,7 +638,7 @@ export class PoolContractV2 extends PoolContract {
    *
    * @returns A base64-encoded string representing the operation.
    */
-  queueSetReserve(contractArgs: SetReserveArgs): string {
+  queueSetReserve(contractArgs: SetReserveV2Args): string {
     return this.call(
       'queue_set_reserve',
       ...PoolContractV2.spec.funcArgsToScVals('queue_set_reserve', contractArgs)
