@@ -89,6 +89,16 @@ export abstract class BackstopContract extends Contract {
     donate: () => {},
   };
 
+  /**
+   * Deposits backstop tokens from an address into the backstop of a pool.
+   *
+   * @param contractArgs - The arguments required for the deposit.
+   * @param contractArgs.from - The address depositing into the backstop.
+   * @param contractArgs.pool_address - The address of the pool.
+   * @param contractArgs.amount - The amount of tokens to deposit.
+   *
+   * @returns A base64-encoded string representing the operation that must be submitted in a transaction.
+   */
   deposit(contractArgs: PoolBackstopActionArgs): string {
     return this.call(
       'deposit',
@@ -96,6 +106,16 @@ export abstract class BackstopContract extends Contract {
     ).toXDR('base64');
   }
 
+  /**
+   * Queues deposited pool shares for withdrawal from a backstop of a pool.
+   *
+   * @param contractArgs - The arguments required for queuing a withdrawal.
+   * @param contractArgs.from - The address whose deposits are being queued for withdrawal.
+   * @param contractArgs.pool_address - The address of the pool.
+   * @param contractArgs.amount - The amount of shares to queue for withdrawal.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   queueWithdrawal(contractArgs: PoolBackstopActionArgs): string {
     return this.call(
       'queue_withdrawal',
@@ -103,6 +123,16 @@ export abstract class BackstopContract extends Contract {
     ).toXDR('base64');
   }
 
+  /**
+   * Dequeues a currently queued pool share withdrawal from the backstop of a pool.
+   *
+   * @param contractArgs - The arguments required for dequeuing a withdrawal.
+   * @param contractArgs.from - The address whose deposits are being dequeued.
+   * @param contractArgs.pool_address - The address of the pool.
+   * @param contractArgs.amount - The amount of shares to dequeue.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   dequeueWithdrawal(contractArgs: PoolBackstopActionArgs): string {
     return this.call(
       'dequeue_withdrawal',
@@ -110,6 +140,16 @@ export abstract class BackstopContract extends Contract {
     ).toXDR('base64');
   }
 
+  /**
+   * Withdraws shares from a user's withdraw queue for a backstop of a pool.
+   *
+   * @param contractArgs - The arguments required for withdrawing shares.
+   * @param contractArgs.from - The address whose shares are being withdrawn.
+   * @param contractArgs.pool_address - The address of the pool.
+   * @param contractArgs.amount - The amount of shares to withdraw.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   withdraw(contractArgs: PoolBackstopActionArgs): string {
     return this.call(
       'withdraw',
@@ -117,12 +157,19 @@ export abstract class BackstopContract extends Contract {
     ).toXDR('base64');
   }
 
-  draw(contractArgs: DrawArgs): string {
-    return this.call('draw', ...BackstopContract.spec.funcArgsToScVals('draw', contractArgs)).toXDR(
-      'base64'
-    );
-  }
-
+  /**
+   * Sends backstop tokens from an address to a pool's backstop. Can only be called by the pool.
+   * Note: This is not a deposit, and the sender will permanently lose access to the funds.
+   *
+   * @param contractArgs - The arguments required for donating to the backstop.
+   * @param contractArgs.from - The address donating tokens to the backstop.
+   * @param contractArgs.pool_address - The address of the pool.
+   * @param contractArgs.amount - The amount of tokens to donate.
+   *
+   * @throws Will throw an error if the pool_address is not valid or if the pool does not authorize the call.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   donate(contractArgs: PoolBackstopActionArgs): string {
     return this.call(
       'donate',
@@ -130,13 +177,13 @@ export abstract class BackstopContract extends Contract {
     ).toXDR('base64');
   }
 
-  donateUSDC(contractArgs: PoolBackstopActionArgs): string {
-    return this.call(
-      'donate_usdc',
-      ...BackstopContract.spec.funcArgsToScVals('donate_usdc', contractArgs)
-    ).toXDR('base64');
-  }
-
+  /**
+   * Consumes accumulated USDC for a pool's backstop.
+   *
+   * @param pool_address - The address of the pool.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   gulpUSDC(pool_address: Address | string): string {
     return this.call(
       'gulp_usdc',
@@ -144,10 +191,23 @@ export abstract class BackstopContract extends Contract {
     ).toXDR('base64');
   }
 
+  /**
+   * Drops initial BLND to a list of addresses through the emitter.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   drop(): string {
     return this.call('drop', ...BackstopContract.spec.funcArgsToScVals('drop', {})).toXDR('base64');
   }
 
+  /**
+   * Fetches the balance of backstop shares of a pool for a user.
+   *
+   * @param pool - The address of the pool.
+   * @param user - The user to fetch the balance for.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   userBalance(pool: Address | string, user: Address | string): string {
     return this.call(
       'user_balance',
@@ -155,6 +215,11 @@ export abstract class BackstopContract extends Contract {
     ).toXDR('base64');
   }
 
+  /**
+   * Fetches the backstop token for the backstop.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   backstopToken(): string {
     return this.call(
       'backstop_token',
@@ -208,6 +273,21 @@ export class BackstopContractV1 extends BackstopContract {
       BackstopContractV1.spec.funcResToNative('update_tkn_val', result),
   };
 
+  /**
+   * Initializes the backstop contract. This function requires that the Emitter has already been initialized.
+   *
+   * @param contractArgs - The arguments required for initialization.
+   * @param contractArgs.backstop_token - The backstop token ID - an LP token with the pair BLND:USDC.
+   * @param contractArgs.emitter - The Emitter contract ID.
+   * @param contractArgs.usdc_token - The USDC token ID.
+   * @param contractArgs.blnd_token - The BLND token ID.
+   * @param contractArgs.pool_factory - The pool factory ID.
+   * @param contractArgs.drop_list - The list of addresses to distribute initial BLND to and the percent of the distribution they should receive.
+   *
+   * @throws Will throw an error if initialize has already been called.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   initialize(contractArgs: BackstopConstructorArgs): string {
     return this.call(
       'initialize',
@@ -215,12 +295,28 @@ export class BackstopContractV1 extends BackstopContract {
     ).toXDR('base64');
   }
 
+  /**
+   * Consumes emissions from the Emitter and distributes them to backstops and pools in the reward zone.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   gulpEmissions(): string {
     return this.call(
       'gulp_emissions',
       ...BackstopContractV1.spec.funcArgsToScVals('gulp_emissions', {})
     ).toXDR('base64');
   }
+
+  /**
+   * Adds a pool to the reward zone, and if the reward zone is full, removes another pool.
+   *
+   * @param to_add - The address of the pool to add.
+   * @param to_remove - The address of the pool to remove.
+   *
+   * @throws Will throw an error if the pool to remove has more tokens, or if distribution occurred in the last 48 hours.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   addReward(to_add: string, to_remove: string): string {
     return this.call(
       'add_reward',
@@ -228,12 +324,30 @@ export class BackstopContractV1 extends BackstopContract {
     ).toXDR('base64');
   }
 
+  /**
+   * Updates the underlying value of 1 backstop token.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   updateTokenValue(): string {
     return this.call(
       'update_tkn_val',
       ...BackstopContractV1.spec.funcArgsToScVals('update_tkn_val', {})
     ).toXDR('base64');
   }
+
+  /**
+   * Claims backstop deposit emissions from a list of pools for a user.
+   *
+   * @param contractArgs - The arguments required for claiming emissions.
+   * @param contractArgs.from - The address of the user claiming emissions.
+   * @param contractArgs.pool_addresses - The list of addresses to claim backstop deposit emissions from.
+   * @param contractArgs.to - The address to send the emissions to.
+   *
+   * @throws Will throw an error if an invalid pool address is included.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   claim(contractArgs: BackstopClaimV1Args): string {
     return this.call(
       'claim',
@@ -287,6 +401,23 @@ export class BackstopContractV2 extends BackstopContract {
     removeReward: () => {},
   };
 
+  /**
+   * Deploys a new instance of the Backstop V2 contract.
+   *
+   * @param deployer - The address of the deployer.
+   * @param wasmHash - The hash of the WASM contract code.
+   * @param args - The constructor arguments for the contract.
+   * @param args.backstop_token - The backstop token ID - an LP token with the pair BLND:USDC.
+   * @param args.emitter - The Emitter contract ID.
+   * @param args.blnd_token - The BLND token ID.
+   * @param args.usdc_token - The USDC token ID.
+   * @param args.pool_factory - The pool factory ID.
+   * @param args.drop_list - The list of addresses to distribute initial BLND to and the percent of the distribution they should receive.
+   * @param salt - Optional salt for the contract deployment.
+   * @param format - Optional format for the WASM hash (hex or base64).
+   *
+   * @returns A base64-encoded string representing the contract deployment operation.
+   */
   static deploy(
     deployer: string,
     wasmHash: Buffer | string,
@@ -305,6 +436,11 @@ export class BackstopContractV2 extends BackstopContract {
     }).toXDR('base64');
   }
 
+  /**
+   * Updates the backstop with new emissions for all reward zone pools.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   distribute(): string {
     return this.call(
       'distribute',
@@ -312,6 +448,16 @@ export class BackstopContractV2 extends BackstopContract {
     ).toXDR('base64');
   }
 
+  /**
+   * Adds a pool to the reward zone, and if the reward zone is full, can optionally remove another pool.
+   *
+   * @param to_add - The address of the pool to add.
+   * @param to_remove - The address of the pool to remove (Optional - Used if the reward zone is full).
+   *
+   * @throws Will throw an error if the pool to remove has more tokens, or if distribution occurred in the last 48 hours.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   addReward(to_add: string, to_remove: string | undefined): string {
     return this.call(
       'add_reward',
@@ -319,6 +465,15 @@ export class BackstopContractV2 extends BackstopContract {
     ).toXDR('base64');
   }
 
+  /**
+   * Removes a pool from the reward zone.
+   *
+   * @param poolToRemove - The address of the pool to remove.
+   *
+   * @throws Will throw an error if the pool is not below the threshold or if the pool is not in the reward zone.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   removeReward(poolToRemove: string): string {
     return this.call(
       'remove_reward',
@@ -326,6 +481,18 @@ export class BackstopContractV2 extends BackstopContract {
     ).toXDR('base64');
   }
 
+  /**
+   * Claims backstop deposit emissions from a list of pools for a user.
+   *
+   * @param contractArgs - The arguments required for claiming emissions.
+   * @param contractArgs.from - The address of the user claiming emissions.
+   * @param contractArgs.pool_addresses - The list of addresses to claim backstop deposit emissions from.
+   * @param contractArgs.min_lp_tokens_out - The minimum amount of LP tokens to mint with the claimed BLND.
+   *
+   * @throws Will throw an error if an invalid pool address is included.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   claim(contractArgs: BackstopClaimV2Args): string {
     return this.call(
       'claim',
@@ -333,6 +500,11 @@ export class BackstopContractV2 extends BackstopContract {
     ).toXDR('base64');
   }
 
+  /**
+   * Fetches the reward zone for the backstop.
+   *
+   * @returns A base64-encoded string representing the operation.
+   */
   rewardZone(): string {
     return this.call(
       'reward_zone',
