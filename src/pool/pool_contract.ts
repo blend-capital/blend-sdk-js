@@ -9,6 +9,7 @@ import {
   ReserveConfig,
   ReserveEmissionMetadata,
   ReserveConfigV2,
+  FlashLoan,
 } from './index.js';
 import { EmissionDataV2, UserEmissions } from '../emissions.js';
 import { AuctionType } from './auction.js';
@@ -32,6 +33,10 @@ export interface PoolConstructorArgs {
   blnd_id: Address | string;
 }
 
+export interface PoolConstructorArgsV2 extends PoolConstructorArgs {
+  min_collateral: i128;
+}
+
 export interface UpdatePoolV1Args {
   backstop_take_rate: u32;
   max_positions: u32;
@@ -52,10 +57,7 @@ export interface SetReserveV2Args {
   asset: Address | string;
   metadata: ReserveConfigV2;
 }
-export interface SetReserveV1Args {
-  asset: Address | string;
-  metadata: ReserveConfig;
-}
+
 export interface PoolClaimArgs {
   from: Address | string;
   reserve_token_ids: Array<u32>;
@@ -76,9 +78,9 @@ export interface NewAuctionArgs {
 }
 
 export interface FlashLoanArgs {
-  contract: Address | string;
-  asset: Address | string;
-  amount: i128;
+  from: Address | string;
+  flash_loan: FlashLoan;
+  requests: Array<Request>;
 }
 
 export abstract class PoolContract extends Contract {
@@ -288,7 +290,7 @@ export abstract class PoolContract extends Contract {
    *
    * @param res_emission_metadata - A vector of ReserveEmissionMetadata to update metadata to.
    *
-   * @throws Will throw an error if the caller is not the admin or if the sum of ReserveEmissionMetadata shares is greater than 1.
+   * @throws Will throw an error if the caller is not the admin.
    *
    * @returns A base64-encoded string representing the operation.
    */
@@ -592,7 +594,7 @@ export class PoolContractV2 extends PoolContract {
   static deploy(
     deployer: string,
     wasmHash: Buffer | string,
-    args: PoolConstructorArgs,
+    args: PoolConstructorArgsV2,
     salt?: Buffer,
     format?: 'hex' | 'base64'
   ): string {

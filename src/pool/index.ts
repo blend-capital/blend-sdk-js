@@ -70,6 +70,12 @@ export interface Request {
   amount: i128;
 }
 
+export interface FlashLoan {
+  contract: Address | string;
+  asset: Address | string;
+  amount: i128;
+}
+
 export interface AuctionKey {
   auct_type: u32;
   user: string;
