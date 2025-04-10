@@ -178,20 +178,6 @@ export abstract class BackstopContract extends Contract {
   }
 
   /**
-   * Consumes accumulated USDC for a pool's backstop.
-   *
-   * @param pool_address - The address of the pool.
-   *
-   * @returns A base64-encoded string representing the operation.
-   */
-  gulpUSDC(pool_address: Address | string): string {
-    return this.call(
-      'gulp_usdc',
-      ...BackstopContract.spec.funcArgsToScVals('gulp_usdc', { pool_address })
-    ).toXDR('base64');
-  }
-
-  /**
    * Drops initial BLND to a list of addresses through the emitter.
    *
    * @returns A base64-encoded string representing the operation.
