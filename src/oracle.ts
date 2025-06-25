@@ -4,10 +4,17 @@ import {
   Contract,
   rpc,
   scValToNative,
+  Transaction,
   TransactionBuilder,
   xdr,
 } from '@stellar/stellar-sdk';
 import { Network } from './index.js';
+
+const REFLECTOR_ORACLE_ADDRESSES = [
+  'CBKGPWGKSKZF52CFHMTRR23TBWTPMRDIYZ4O2P5VS65BMHYH4DXMCJZC',
+  'CALI2BYU2JE6WVRUFYTS6MSBNEHGJ35P4AVCZYF3B6QOE3QKOB2PLE6M',
+  'CAFJZQWSED6YAWZU3GWRTOCNPPCGBN32L7QV43XX5LZLFTK6JLN34DLN',
+];
 
 export interface PriceData {
   price: bigint;
@@ -75,4 +82,67 @@ export async function getOracleDecimals(
   } else {
     throw new Error(`Failed to fetch oralce decimals: ${result.error}`);
   }
+}
+
+export function addReflectorEntries(tx: Transaction): Transaction {
+  if (tx.toEnvelope().switch() !== xdr.EnvelopeType.envelopeTypeTx()) {
+    return tx;
+  }
+
+  const sorobanData = tx.toEnvelope().v1().tx().ext().sorobanData();
+  const readEntries = sorobanData.resources().footprint().readOnly();
+  const readWriteEntries = sorobanData.resources().footprint().readWrite();
+
+  const newReadEntries = [];
+  for (const entry of readEntries) {
+    if (readWriteEntries.length + readEntries.length + newReadEntries.length > 100) {
+      break;
+    }
+
+    switch (entry.switch()) {
+      case xdr.LedgerEntryType.contractData(): {
+        const contractData = entry.contractData();
+        const address = Address.fromScAddress(contractData.contract()).toString();
+
+        if (REFLECTOR_ORACLE_ADDRESSES.includes(address)) {
+          switch (contractData.key().switch()) {
+            case xdr.ScValType.scvU128(): {
+              const u128Key = contractData.key().u128();
+              const roundTimestamp = u128Key.hi().toBigInt();
+              const index = u128Key.lo().toBigInt();
+
+              const newRoundTimestamp = roundTimestamp + 300_000n;
+
+              newReadEntries.push(
+                xdr.LedgerKey.contractData(
+                  new xdr.LedgerKeyContractData({
+                    contract: contractData.contract(),
+                    key: xdr.ScVal.scvU128(
+                      new xdr.UInt128Parts({
+                        hi: xdr.Uint64.fromString(newRoundTimestamp.toString()),
+                        lo: xdr.Uint64.fromString(index.toString()),
+                      })
+                    ),
+                    durability: xdr.ContractDataDurability.temporary(),
+                  })
+                )
+              );
+            }
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  sorobanData
+    .resources()
+    .footprint()
+    .readOnly([...readEntries, ...newReadEntries]);
+  const newTx = TransactionBuilder.cloneFrom(tx, {
+    sorobanData: sorobanData,
+    fee: tx.fee,
+  }).build();
+
+  return newTx;
 }
