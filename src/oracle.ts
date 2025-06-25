@@ -95,7 +95,7 @@ export function addReflectorEntries(tx: Transaction): Transaction {
 
   const newReadEntries = [];
   for (const entry of readEntries) {
-    if (readWriteEntries.length + readEntries.length + newReadEntries.length > 100) {
+    if (readWriteEntries.length + readEntries.length + newReadEntries.length + 1 > 100) {
       break;
     }
 
