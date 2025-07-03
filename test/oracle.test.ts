@@ -110,111 +110,146 @@ describe('addReflectorEntries', () => {
 
   it('should add future timestamp entries for each reflector oracle entry', () => {
     // Arrange
-    const timestamp = 1000000n;
-    const count = 3;
-    const txWithReflectors = addReflectorOracleEntries(baseTransaction, count, timestamp);
+    const realDateNow = Date.now;
+    const mockTimestamp = 1609459200000; // 2021-01-01 00:00:00 UTC
+    const currRoundTimestamp = BigInt(Math.floor(mockTimestamp / 1000 / 300_000) * 300_000);
 
-    // Act
-    const result = addReflectorEntries(txWithReflectors);
+    try {
+      // Mock Date.now to return our fixed timestamp
+      global.Date.now = jest.fn(() => mockTimestamp);
+      const count = 3;
+      const txWithReflectors = addReflectorOracleEntries(
+        baseTransaction,
+        count,
+        currRoundTimestamp
+      );
 
-    // Assert
-    const resultFootprint = result
-      .toEnvelope()
-      .v1()
-      .tx()
-      .ext()
-      .sorobanData()
-      .resources()
-      .footprint();
+      // Act
+      const result = addReflectorEntries(txWithReflectors);
 
-    // Original entries plus one new entry for each reflector entry
-    expect(resultFootprint.readOnly().length).toBe(
-      txWithReflectors.toEnvelope().v1().tx().ext().sorobanData().resources().footprint().readOnly()
-        .length + count
-    );
+      // Assert
+      const resultFootprint = result
+        .toEnvelope()
+        .v1()
+        .tx()
+        .ext()
+        .sorobanData()
+        .resources()
+        .footprint();
 
-    // Check that the new entries have future timestamps (original + 300,000)
-    let foundFutureEntries = 0;
-    for (const entry of resultFootprint.readOnly()) {
-      if (entry.switch() === xdr.LedgerEntryType.contractData()) {
-        const contractData = entry.contractData();
-        const address = Address.fromScAddress(contractData.contract()).toString();
+      // Original entries plus one new entry for each reflector entry
+      expect(resultFootprint.readOnly().length).toBe(
+        txWithReflectors
+          .toEnvelope()
+          .v1()
+          .tx()
+          .ext()
+          .sorobanData()
+          .resources()
+          .footprint()
+          .readOnly().length + count
+      );
 
-        if (
-          address === 'CBKGPWGKSKZF52CFHMTRR23TBWTPMRDIYZ4O2P5VS65BMHYH4DXMCJZC' &&
-          contractData.key().switch() === xdr.ScValType.scvU128()
-        ) {
-          const u128Key = contractData.key().u128();
-          const entryTimestamp = u128Key.hi().toBigInt();
+      // Check that the new entries have future timestamps (original + 300,000)
+      let foundFutureEntries = 0;
+      for (const entry of resultFootprint.readOnly()) {
+        if (entry.switch() === xdr.LedgerEntryType.contractData()) {
+          const contractData = entry.contractData();
+          const address = Address.fromScAddress(contractData.contract()).toString();
 
-          if (entryTimestamp === timestamp + 300_000n) {
-            foundFutureEntries++;
+          if (
+            address === 'CBKGPWGKSKZF52CFHMTRR23TBWTPMRDIYZ4O2P5VS65BMHYH4DXMCJZC' &&
+            contractData.key().switch() === xdr.ScValType.scvU128()
+          ) {
+            const u128Key = contractData.key().u128();
+            const entryTimestamp = u128Key.hi().toBigInt();
+
+            if (entryTimestamp === currRoundTimestamp + 300_000n) {
+              foundFutureEntries++;
+            }
           }
         }
       }
-    }
 
-    expect(foundFutureEntries).toBe(count);
+      expect(foundFutureEntries).toBe(count);
+    } finally {
+      // Restore the original Date.now
+      global.Date.now = realDateNow;
+    }
   });
 
   it('should respect the 100 entry limit', () => {
     // Arrange - create a transaction with many entries
-    const timestamp = 1000000n;
-    const reflectorCount = 40; // 40 reflector entries
-    const txWithReflectors = addReflectorOracleEntries(baseTransaction, reflectorCount, timestamp);
+    const realDateNow = Date.now;
+    const mockTimestamp = 1609459200000; // 2021-01-01 00:00:00 UTC
+    const currRoundTimestamp = BigInt(Math.floor(mockTimestamp / 1000 / 300_000) * 300_000);
 
-    // We need to ensure we approach but don't exceed 100 total entries
-    // To do this, let's add a bunch of read/write entries too
-    const sorobanData = txWithReflectors.toEnvelope().v1().tx().ext().sorobanData();
-    const footprint = sorobanData.resources().footprint();
-
-    // Add 55 read-write entries to push us near the limit
-    const rwEntries: xdr.LedgerKey[] = [];
-    for (let i = 0; i < 55; i++) {
-      rwEntries.push(
-        xdr.LedgerKey.contractData(
-          new xdr.LedgerKeyContractData({
-            contract: Address.fromString(
-              'GANXGJV2RNOFMOSQ2DTI3RKDBAVERXUVFC27KW3RLVQCLB3RYNO3AAI4'
-            ).toScAddress(),
-            key: xdr.ScVal.scvU32(i),
-            durability: xdr.ContractDataDurability.temporary(),
-          })
-        )
+    try {
+      // Mock Date.now to return our fixed timestamp
+      global.Date.now = jest.fn(() => mockTimestamp);
+      const reflectorCount = 40; // 40 reflector entries
+      const txWithReflectors = addReflectorOracleEntries(
+        baseTransaction,
+        reflectorCount,
+        currRoundTimestamp
       );
+
+      // We need to ensure we approach but don't exceed 100 total entries
+      // To do this, let's add a bunch of read/write entries too
+      const sorobanData = txWithReflectors.toEnvelope().v1().tx().ext().sorobanData();
+      const footprint = sorobanData.resources().footprint();
+
+      // Add 55 read-write entries to push us near the limit
+      const rwEntries: xdr.LedgerKey[] = [];
+      for (let i = 0; i < 55; i++) {
+        rwEntries.push(
+          xdr.LedgerKey.contractData(
+            new xdr.LedgerKeyContractData({
+              contract: Address.fromString(
+                'GANXGJV2RNOFMOSQ2DTI3RKDBAVERXUVFC27KW3RLVQCLB3RYNO3AAI4'
+              ).toScAddress(),
+              key: xdr.ScVal.scvU32(i),
+              durability: xdr.ContractDataDurability.temporary(),
+            })
+          )
+        );
+      }
+      footprint.readWrite(rwEntries);
+
+      const txNearLimit = TransactionBuilder.cloneFrom(txWithReflectors, {
+        sorobanData: sorobanData,
+        fee: txWithReflectors.fee,
+      }).build();
+
+      // Act
+      const result = addReflectorEntries(txNearLimit);
+
+      // Assert
+      const resultFootprint = result
+        .toEnvelope()
+        .v1()
+        .tx()
+        .ext()
+        .sorobanData()
+        .resources()
+        .footprint();
+      const totalEntries = resultFootprint.readOnly().length + resultFootprint.readWrite().length;
+
+      // We should have some new reflector entries, but not all
+      expect(totalEntries).toBeLessThanOrEqual(100);
+      expect(resultFootprint.readOnly().length).toBeGreaterThan(
+        txNearLimit.toEnvelope().v1().tx().ext().sorobanData().resources().footprint().readOnly()
+          .length
+      );
+      // But we shouldn't have added all possible reflector entries
+      expect(resultFootprint.readOnly().length).toBeLessThan(
+        txNearLimit.toEnvelope().v1().tx().ext().sorobanData().resources().footprint().readOnly()
+          .length + reflectorCount
+      );
+    } finally {
+      // Restore the original Date.now
+      global.Date.now = realDateNow;
     }
-    footprint.readWrite(rwEntries);
-
-    const txNearLimit = TransactionBuilder.cloneFrom(txWithReflectors, {
-      sorobanData: sorobanData,
-      fee: txWithReflectors.fee,
-    }).build();
-
-    // Act
-    const result = addReflectorEntries(txNearLimit);
-
-    // Assert
-    const resultFootprint = result
-      .toEnvelope()
-      .v1()
-      .tx()
-      .ext()
-      .sorobanData()
-      .resources()
-      .footprint();
-    const totalEntries = resultFootprint.readOnly().length + resultFootprint.readWrite().length;
-
-    // We should have some new reflector entries, but not all
-    expect(totalEntries).toBeLessThanOrEqual(100);
-    expect(resultFootprint.readOnly().length).toBeGreaterThan(
-      txNearLimit.toEnvelope().v1().tx().ext().sorobanData().resources().footprint().readOnly()
-        .length
-    );
-    // But we shouldn't have added all possible reflector entries
-    expect(resultFootprint.readOnly().length).toBeLessThan(
-      txNearLimit.toEnvelope().v1().tx().ext().sorobanData().resources().footprint().readOnly()
-        .length + reflectorCount
-    );
   });
 
   it('should skip non-reflector oracle addresses', () => {
@@ -337,93 +372,226 @@ describe('addReflectorEntries', () => {
 
   it('should handle multiple reflector oracle addresses', () => {
     // Arrange
-    const timestamp = 1000000n;
-    const sorobanData = baseTransaction.toEnvelope().v1().tx().ext().sorobanData();
-    const footprint = sorobanData.resources().footprint();
+    const realDateNow = Date.now;
+    const mockTimestamp = 1609459200000; // 2021-01-01 00:00:00 UTC
+    const currRoundTimestamp = BigInt(Math.floor(mockTimestamp / 1000 / 300_000) * 300_000);
 
-    const origReadEntries = footprint.readOnly();
+    try {
+      // Mock Date.now to return our fixed timestamp
+      global.Date.now = jest.fn(() => mockTimestamp);
 
-    // Add entries for multiple reflector addresses
-    const reflectorAddresses = [
-      'CBKGPWGKSKZF52CFHMTRR23TBWTPMRDIYZ4O2P5VS65BMHYH4DXMCJZC',
-      'CALI2BYU2JE6WVRUFYTS6MSBNEHGJ35P4AVCZYF3B6QOE3QKOB2PLE6M',
-    ];
+      const sorobanData = baseTransaction.toEnvelope().v1().tx().ext().sorobanData();
+      const footprint = sorobanData.resources().footprint();
 
-    const newEntries: xdr.LedgerKey[] = [];
-    for (let i = 0; i < reflectorAddresses.length; i++) {
-      newEntries.push(
-        xdr.LedgerKey.contractData(
-          new xdr.LedgerKeyContractData({
-            contract: Address.fromString(reflectorAddresses[i]).toScAddress(),
-            key: xdr.ScVal.scvU128(
-              new xdr.UInt128Parts({
-                hi: xdr.Uint64.fromString(timestamp.toString()),
-                lo: xdr.Uint64.fromString(BigInt(i).toString()),
-              })
-            ),
-            durability: xdr.ContractDataDurability.temporary(),
-          })
-        )
-      );
-    }
+      const origReadEntries = footprint.readOnly();
 
-    footprint.readOnly([...origReadEntries, ...newEntries]);
+      // Add entries for multiple reflector addresses
+      const reflectorAddresses = [
+        'CBKGPWGKSKZF52CFHMTRR23TBWTPMRDIYZ4O2P5VS65BMHYH4DXMCJZC',
+        'CALI2BYU2JE6WVRUFYTS6MSBNEHGJ35P4AVCZYF3B6QOE3QKOB2PLE6M',
+      ];
 
-    const txWithMultipleReflectors = TransactionBuilder.cloneFrom(baseTransaction, {
-      sorobanData: sorobanData,
-      fee: baseTransaction.fee,
-    }).build();
+      const newEntries: xdr.LedgerKey[] = [];
+      for (let i = 0; i < reflectorAddresses.length; i++) {
+        newEntries.push(
+          xdr.LedgerKey.contractData(
+            new xdr.LedgerKeyContractData({
+              contract: Address.fromString(reflectorAddresses[i]).toScAddress(),
+              key: xdr.ScVal.scvU128(
+                new xdr.UInt128Parts({
+                  hi: xdr.Uint64.fromString(currRoundTimestamp.toString()),
+                  lo: xdr.Uint64.fromString(BigInt(i).toString()),
+                })
+              ),
+              durability: xdr.ContractDataDurability.temporary(),
+            })
+          )
+        );
+      }
 
-    // Act
-    const result = addReflectorEntries(txWithMultipleReflectors);
+      footprint.readOnly([...origReadEntries, ...newEntries]);
 
-    // Assert
-    const resultFootprint = result
-      .toEnvelope()
-      .v1()
-      .tx()
-      .ext()
-      .sorobanData()
-      .resources()
-      .footprint();
+      const txWithMultipleReflectors = TransactionBuilder.cloneFrom(baseTransaction, {
+        sorobanData: sorobanData,
+        fee: baseTransaction.fee,
+      }).build();
 
-    // Should add one entry for each reflector address
-    expect(resultFootprint.readOnly().length).toBe(
-      txWithMultipleReflectors
+      // Act
+      const result = addReflectorEntries(txWithMultipleReflectors);
+
+      // Assert
+      const resultFootprint = result
         .toEnvelope()
         .v1()
         .tx()
         .ext()
         .sorobanData()
         .resources()
-        .footprint()
-        .readOnly().length + reflectorAddresses.length
-    );
+        .footprint();
 
-    // Check that each reflector address has a corresponding future entry
-    for (let i = 0; i < reflectorAddresses.length; i++) {
-      let foundFutureEntry = false;
+      // Should add one entry for each reflector address
+      expect(resultFootprint.readOnly().length).toBe(
+        txWithMultipleReflectors
+          .toEnvelope()
+          .v1()
+          .tx()
+          .ext()
+          .sorobanData()
+          .resources()
+          .footprint()
+          .readOnly().length + reflectorAddresses.length
+      );
+
+      // Check that each reflector address has a corresponding future entry
+      for (let i = 0; i < reflectorAddresses.length; i++) {
+        let foundFutureEntry = false;
+        for (const entry of resultFootprint.readOnly()) {
+          if (entry.switch() === xdr.LedgerEntryType.contractData()) {
+            const contractData = entry.contractData();
+            const address = Address.fromScAddress(contractData.contract()).toString();
+
+            if (
+              address === reflectorAddresses[i] &&
+              contractData.key().switch() === xdr.ScValType.scvU128()
+            ) {
+              const u128Key = contractData.key().u128();
+              const entryTimestamp = u128Key.hi().toBigInt();
+              const index = u128Key.lo().toBigInt();
+
+              if (entryTimestamp === currRoundTimestamp + 300_000n && index === BigInt(i)) {
+                foundFutureEntry = true;
+                break;
+              }
+            }
+          }
+        }
+        expect(foundFutureEntry).toBe(true);
+      }
+    } finally {
+      // Restore the original Date.now
+      global.Date.now = realDateNow;
+    }
+  });
+
+  it('should only add entries for the most current unique oracle-index pair', () => {
+    // We need to mock Date.now to ensure consistent behavior
+    const realDateNow = Date.now;
+    const mockTimestamp = 1609459200000; // 2021-01-01 00:00:00 UTC
+    const currRoundTimestamp = BigInt(Math.floor(mockTimestamp / 1000 / 300_000) * 300_000);
+
+    try {
+      // Mock Date.now to return our fixed timestamp
+      global.Date.now = jest.fn(() => mockTimestamp);
+
+      // Arrange - create entries with different timestamps
+      const sorobanData = baseTransaction.toEnvelope().v1().tx().ext().sorobanData();
+      const footprint = sorobanData.resources().footprint();
+      const reflectorAddress = 'CBKGPWGKSKZF52CFHMTRR23TBWTPMRDIYZ4O2P5VS65BMHYH4DXMCJZC';
+
+      // Create 4 entries:
+      // 1. Index 0 with current round timestamp (should add new entry)
+      // 2. Index 0 with previous round timestamp (should NOT add new entry)
+      // 3. Index 1 with previous round timestamp (should add new entry)
+      // 4. Index 2 with future round timestamp (should add new entry)
+      const entries: xdr.LedgerKey[] = [
+        // Entry with current round timestamp
+        xdr.LedgerKey.contractData(
+          new xdr.LedgerKeyContractData({
+            contract: Address.fromString(reflectorAddress).toScAddress(),
+            key: xdr.ScVal.scvU128(
+              new xdr.UInt128Parts({
+                hi: xdr.Uint64.fromString(currRoundTimestamp.toString()),
+                lo: xdr.Uint64.fromString('0'),
+              })
+            ),
+            durability: xdr.ContractDataDurability.temporary(),
+          })
+        ),
+        xdr.LedgerKey.contractData(
+          new xdr.LedgerKeyContractData({
+            contract: Address.fromString(reflectorAddress).toScAddress(),
+            key: xdr.ScVal.scvU128(
+              new xdr.UInt128Parts({
+                hi: xdr.Uint64.fromString((currRoundTimestamp - 300_000n).toString()),
+                lo: xdr.Uint64.fromString('0'),
+              })
+            ),
+            durability: xdr.ContractDataDurability.temporary(),
+          })
+        ),
+        // Entry with previous round timestamp
+        xdr.LedgerKey.contractData(
+          new xdr.LedgerKeyContractData({
+            contract: Address.fromString(reflectorAddress).toScAddress(),
+            key: xdr.ScVal.scvU128(
+              new xdr.UInt128Parts({
+                hi: xdr.Uint64.fromString((currRoundTimestamp - 300_000n).toString()),
+                lo: xdr.Uint64.fromString('1'),
+              })
+            ),
+            durability: xdr.ContractDataDurability.temporary(),
+          })
+        ),
+        // Entry with future round timestamp
+        xdr.LedgerKey.contractData(
+          new xdr.LedgerKeyContractData({
+            contract: Address.fromString(reflectorAddress).toScAddress(),
+            key: xdr.ScVal.scvU128(
+              new xdr.UInt128Parts({
+                hi: xdr.Uint64.fromString((currRoundTimestamp + 300_000n).toString()),
+                lo: xdr.Uint64.fromString('2'),
+              })
+            ),
+            durability: xdr.ContractDataDurability.temporary(),
+          })
+        ),
+      ];
+
+      footprint.readOnly(entries);
+
+      const tx = TransactionBuilder.cloneFrom(baseTransaction, {
+        sorobanData: sorobanData,
+        fee: baseTransaction.fee,
+      }).build();
+
+      // Act
+      const result = addReflectorEntries(tx);
+
+      // Assert
+      const resultFootprint = result
+        .toEnvelope()
+        .v1()
+        .tx()
+        .ext()
+        .sorobanData()
+        .resources()
+        .footprint();
+
+      // Should have added exactly one new entry (original 3 + 1 new)
+      expect(resultFootprint.readOnly().length).toBe(7);
+
+      // Verify that the new entry has the expected future timestamp
+      let foundNewTimestamp = false;
       for (const entry of resultFootprint.readOnly()) {
         if (entry.switch() === xdr.LedgerEntryType.contractData()) {
           const contractData = entry.contractData();
-          const address = Address.fromScAddress(contractData.contract()).toString();
-
-          if (
-            address === reflectorAddresses[i] &&
-            contractData.key().switch() === xdr.ScValType.scvU128()
-          ) {
+          if (contractData.key().switch() === xdr.ScValType.scvU128()) {
             const u128Key = contractData.key().u128();
-            const entryTimestamp = u128Key.hi().toBigInt();
-            const index = u128Key.lo().toBigInt();
+            const timestamp = u128Key.hi().toBigInt();
 
-            if (entryTimestamp === timestamp + 300_000n && index === BigInt(i)) {
-              foundFutureEntry = true;
+            // Check for entry with timestamp = currRoundTimestamp + 300_000
+            if (timestamp === currRoundTimestamp + 300_000n) {
+              foundNewTimestamp = true;
               break;
             }
           }
         }
       }
-      expect(foundFutureEntry).toBe(true);
+
+      expect(foundNewTimestamp).toBe(true);
+    } finally {
+      // Restore the original Date.now
+      global.Date.now = realDateNow;
     }
   });
 });

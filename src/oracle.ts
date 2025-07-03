@@ -16,6 +16,12 @@ const REFLECTOR_ORACLE_ADDRESSES = [
   'CAFJZQWSED6YAWZU3GWRTOCNPPCGBN32L7QV43XX5LZLFTK6JLN34DLN',
 ];
 
+interface ReflectorEntry {
+  contract: xdr.ScAddress;
+  key: number;
+  roundTimestamp: bigint;
+}
+
 export interface PriceData {
   price: bigint;
   timestamp: number;
@@ -49,7 +55,7 @@ export async function getOraclePrice(
           // eslint-disable-next-line
           // @ts-ignore
           price: scValToNative(price_result[0]?.val()),
-          timestamp: Number(scValToNative(price_result[1]?.val())),
+          timestamp: scValToNative(price_result[1]?.val()),
         };
       }
     }
@@ -92,13 +98,11 @@ export function addReflectorEntries(tx: Transaction): Transaction {
   const sorobanData = tx.toEnvelope().v1().tx().ext().sorobanData();
   const readEntries = sorobanData.resources().footprint().readOnly();
   const readWriteEntries = sorobanData.resources().footprint().readWrite();
-
+  // Key: the index of the contract data entry
+  // Value: the timestamp of the most recent entry for that index
+  const mostRecentEntries: Map<string, Map<bigint, bigint>> = new Map();
   const newReadEntries = [];
   for (const entry of readEntries) {
-    if (readWriteEntries.length + readEntries.length + newReadEntries.length + 1 > 100) {
-      break;
-    }
-
     switch (entry.switch()) {
       case xdr.LedgerEntryType.contractData(): {
         const contractData = entry.contractData();
@@ -110,23 +114,26 @@ export function addReflectorEntries(tx: Transaction): Transaction {
               const u128Key = contractData.key().u128();
               const roundTimestamp = u128Key.hi().toBigInt();
               const index = u128Key.lo().toBigInt();
-
-              const newRoundTimestamp = roundTimestamp + 300_000n;
-
-              newReadEntries.push(
-                xdr.LedgerKey.contractData(
-                  new xdr.LedgerKeyContractData({
-                    contract: contractData.contract(),
-                    key: xdr.ScVal.scvU128(
-                      new xdr.UInt128Parts({
-                        hi: xdr.Uint64.fromString(newRoundTimestamp.toString()),
-                        lo: xdr.Uint64.fromString(index.toString()),
-                      })
-                    ),
-                    durability: xdr.ContractDataDurability.temporary(),
-                  })
-                )
+              if (
+                !mostRecentEntries.has(Address.fromScAddress(contractData.contract()).toString())
+              ) {
+                mostRecentEntries.set(
+                  Address.fromScAddress(contractData.contract()).toString(),
+                  new Map()
+                );
+              }
+              const contractEntries = mostRecentEntries.get(
+                Address.fromScAddress(contractData.contract()).toString()
               );
+
+              if (contractEntries.has(index)) {
+                const mostRecentTimestamp = contractEntries.get(index);
+                if (mostRecentTimestamp < roundTimestamp) {
+                  contractEntries.set(index, roundTimestamp);
+                }
+              } else {
+                contractEntries.set(index, roundTimestamp);
+              }
             }
           }
         }
@@ -135,6 +142,30 @@ export function addReflectorEntries(tx: Transaction): Transaction {
     }
   }
 
+  for (const [contract, entries] of mostRecentEntries.entries()) {
+    for (const [index, roundTimestamp] of entries.entries()) {
+      if (readWriteEntries.length + readEntries.length + newReadEntries.length + 1 > 100) {
+        break;
+      }
+      // Create a new entry for the reflector oracle
+      const newRoundTimestamp = roundTimestamp + 300_000n;
+
+      newReadEntries.push(
+        xdr.LedgerKey.contractData(
+          new xdr.LedgerKeyContractData({
+            contract: Address.fromString(contract).toScAddress(),
+            key: xdr.ScVal.scvU128(
+              new xdr.UInt128Parts({
+                hi: xdr.Uint64.fromString(newRoundTimestamp.toString()),
+                lo: xdr.Uint64.fromString(index.toString()),
+              })
+            ),
+            durability: xdr.ContractDataDurability.temporary(),
+          })
+        )
+      );
+    }
+  }
   sorobanData
     .resources()
     .footprint()
