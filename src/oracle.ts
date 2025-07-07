@@ -98,8 +98,8 @@ export function addReflectorEntries(tx: Transaction): Transaction {
   const sorobanData = tx.toEnvelope().v1().tx().ext().sorobanData();
   const readEntries = sorobanData.resources().footprint().readOnly();
   const readWriteEntries = sorobanData.resources().footprint().readWrite();
-  // Key: the index of the contract data entry
-  // Value: the timestamp of the most recent entry for that index
+  // Key: the reflector oracle contract address
+  // Value: a map of index to the most recent timestamp for that index
   const mostRecentEntries: Map<string, Map<bigint, bigint>> = new Map();
   const newReadEntries = [];
   for (const entry of readEntries) {
