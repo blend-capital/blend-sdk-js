@@ -25,11 +25,6 @@ describe('addReflectorEntries', () => {
       Networks.PUBLIC
     );
   });
-  
-  afterEach(() => {
-    jest.clearAllMocks();
-    jest.useRealTimers();
-  });
 
   function createReflectorEntry(index: number, timestamp: bigint, oracle: string): xdr.LedgerKey {
     return xdr.LedgerKey.contractData(
@@ -46,13 +41,18 @@ describe('addReflectorEntries', () => {
     );
   }
 
-  function appendEntriesToTx(baseTx: Transaction, readOnly: xdr.LedgerKey[], readWrite: xdr.LedgerKey[]): Transaction {
+  function appendEntriesToTx(baseTx: Transaction, readOnly: xdr.LedgerKey[], readWrite: xdr.LedgerKey[], extraReadBytes: number = 0): Transaction {
     const sorobanData = baseTx.toEnvelope().v1().tx().ext().sorobanData();
     const footprint = sorobanData.resources().footprint();
 
     // Append new read-only and read-write entries
     footprint.readOnly([...footprint.readOnly(), ...readOnly]);
     footprint.readWrite([...footprint.readWrite(), ...readWrite]);
+
+    if (extraReadBytes > 0 ) {
+      const curReadBytes = sorobanData.resources().readBytes();
+      sorobanData.resources().readBytes(curReadBytes + extraReadBytes);
+    }
 
     // Clone and build the transaction
     return TransactionBuilder.cloneFrom(baseTx, {
@@ -62,17 +62,14 @@ describe('addReflectorEntries', () => {
   }
 
   it('should process a transaction with no reflector entries unchanged', () => {
-    const result = addReflectorEntries(baseTransaction);
+    const result = addReflectorEntries(baseTransaction.toXDR());
 
     // We expect no changes to the transaction
-    expect(result.toXDR()).toEqual(baseTransaction.toXDR());
+    expect(result).toEqual(baseTransaction.toXDR());
   });
 
   it('should add future timestamp entries for each reflector oracle entry', () => {
-    const mockTimestamp = 1609459200000; // 2021-01-01 00:00:00 UTC
-    jest
-      .useFakeTimers()
-      .setSystemTime(mockTimestamp);
+    const mockTimestamp = Date.now();
     const currRoundTimestamp = BigInt(Math.floor(mockTimestamp / 1000 / 300_000) * 300_000);
 
     const extraROEntries: xdr.LedgerKey[] = [
@@ -81,7 +78,7 @@ describe('addReflectorEntries', () => {
       createReflectorEntry(3, currRoundTimestamp, REFLECTOR_ORACLE_ADDRESSES[0]),
     ];
     const textTx = appendEntriesToTx(baseTransaction, extraROEntries, []);
-    const resultTx = addReflectorEntries(textTx);
+    const resultTx = addReflectorEntries(textTx.toXDR());
 
     const nextRoundTimestamp = currRoundTimestamp + 300_000n;
     const expectedExtraROEntries: xdr.LedgerKey[] = [
@@ -89,16 +86,13 @@ describe('addReflectorEntries', () => {
       createReflectorEntry(0, nextRoundTimestamp, REFLECTOR_ORACLE_ADDRESSES[0]),
       createReflectorEntry(3, nextRoundTimestamp, REFLECTOR_ORACLE_ADDRESSES[0]),
     ];
-    const expectedTx = appendEntriesToTx(baseTransaction, expectedExtraROEntries, []);
+    const expectedTx = appendEntriesToTx(baseTransaction, expectedExtraROEntries, [], 100 * 2);
 
-    expect(resultTx.toXDR()).toEqual(expectedTx.toXDR());
+    expect(resultTx).toEqual(expectedTx.toXDR());
   });
 
   it('should respect the 100 entry limit', () => {
-    const mockTimestamp = 1609459200000; // 2021-01-01 00:00:00 UTC
-    jest
-      .useFakeTimers()
-      .setSystemTime(mockTimestamp);
+    const mockTimestamp = Date.now();
     const currRoundTimestamp = BigInt(Math.floor(mockTimestamp / 1000 / 300_000) * 300_000);
 
     const baseFootprint = baseTransaction.toEnvelope().v1().tx().ext().sorobanData().resources().footprint();
@@ -132,7 +126,7 @@ describe('addReflectorEntries', () => {
     }
 
     const textTx = appendEntriesToTx(baseTransaction, extraROEntries, extraRWEntries);
-    const resultTx = addReflectorEntries(textTx);
+    const resultTx = addReflectorEntries(textTx.toXDR());
 
     const nextRoundTimestamp = currRoundTimestamp + 300_000n;
     // due to seeing oracle 0 first, the expected addition entries will be:
@@ -146,20 +140,17 @@ describe('addReflectorEntries', () => {
       createReflectorEntry(3, nextRoundTimestamp, REFLECTOR_ORACLE_ADDRESSES[0]),
       createReflectorEntry(1, nextRoundTimestamp, REFLECTOR_ORACLE_ADDRESSES[1]),
     ];
-    const expectedTx = appendEntriesToTx(baseTransaction, expectedExtraROEntries, extraRWEntries);
+    const expectedTx = appendEntriesToTx(baseTransaction, expectedExtraROEntries, extraRWEntries, 100 * 3);
 
 
     const resultFootprint = expectedTx.toEnvelope().v1().tx().ext().sorobanData().resources().footprint();
     const totalEntries = resultFootprint.readOnly().length + resultFootprint.readWrite().length;
     expect(totalEntries).toBeLessThanOrEqual(100);
-    expect(resultTx.toXDR()).toEqual(expectedTx.toXDR());
+    expect(resultTx).toEqual(expectedTx.toXDR());
   });
 
   it('should skip entries with non-U128 key types', () => {
-    const mockTimestamp = 1609459200000; // 2021-01-01 00:00:00 UTC
-    jest
-      .useFakeTimers()
-      .setSystemTime(mockTimestamp);
+    const mockTimestamp = Date.now();
     const currRoundTimestamp = BigInt(Math.floor(mockTimestamp / 1000 / 300_000) * 300_000);
 
     const extraROEntries: xdr.LedgerKey[] = [
@@ -179,23 +170,20 @@ describe('addReflectorEntries', () => {
     }
 
     const textTx = appendEntriesToTx(baseTransaction, extraROEntries, []);
-    const resultTx = addReflectorEntries(textTx);
+    const resultTx = addReflectorEntries(textTx.toXDR());
 
     const nextRoundTimestamp = currRoundTimestamp + 300_000n;
     const expectedExtraROEntries: xdr.LedgerKey[] = [
       ...extraROEntries,
       createReflectorEntry(2, nextRoundTimestamp, REFLECTOR_ORACLE_ADDRESSES[2]),
     ];
-    const expectedTx = appendEntriesToTx(baseTransaction, expectedExtraROEntries, []);
+    const expectedTx = appendEntriesToTx(baseTransaction, expectedExtraROEntries, [], 100);
 
-    expect(resultTx.toXDR()).toEqual(expectedTx.toXDR());
+    expect(resultTx).toEqual(expectedTx.toXDR());
   });
 
   it('should handle multiple reflector oracle addresses', () => {
-    const mockTimestamp = 1609459200000; // 2021-01-01 00:00:00 UTC
-    jest
-      .useFakeTimers()
-      .setSystemTime(mockTimestamp);
+    const mockTimestamp = Date.now();
     const currRoundTimestamp = BigInt(Math.floor(mockTimestamp / 1000 / 300_000) * 300_000);
 
     const extraROEntries: xdr.LedgerKey[] = [
@@ -208,7 +196,7 @@ describe('addReflectorEntries', () => {
     ];
     const textTx = appendEntriesToTx(baseTransaction, extraROEntries, []);
 
-    const resultTx = addReflectorEntries(textTx);
+    const resultTx = addReflectorEntries(textTx.toXDR());
 
     // oracle 0 stops the round before currRoundTimestamp
     const expectedExtraROEntries: xdr.LedgerKey[] = [
@@ -216,16 +204,13 @@ describe('addReflectorEntries', () => {
       createReflectorEntry(0, currRoundTimestamp, REFLECTOR_ORACLE_ADDRESSES[0]),
       createReflectorEntry(0, currRoundTimestamp + 300_000n, REFLECTOR_ORACLE_ADDRESSES[1]),
     ];
-    const expectedTx = appendEntriesToTx(baseTransaction, expectedExtraROEntries, []);
+    const expectedTx = appendEntriesToTx(baseTransaction, expectedExtraROEntries, [], 100 * 2);
 
-    expect(resultTx.toXDR()).toEqual(expectedTx.toXDR());
+    expect(resultTx).toEqual(expectedTx.toXDR());
   });
 
   it('should only add entries for the most current unique oracle-index pair', () => {
-    const mockTimestamp = 1609459200000; // 2021-01-01 00:00:00 UTC
-    jest
-      .useFakeTimers()
-      .setSystemTime(mockTimestamp);
+    const mockTimestamp = Date.now();
     const currRoundTimestamp = BigInt(Math.floor(mockTimestamp / 1000 / 300_000) * 300_000);
 
     // Create 5 entries:
@@ -243,7 +228,7 @@ describe('addReflectorEntries', () => {
     ];
     const textTx = appendEntriesToTx(baseTransaction, extraROEntries, []);
 
-    const resultTx = addReflectorEntries(textTx);
+    const resultTx = addReflectorEntries(textTx.toXDR());
 
     const expectedExtraROEntries: xdr.LedgerKey[] = [
       ...extraROEntries,
@@ -251,8 +236,8 @@ describe('addReflectorEntries', () => {
       createReflectorEntry(1, currRoundTimestamp, REFLECTOR_ORACLE_ADDRESSES[1]),
       createReflectorEntry(0, currRoundTimestamp + 600_000n, REFLECTOR_ORACLE_ADDRESSES[0]),
     ];
-    const expectedTx = appendEntriesToTx(baseTransaction, expectedExtraROEntries, []);
+    const expectedTx = appendEntriesToTx(baseTransaction, expectedExtraROEntries, [], 100 * 3);
 
-    expect(resultTx.toXDR()).toEqual(expectedTx.toXDR());
+    expect(resultTx).toEqual(expectedTx.toXDR());
   });
 });

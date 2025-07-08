@@ -2,6 +2,8 @@ import {
   Account,
   Address,
   Contract,
+  FeeBumpTransaction,
+  Networks,
   rpc,
   scValToNative,
   Transaction,
@@ -116,17 +118,21 @@ export async function getOracleDecimals(
  * If more than 100 entries are added to the read-only footprint, it will stop adding. The priority
  * is given to the oracle contracts seen first, and the indexes for the contract that are seen first.
  * 
- * @param tx - The transaction to add the reflector entries to.
- * @returns A new transaction object with the reflector entries added to the read-only footprint if necessary.
+ * @param tx - The transaction XDR to add the reflector entries to.
+ * @returns A base-64 transaction XDR string with the reflector entries added to the read-only footprint.
  */
-export function addReflectorEntries(tx: Transaction): Transaction {
-  if (tx.toEnvelope().switch() !== xdr.EnvelopeType.envelopeTypeTx()) {
-    return tx;
+export function addReflectorEntries(txXdr: string): string {
+  // network passphrase not relevant as TX XDR is returned, which
+  // does not include a network passphrase.
+  const tx = TransactionBuilder.fromXDR(txXdr, Networks.PUBLIC);
+  if (tx instanceof FeeBumpTransaction) {
+    return tx.toXDR();
   }
 
   const sorobanData = tx.toEnvelope().v1().tx().ext().sorobanData();
   const readEntries = sorobanData.resources().footprint().readOnly();
   const readWriteEntries = sorobanData.resources().footprint().readWrite();
+  let bytes_read = sorobanData.resources().readBytes();
   // Key: the reflector oracle contract address
   // Value: a map of index to the most recent timestamp for that index
   const mostRecentEntries: Map<string, Map<bigint, bigint>> = new Map();
@@ -178,7 +184,6 @@ export function addReflectorEntries(tx: Transaction): Transaction {
       }
       // Create a new entry for the reflector oracle
       const newRoundTimestamp = roundTimestamp + 300_000n;
-
       newReadEntries.push(
         xdr.LedgerKey.contractData(
           new xdr.LedgerKeyContractData({
@@ -193,16 +198,19 @@ export function addReflectorEntries(tx: Transaction): Transaction {
           })
         )
       );
+      // Reading the additional ledger key+entry adds 96 bytes to the bytes_read count.
+      // Add 100 bytes to be safe.
+      bytes_read += 100;
     }
   }
+
   sorobanData
     .resources()
     .footprint()
     .readOnly([...readEntries, ...newReadEntries]);
-  const newTx = TransactionBuilder.cloneFrom(tx, {
+  sorobanData.resources().readBytes(bytes_read);
+  return TransactionBuilder.cloneFrom(tx, {
     sorobanData: sorobanData,
     fee: tx.fee,
-  }).build();
-
-  return newTx;
+  }).build().toXDR();
 }
