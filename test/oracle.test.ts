@@ -50,8 +50,8 @@ describe('addReflectorEntries', () => {
     footprint.readWrite([...footprint.readWrite(), ...readWrite]);
 
     if (extraReadBytes > 0 ) {
-      const curReadBytes = sorobanData.resources().readBytes();
-      sorobanData.resources().readBytes(curReadBytes + extraReadBytes);
+      const curReadBytes = sorobanData.resources().diskReadBytes();
+      sorobanData.resources().diskReadBytes(curReadBytes + extraReadBytes);
     }
 
     // Clone and build the transaction

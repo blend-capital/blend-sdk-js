@@ -6,7 +6,6 @@ import {
   Networks,
   rpc,
   scValToNative,
-  Transaction,
   TransactionBuilder,
   xdr,
 } from '@stellar/stellar-sdk';
@@ -98,6 +97,7 @@ export async function getOracleDecimals(
   const result = await stellar_rpc.simulateTransaction(tx_builder.build());
   if (rpc.Api.isSimulationSuccess(result)) {
     const val = scValToNative(result.result.retval);
+    console.log(`DECIMALS: Decimals value: ${val}`);
     return {
       decimals: val,
       latestLedger: result.latestLedger,
@@ -132,7 +132,7 @@ export function addReflectorEntries(txXdr: string): string {
   const sorobanData = tx.toEnvelope().v1().tx().ext().sorobanData();
   const readEntries = sorobanData.resources().footprint().readOnly();
   const readWriteEntries = sorobanData.resources().footprint().readWrite();
-  let bytes_read = sorobanData.resources().readBytes();
+  let bytes_read = sorobanData.resources().diskReadBytes();
   // Key: the reflector oracle contract address
   // Value: a map of index to the most recent timestamp for that index
   const mostRecentEntries: Map<string, Map<bigint, bigint>> = new Map();
@@ -208,7 +208,7 @@ export function addReflectorEntries(txXdr: string): string {
     .resources()
     .footprint()
     .readOnly([...readEntries, ...newReadEntries]);
-  sorobanData.resources().readBytes(bytes_read);
+  sorobanData.resources().diskReadBytes(bytes_read);
   return TransactionBuilder.cloneFrom(tx, {
     sorobanData: sorobanData,
     fee: tx.fee,
