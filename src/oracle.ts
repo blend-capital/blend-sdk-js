@@ -97,7 +97,6 @@ export async function getOracleDecimals(
   const result = await stellar_rpc.simulateTransaction(tx_builder.build());
   if (rpc.Api.isSimulationSuccess(result)) {
     const val = scValToNative(result.result.retval);
-    console.log(`DECIMALS: Decimals value: ${val}`);
     return {
       decimals: val,
       latestLedger: result.latestLedger,
@@ -111,13 +110,13 @@ export async function getOracleDecimals(
  * Add future Reflector oracle entries to the read-only footprint of a transaction.
  * This ensures that if a future oracle round occurs before the transaction is executed,
  * the future oracle round will still be included in the footprint.
- * 
- * This only works for Reflector based oracles as it makes assumptions based on how the 
+ *
+ * This only works for Reflector based oracles as it makes assumptions based on how the
  * oracle contracts keys are structured.
- * 
+ *
  * If more than 100 entries are added to the read-only footprint, it will stop adding. The priority
  * is given to the oracle contracts seen first, and the indexes for the contract that are seen first.
- * 
+ *
  * @param tx - The transaction XDR to add the reflector entries to.
  * @returns A base-64 transaction XDR string with the reflector entries added to the read-only footprint.
  */
@@ -212,5 +211,7 @@ export function addReflectorEntries(txXdr: string): string {
   return TransactionBuilder.cloneFrom(tx, {
     sorobanData: sorobanData,
     fee: tx.fee,
-  }).build().toXDR();
+  })
+    .build()
+    .toXDR();
 }
