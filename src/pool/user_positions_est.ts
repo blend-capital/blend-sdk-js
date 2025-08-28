@@ -128,7 +128,6 @@ export class PositionsEstimate {
           0
         : (supplyApy - borrowApy) / netEquity;
   
-    // keep displayed weighted APYs identical to previous behavior
     supplyApy = totalSupplied == 0 ? 0 : supplyApy / totalSupplied;
     borrowApy = totalBorrowed == 0 ? 0 : borrowApy / totalBorrowed;
 
