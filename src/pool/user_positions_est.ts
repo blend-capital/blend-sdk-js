@@ -44,7 +44,7 @@ export class PositionsEstimate {
 
   public static build(pool: Pool, poolOracle: PoolOracle, positions: Positions): PositionsEstimate {
     const reserve_list = Array.from(pool.reserves.keys());
-  
+
     const liabilities = new Map<string, number>();
     const collateral = new Map<string, number>();
     const supply = new Map<string, number>();
@@ -54,7 +54,7 @@ export class PositionsEstimate {
     let totalEffectiveCollateral = 0;
     let supplyApy = 0;
     let borrowApy = 0;
-  
+
     // translate ledger liabilities to floating point values
     for (const [key, value] of positions.liabilities) {
       const reserve = pool.reserves.get(reserve_list[key]);
@@ -76,7 +76,7 @@ export class PositionsEstimate {
       borrowApy += base_liability * reserve.estBorrowApy;
       liabilities.set(reserve.assetId, asset_liability);
     }
-  
+
     // translate ledger collateral to floating point values
     for (const [key, value] of positions.collateral) {
       const reserve = pool.reserves.get(reserve_list[key]);
@@ -98,7 +98,7 @@ export class PositionsEstimate {
       supplyApy += base_collateral * reserve.estSupplyApy;
       collateral.set(reserve.assetId, asset_collateral);
     }
-  
+
     // translate ledger supply to floating point values
     for (const [key, value] of positions.supply) {
       const reserve = pool.reserves.get(reserve_list[key]);
@@ -115,23 +115,23 @@ export class PositionsEstimate {
       supplyApy += base_supply * reserve.estSupplyApy;
       supply.set(reserve.assetId, asset_supply);
     }
-  
+
     const borrowCap = totalEffectiveCollateral - totalEffectiveLiabilities;
     const borrowLimit =
       totalEffectiveCollateral == 0 ? 0 : totalEffectiveLiabilities / totalEffectiveCollateral;
-  
-    // === CHANGED: compute net APY on equity (totalSupplied - totalBorrowed) ===
+
     const netEquity = totalSupplied - totalBorrowed;
     const netApy =
       netEquity <= 0
-        ? // if user has no equity (or negative), treat net APY as 0
+        ? // if user has no supplied funds and has borrowed funds (e.g. a bad debt position), the debt will
+          // be forgiven as bad debt so the net APY is still 0
           0
         : (supplyApy - borrowApy) / netEquity;
   
     // keep displayed weighted APYs identical to previous behavior
     supplyApy = totalSupplied == 0 ? 0 : supplyApy / totalSupplied;
     borrowApy = totalBorrowed == 0 ? 0 : borrowApy / totalBorrowed;
-  
+
     return new PositionsEstimate(
       totalBorrowed,
       totalSupplied,
