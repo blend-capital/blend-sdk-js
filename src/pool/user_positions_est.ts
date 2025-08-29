@@ -119,12 +119,15 @@ export class PositionsEstimate {
     const borrowCap = totalEffectiveCollateral - totalEffectiveLiabilities;
     const borrowLimit =
       totalEffectiveCollateral == 0 ? 0 : totalEffectiveLiabilities / totalEffectiveCollateral;
+
+    const netEquity = totalSupplied - totalBorrowed;
     const netApy =
-      totalSupplied == 0
+      netEquity <= 0
         ? // if user has no supplied funds and has borrowed funds (e.g. a bad debt position), the debt will
           // be forgiven as bad debt so the net APY is still 0
           0
-        : (supplyApy - borrowApy) / totalSupplied;
+        : (supplyApy - borrowApy) / netEquity;
+  
     supplyApy = totalSupplied == 0 ? 0 : supplyApy / totalSupplied;
     borrowApy = totalBorrowed == 0 ? 0 : borrowApy / totalBorrowed;
 
