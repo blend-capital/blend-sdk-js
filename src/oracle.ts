@@ -74,7 +74,7 @@ export async function getOraclePrice(
     }
     throw new Error('Unable to decode oracle price result');
   } else {
-    throw new Error(`Failed to fetch oralce price: ${result.error}`);
+    throw new Error(`Failed to fetch oracle price: ${result.error}`);
   }
 }
 
@@ -106,7 +106,7 @@ export async function getOracleDecimals(
       latestLedger: result.latestLedger,
     };
   } else {
-    throw new Error(`Failed to fetch oralce decimals: ${result.error}`);
+    throw new Error(`Failed to fetch oracle decimals: ${result.error}`);
   }
 }
 
