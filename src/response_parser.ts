@@ -1,4 +1,4 @@
-import { rpc } from '@stellar/stellar-sdk';
+import { rpc, xdr } from '@stellar/stellar-sdk';
 
 export class ContractError extends Error {
   /**
@@ -149,21 +149,16 @@ export function parseError(
 
   // Send Transaction Error
   if ('errorResult' in errorResponse) {
-    const txErrorName = errorResponse.errorResult.result().switch().name;
-    if (txErrorName == 'txFailed') {
+    const txResult = errorResponse.errorResult.result;
+    if (txResult.type == 'txFailed') {
       // Transaction should only contain one operation
-      if (errorResponse.errorResult.result().results().length == 1) {
-        const hostFunctionError = errorResponse.errorResult
-          .result()
-          .results()[0]
-          .tr()
-          .invokeHostFunctionResult()
-          .switch().value;
+      if (txResult.results.length == 1) {
+        const hostFunctionError = getInvokeHostFunctionErrorValue(txResult.results[0]);
         if (hostFunctionError in ContractErrorType)
           return new ContractError(hostFunctionError as ContractErrorType);
       }
     } else {
-      const txErrorValue = errorResponse.errorResult.result().switch().value - 7;
+      const txErrorValue = xdr.TransactionResultCode.fromName(txResult.type).value - 7;
       if (txErrorValue in ContractErrorType) {
         return new ContractError(txErrorValue as ContractErrorType);
       }
@@ -173,25 +168,20 @@ export function parseError(
   // Get Transaction Error
   if ('resultXdr' in errorResponse) {
     // Transaction submission failed
-    const txResult = errorResponse.resultXdr.result();
-    const txErrorName = txResult.switch().name;
+    const txResult = errorResponse.resultXdr.result;
 
     // Use invokeHostFunctionErrors in case of generic `txFailed` error
-    if (txErrorName == 'txFailed') {
+    if (txResult.type == 'txFailed') {
       // Transaction should only contain one operation
-      if (errorResponse.resultXdr.result().results().length == 1) {
-        const hostFunctionError = txResult
-          .results()[0]
-          .tr()
-          .invokeHostFunctionResult()
-          .switch().value;
+      if (txResult.results.length == 1) {
+        const hostFunctionError = getInvokeHostFunctionErrorValue(txResult.results[0]);
         if (hostFunctionError in ContractErrorType)
           return new ContractError(hostFunctionError as ContractErrorType);
       }
     }
 
     // Shift the error value to avoid collision with invokeHostFunctionErrors
-    const txErrorValue = txResult.switch().value - 7;
+    const txErrorValue = xdr.TransactionResultCode.fromName(txResult.type).value - 7;
     // Use TransactionResultCode with more specific errors
     if (txErrorValue in ContractErrorType) {
       return new ContractError(txErrorValue as ContractErrorType);
@@ -202,14 +192,28 @@ export function parseError(
   return new ContractError(ContractErrorType.UnknownError);
 }
 
+/**
+ * Get the InvokeHostFunctionResultCode value from an operation result
+ * @param opResult - The operation result of an invokeHostFunction operation
+ * @returns The InvokeHostFunctionResultCode value
+ */
+function getInvokeHostFunctionErrorValue(opResult: xdr.OperationResult): number {
+  const opTr = xdr.expectUnionVariant(opResult, 'opInner').tr;
+  const hostFunctionResult = xdr.expectUnionVariant(
+    opTr,
+    'invokeHostFunction'
+  ).invokeHostFunctionResult;
+  return xdr.InvokeHostFunctionResultCode.fromName(hostFunctionResult.type).value;
+}
+
 export function parseResult<T>(
   response: rpc.Api.SimulateTransactionSuccessResponse | rpc.Api.GetSuccessfulTransactionResponse,
   parser: (xdr: string) => T
 ): T | undefined {
   if ('result' in response) {
-    return parser(response.result.retval.toXDR('base64'));
+    return parser(response.result.retval.toXdr('base64'));
   } else if ('returnValue' in response && response.returnValue) {
-    return parser(response.returnValue.toXDR('base64'));
+    return parser(response.returnValue.toXdr('base64'));
   } else {
     return undefined;
   }

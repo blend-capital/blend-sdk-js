@@ -1,4 +1,11 @@
-import { TransactionBuilder, xdr, Networks, Address, Transaction } from '@stellar/stellar-sdk';
+import {
+  TransactionBuilder,
+  xdr,
+  Networks,
+  Address,
+  Transaction,
+  SorobanDataBuilder,
+} from '@stellar/stellar-sdk';
 import { addReflectorEntries } from '../src/oracle';
 import { describe, it, expect, beforeEach } from '@jest/globals';
 
@@ -20,7 +27,7 @@ describe('addReflectorEntries', () => {
     // Load the base transaction from XDR
     // This XDR is a sample with all price entries removed. Only the CALI instance entry remains.
     baseTransaction = new Transaction(
-      xdr.TransactionEnvelope.fromXDR(
+      xdr.TransactionEnvelope.fromXdr(
         'AAAAAgAAAACBvhwqauzdgdewY27jZ5GOKxd0GGKe4Oanj2MnJHu02QAgZDkDYfjHAAAAWwAAAAEAAAAAaFwpxAAAAABoXXtEAAAAAAAAAAEAAAABAAAAAIG+HCpq7N2B17BjbuNnkY4rF3QYYp7g5qePYycke7TZAAAAGAAAAAAAAAABhCRCQ0LRM7GfeGS6jn1iJSx+OvMbm4r8P9PUw6V6MOMAAAAGc3VibWl0AAAAAAAEAAAAEgAAAAAAAAAAgb4cKmrs3YHXsGNu42eRjisXdBhinuDmp49jJyR7tNkAAAASAAAAAAAAAACBvhwqauzdgdewY27jZ5GOKxd0GGKe4Oanj2MnJHu02QAAABIAAAAAAAAAAIG+HCpq7N2B17BjbuNnkY4rF3QYYp7g5qePYycke7TZAAAAEAAAAAEAAAABAAAAEQAAAAEAAAADAAAADwAAAAdhZGRyZXNzAAAAABIAAAABre/OWa7lKWj3YGHUlMJSW3Vln6QpamX0me8p5WR35JYAAAAPAAAABmFtb3VudAAAAAAACgAAAAAAAAAAAAAA6NSlEAAAAAAPAAAADHJlcXVlc3RfdHlwZQAAAAMAAAAEAAAAAQAAAAAAAAAAAAAAAYQkQkNC0TOxn3hkuo59YiUsfjrzG5uK/D/T1MOlejDjAAAABnN1Ym1pdAAAAAAABAAAABIAAAAAAAAAAIG+HCpq7N2B17BjbuNnkY4rF3QYYp7g5qePYycke7TZAAAAEgAAAAAAAAAAgb4cKmrs3YHXsGNu42eRjisXdBhinuDmp49jJyR7tNkAAAASAAAAAAAAAACBvhwqauzdgdewY27jZ5GOKxd0GGKe4Oanj2MnJHu02QAAABAAAAABAAAAAQAAABEAAAABAAAAAwAAAA8AAAAHYWRkcmVzcwAAAAASAAAAAa3vzlmu5Slo92Bh1JTCUlt1ZZ+kKWpl9JnvKeVkd+SWAAAADwAAAAZhbW91bnQAAAAAAAoAAAAAAAAAAAAAAOjUpRAAAAAADwAAAAxyZXF1ZXN0X3R5cGUAAAADAAAABAAAAAAAAAABAAAAAAAAABQAAAAGAAAAARaNBxTSSetWNC4nLzJBaQ5k76/gKizguw+g4m4KcHT1AAAAFAAAAAEAAAAGAAAAAYQkQkNC0TOxn3hkuo59YiUsfjrzG5uK/D/T1MOlejDjAAAADwAAAAdSZXNMaXN0AAAAAAEAAAAGAAAAAYQkQkNC0TOxn3hkuo59YiUsfjrzG5uK/D/T1MOlejDjAAAAEAAAAAEAAAACAAAADwAAAAdBdWN0aW9uAAAAABEAAAABAAAAAgAAAA8AAAAJYXVjdF90eXBlAAAAAAAAAwAAAAAAAAAPAAAABHVzZXIAAAASAAAAAAAAAACBvhwqauzdgdewY27jZ5GOKxd0GGKe4Oanj2MnJHu02QAAAAAAAAAGAAAAAYQkQkNC0TOxn3hkuo59YiUsfjrzG5uK/D/T1MOlejDjAAAAEAAAAAEAAAACAAAADwAAAAlSZXNDb25maWcAAAAAAAASAAAAARfiR1NHhTiDHglvZtgftPF6XnAR6BEgNOu8pmzpKb2fAAAAAQAAAAYAAAABhCRCQ0LRM7GfeGS6jn1iJSx+OvMbm4r8P9PUw6V6MOMAAAAQAAAAAQAAAAIAAAAPAAAACVJlc0NvbmZpZwAAAAAAABIAAAABJbT82FmuwvpjSEOMSJs8PBDJi20hvk/TyzDLaJU++XcAAAABAAAABgAAAAGEJEJDQtEzsZ94ZLqOfWIlLH468xubivw/09TDpXow4wAAABAAAAABAAAAAgAAAA8AAAAJUmVzQ29uZmlnAAAAAAAAEgAAAAFXXgJyRanviLKFNNrFSGwQqmdOHLIaJmnm6prGQZ5w5wAAAAEAAAAGAAAAAYQkQkNC0TOxn3hkuo59YiUsfjrzG5uK/D/T1MOlejDjAAAAEAAAAAEAAAACAAAADwAAAAlSZXNDb25maWcAAAAAAAASAAAAAXWvZcTF5hePcCGAGacSVmoX6eCRESWbcgsm3oichmlcAAAAAQAAAAYAAAABhCRCQ0LRM7GfeGS6jn1iJSx+OvMbm4r8P9PUw6V6MOMAAAAQAAAAAQAAAAIAAAAPAAAACVJlc0NvbmZpZwAAAAAAABIAAAABre/OWa7lKWj3YGHUlMJSW3Vln6QpamX0me8p5WR35JYAAAABAAAABgAAAAGEJEJDQtEzsZ94ZLqOfWIlLH468xubivw/09TDpXow4wAAABAAAAABAAAAAgAAAA8AAAAJUmVzQ29uZmlnAAAAAAAAEgAAAAHmp9nrdSMAakaap0g60RByR0Q8DYLmJ2PeZwhIxOl8kAAAAAEAAAAGAAAAAYQkQkNC0TOxn3hkuo59YiUsfjrzG5uK/D/T1MOlejDjAAAAEAAAAAEAAAACAAAADwAAAAdSZXNEYXRhAAAAABIAAAABF+JHU0eFOIMeCW9m2B+08XpecBHoESA067ymbOkpvZ8AAAABAAAABgAAAAGEJEJDQtEzsZ94ZLqOfWIlLH468xubivw/09TDpXow4wAAABAAAAABAAAAAgAAAA8AAAAHUmVzRGF0YQAAAAASAAAAASW0/NhZrsL6Y0hDjEibPDwQyYttIb5P08swy2iVPvl3AAAAAQAAAAYAAAABhCRCQ0LRM7GfeGS6jn1iJSx+OvMbm4r8P9PUw6V6MOMAAAAQAAAAAQAAAAIAAAAPAAAAB1Jlc0RhdGEAAAAAEgAAAAFXXgJyRanviLKFNNrFSGwQqmdOHLIaJmnm6prGQZ5w5wAAAAEAAAAGAAAAAYQkQkNC0TOxn3hkuo59YiUsfjrzG5uK/D/T1MOlejDjAAAAEAAAAAEAAAACAAAADwAAAAdSZXNEYXRhAAAAABIAAAABda9lxMXmF49wIYAZpxJWahfp4JERJZtyCybeiJyGaVwAAAABAAAABgAAAAGEJEJDQtEzsZ94ZLqOfWIlLH468xubivw/09TDpXow4wAAABAAAAABAAAAAgAAAA8AAAAHUmVzRGF0YQAAAAASAAAAAean2et1IwBqRpqnSDrREHJHRDwNguYnY95nCEjE6XyQAAAAAQAAAAYAAAABhCRCQ0LRM7GfeGS6jn1iJSx+OvMbm4r8P9PUw6V6MOMAAAAUAAAAAQAAAAYAAAABre/OWa7lKWj3YGHUlMJSW3Vln6QpamX0me8p5WR35JYAAAAUAAAAAQAAAAYAAAAB/8BsXeEVSpDUF6zZ0e6Zw+1yxVXbtGJlSa+yHuO5xYYAAAAUAAAAAQAAAAeM9DiC/y5nV77xkAlzqybvsbQrgypkCjIKm4gfpQHPdgAAAAekH8U9Z1O2wE6xWwIcVQUjZqTI4OIbxycA9GEmTsE1DgAAAAffiIIOIxrY8wJ4ceXdPPRUkde3c154VzFGa/wpRgCGCAAAAAYAAAABAAAAAIG+HCpq7N2B17BjbuNnkY4rF3QYYp7g5qePYycke7TZAAAAAVVTREMAAAAAO5kROA7+mIugqJAOsc/kTzZvfb6Ua+0HckD39iTfFcUAAAAGAAAAAYQkQkNC0TOxn3hkuo59YiUsfjrzG5uK/D/T1MOlejDjAAAAEAAAAAEAAAACAAAADwAAAAhFbWlzRGF0YQAAAAMAAAACAAAAAQAAAAYAAAABhCRCQ0LRM7GfeGS6jn1iJSx+OvMbm4r8P9PUw6V6MOMAAAAQAAAAAQAAAAIAAAAPAAAACVBvc2l0aW9ucwAAAAAAABIAAAAAAAAAAIG+HCpq7N2B17BjbuNnkY4rF3QYYp7g5qePYycke7TZAAAAAQAAAAYAAAABhCRCQ0LRM7GfeGS6jn1iJSx+OvMbm4r8P9PUw6V6MOMAAAAQAAAAAQAAAAIAAAAPAAAAB1Jlc0RhdGEAAAAAEgAAAAGt785ZruUpaPdgYdSUwlJbdWWfpClqZfSZ7ynlZHfklgAAAAEAAAAGAAAAAYQkQkNC0TOxn3hkuo59YiUsfjrzG5uK/D/T1MOlejDjAAAAEAAAAAEAAAACAAAADwAAAAhVc2VyRW1pcwAAABEAAAABAAAAAgAAAA8AAAAKcmVzZXJ2ZV9pZAAAAAAAAwAAAAIAAAAPAAAABHVzZXIAAAASAAAAAAAAAACBvhwqauzdgdewY27jZ5GOKxd0GGKe4Oanj2MnJHu02QAAAAEAAAAGAAAAAa3vzlmu5Slo92Bh1JTCUlt1ZZ+kKWpl9JnvKeVkd+SWAAAAEAAAAAEAAAACAAAADwAAAAdCYWxhbmNlAAAAABIAAAABhCRCQ0LRM7GfeGS6jn1iJSx+OvMbm4r8P9PUw6V6MOMAAAABAgfZhgABqbQAAAZcAAAAAAAgY9UAAAAA',
         'base64'
       ),
@@ -33,23 +40,26 @@ describe('addReflectorEntries', () => {
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(oracle).toScAddress(),
         key: xdr.ScVal.scvU128(
-          new xdr.UInt128Parts({
-            hi: xdr.Uint64.fromString(timestamp.toString()),
-            lo: xdr.Uint64.fromString(index.toString()),
+          new xdr.Uint128Parts({
+            hi: timestamp,
+            lo: BigInt(index),
           })
         ),
-        durability: xdr.ContractDataDurability.temporary(),
+        durability: xdr.ContractDataDurability.temporary,
       })
     );
   }
 
   function getSorobanData(tx: Transaction): xdr.SorobanTransactionData {
-    return tx.toEnvelope().v1().tx().ext().sorobanData();
+    return xdr.expectUnionVariant(
+      xdr.expectUnionVariant(tx.toEnvelope(), 'envelopeTypeTx').v1.tx.ext,
+      'sorobanData'
+    ).sorobanData;
   }
 
   function getBaseFee(tx: Transaction): string {
     const sorobanData = getSorobanData(tx);
-    const inclusionFee = BigInt(tx.fee) - sorobanData.resourceFee().toBigInt();
+    const inclusionFee = BigInt(tx.fee) - sorobanData.resourceFee;
     return (inclusionFee / BigInt(tx.operations.length)).toString();
   }
 
@@ -61,37 +71,41 @@ describe('addReflectorEntries', () => {
     extraResourceFee: bigint = 0n
   ): Transaction {
     const tx = new Transaction(
-      xdr.TransactionEnvelope.fromXDR(baseTx.toXDR(), 'base64'),
+      xdr.TransactionEnvelope.fromXdr(baseTx.toXdr(), 'base64'),
       Networks.PUBLIC
     );
     const sorobanData = getSorobanData(tx);
-    const footprint = sorobanData.resources().footprint();
+    const resources = sorobanData.resources;
 
     // Append new read-only and read-write entries
-    footprint.readOnly([...footprint.readOnly(), ...readOnly]);
-    footprint.readWrite([...footprint.readWrite(), ...readWrite]);
+    const sorobanDataBuilder = new SorobanDataBuilder(sorobanData).appendFootprint(
+      readOnly,
+      readWrite
+    );
 
     if (extraReadBytes > 0) {
-      const curReadBytes = sorobanData.resources().diskReadBytes();
-      sorobanData.resources().diskReadBytes(curReadBytes + extraReadBytes);
+      sorobanDataBuilder.setResources(
+        resources.instructions,
+        resources.diskReadBytes + extraReadBytes,
+        resources.writeBytes
+      );
     }
 
     if (extraResourceFee > 0n) {
-      const resourceFee = sorobanData.resourceFee().toBigInt() + extraResourceFee;
-      sorobanData.resourceFee(xdr.Int64.fromString(resourceFee.toString()));
+      sorobanDataBuilder.setResourceFee(sorobanData.resourceFee + extraResourceFee);
     }
 
     return TransactionBuilder.cloneFrom(tx, {
       fee: getBaseFee(baseTx),
-      sorobanData: sorobanData,
+      sorobanData: sorobanDataBuilder.build(),
     }).build();
   }
 
   it('should process a transaction with no reflector entries unchanged', () => {
-    const result = addReflectorEntries(baseTransaction.toXDR());
+    const result = addReflectorEntries(baseTransaction.toXdr());
 
     // We expect no changes to the transaction
-    expect(result).toEqual(baseTransaction.toXDR());
+    expect(result).toEqual(baseTransaction.toXdr());
   });
 
   it('should add future timestamp entries for each reflector oracle entry', () => {
@@ -104,7 +118,7 @@ describe('addReflectorEntries', () => {
       createReflectorEntry(3, currRoundTimestamp, REFLECTOR_ORACLE_ADDRESSES[0]),
     ];
     const textTx = appendEntriesToTx(baseTransaction, extraROEntries, []);
-    const resultTx = addReflectorEntries(textTx.toXDR());
+    const resultTx = addReflectorEntries(textTx.toXdr());
 
     const nextRoundTimestamp = currRoundTimestamp + 300_000n;
     const expectedExtraROEntries: xdr.LedgerKey[] = [
@@ -121,9 +135,9 @@ describe('addReflectorEntries', () => {
     );
     const resultTransaction = new Transaction(resultTx, Networks.PUBLIC);
 
-    expect(resultTx).toEqual(expectedTx.toXDR());
-    expect(getSorobanData(resultTransaction).resourceFee().toBigInt()).toEqual(
-      getSorobanData(textTx).resourceFee().toBigInt() + REFLECTOR_ENTRY_RESOURCE_FEE * 2n
+    expect(resultTx).toEqual(expectedTx.toXdr());
+    expect(getSorobanData(resultTransaction).resourceFee).toEqual(
+      getSorobanData(textTx).resourceFee + REFLECTOR_ENTRY_RESOURCE_FEE * 2n
     );
     expect(BigInt(resultTransaction.fee)).toEqual(
       BigInt(textTx.fee) + REFLECTOR_ENTRY_RESOURCE_FEE * 2n
@@ -134,15 +148,11 @@ describe('addReflectorEntries', () => {
     const mockTimestamp = Date.now();
     const currRoundTimestamp = BigInt(Math.floor(mockTimestamp / 1000 / 300_000) * 300_000);
 
-    const baseFootprint = baseTransaction
-      .toEnvelope()
-      .v1()
-      .tx()
-      .ext()
-      .sorobanData()
-      .resources()
-      .footprint();
-    const baseEntryCount = baseFootprint.readOnly().length + baseFootprint.readWrite().length;
+    const baseFootprint = xdr.expectUnionVariant(
+      xdr.expectUnionVariant(baseTransaction.toEnvelope(), 'envelopeTypeTx').v1.tx.ext,
+      'sorobanData'
+    ).sorobanData.resources.footprint;
+    const baseEntryCount = baseFootprint.readOnly.length + baseFootprint.readWrite.length;
 
     const extraROEntries: xdr.LedgerKey[] = [
       createReflectorEntry(0, currRoundTimestamp, REFLECTOR_ORACLE_ADDRESSES[0]),
@@ -163,14 +173,14 @@ describe('addReflectorEntries', () => {
           new xdr.LedgerKeyContractData({
             contract: Address.fromString(NON_ORACLE_CONTRACT_ADDRESS).toScAddress(),
             key: xdr.ScVal.scvU32(i),
-            durability: xdr.ContractDataDurability.temporary(),
+            durability: xdr.ContractDataDurability.temporary,
           })
         )
       );
     }
 
     const textTx = appendEntriesToTx(baseTransaction, extraROEntries, extraRWEntries);
-    const resultTx = addReflectorEntries(textTx.toXDR());
+    const resultTx = addReflectorEntries(textTx.toXdr());
 
     const nextRoundTimestamp = currRoundTimestamp + 300_000n;
     // due to seeing oracle 0 first, the expected addition entries will be:
@@ -192,17 +202,13 @@ describe('addReflectorEntries', () => {
       REFLECTOR_ENTRY_RESOURCE_FEE * 3n
     );
 
-    const resultFootprint = expectedTx
-      .toEnvelope()
-      .v1()
-      .tx()
-      .ext()
-      .sorobanData()
-      .resources()
-      .footprint();
-    const totalEntries = resultFootprint.readOnly().length + resultFootprint.readWrite().length;
+    const resultFootprint = xdr.expectUnionVariant(
+      xdr.expectUnionVariant(expectedTx.toEnvelope(), 'envelopeTypeTx').v1.tx.ext,
+      'sorobanData'
+    ).sorobanData.resources.footprint;
+    const totalEntries = resultFootprint.readOnly.length + resultFootprint.readWrite.length;
     expect(totalEntries).toBeLessThanOrEqual(100);
-    expect(resultTx).toEqual(expectedTx.toXDR());
+    expect(resultTx).toEqual(expectedTx.toXdr());
   });
 
   it('should skip entries with non-U128 key types', () => {
@@ -219,14 +225,14 @@ describe('addReflectorEntries', () => {
           new xdr.LedgerKeyContractData({
             contract: Address.fromString(REFLECTOR_ORACLE_ADDRESSES[2]).toScAddress(),
             key: xdr.ScVal.scvSymbol('not_u128_' + i),
-            durability: xdr.ContractDataDurability.temporary(),
+            durability: xdr.ContractDataDurability.temporary,
           })
         )
       );
     }
 
     const textTx = appendEntriesToTx(baseTransaction, extraROEntries, []);
-    const resultTx = addReflectorEntries(textTx.toXDR());
+    const resultTx = addReflectorEntries(textTx.toXdr());
 
     const nextRoundTimestamp = currRoundTimestamp + 300_000n;
     const expectedExtraROEntries: xdr.LedgerKey[] = [
@@ -241,7 +247,7 @@ describe('addReflectorEntries', () => {
       REFLECTOR_ENTRY_RESOURCE_FEE
     );
 
-    expect(resultTx).toEqual(expectedTx.toXDR());
+    expect(resultTx).toEqual(expectedTx.toXdr());
   });
 
   it('should handle multiple reflector oracle addresses', () => {
@@ -258,7 +264,7 @@ describe('addReflectorEntries', () => {
     ];
     const textTx = appendEntriesToTx(baseTransaction, extraROEntries, []);
 
-    const resultTx = addReflectorEntries(textTx.toXDR());
+    const resultTx = addReflectorEntries(textTx.toXdr());
 
     // oracle 0 stops the round before currRoundTimestamp
     const expectedExtraROEntries: xdr.LedgerKey[] = [
@@ -274,7 +280,7 @@ describe('addReflectorEntries', () => {
       REFLECTOR_ENTRY_RESOURCE_FEE * 2n
     );
 
-    expect(resultTx).toEqual(expectedTx.toXDR());
+    expect(resultTx).toEqual(expectedTx.toXdr());
   });
 
   it('should only add entries for the most current unique oracle-index pair', () => {
@@ -296,7 +302,7 @@ describe('addReflectorEntries', () => {
     ];
     const textTx = appendEntriesToTx(baseTransaction, extraROEntries, []);
 
-    const resultTx = addReflectorEntries(textTx.toXDR());
+    const resultTx = addReflectorEntries(textTx.toXdr());
 
     const expectedExtraROEntries: xdr.LedgerKey[] = [
       ...extraROEntries,
@@ -312,6 +318,6 @@ describe('addReflectorEntries', () => {
       REFLECTOR_ENTRY_RESOURCE_FEE * 3n
     );
 
-    expect(resultTx).toEqual(expectedTx.toXDR());
+    expect(resultTx).toEqual(expectedTx.toXdr());
   });
 });

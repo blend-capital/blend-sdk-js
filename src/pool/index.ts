@@ -119,24 +119,26 @@ export class AuctionData {
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(poolId).toScAddress(),
         key: xdr.ScVal.scvVec(res),
-        durability: xdr.ContractDataDurability.temporary(),
+        durability: xdr.ContractDataDurability.temporary,
       })
     );
   }
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): AuctionData {
     if (typeof ledger_entry_data == 'string') {
-      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+      ledger_entry_data = xdr.LedgerEntryData.fromXdr(ledger_entry_data, 'base64');
     }
 
-    return AuctionData.fromScVal(ledger_entry_data.contractData().val());
+    return AuctionData.fromScVal(
+      xdr.expectUnionVariant(ledger_entry_data, 'contractData').contractData.val
+    );
   }
 
   static fromScVal(sc_val: xdr.ScVal | string): AuctionData {
     if (typeof sc_val == 'string') {
-      sc_val = xdr.ScVal.fromXDR(sc_val, 'base64');
+      sc_val = xdr.ScVal.fromXdr(sc_val, 'base64');
     }
-    const data_entry_map = sc_val.map();
+    const data_entry_map = xdr.expectUnionVariant(sc_val, 'scvMap').map;
     if (data_entry_map == undefined) {
       throw Error('UserPositions contract data value is not a map');
     }
@@ -145,30 +147,30 @@ export class AuctionData {
     let block: u32;
 
     for (const map_entry of data_entry_map) {
-      const key = decodeEntryKey(map_entry.key());
+      const key = decodeEntryKey(map_entry.key);
       switch (key) {
         case 'bid': {
           bid_map = new Map<string, i128>();
-          const bid = map_entry.val().map();
+          const bid = xdr.expectUnionVariant(map_entry.val, 'scvMap').map;
           if (bid) {
             for (const asset of bid) {
-              bid_map.set(scValToNative(asset.key()), scValToNative(asset.val()));
+              bid_map.set(scValToNative(asset.key), scValToNative(asset.val));
             }
           }
           break;
         }
         case 'lot': {
           lot_map = new Map<string, i128>();
-          const lot = map_entry.val().map();
+          const lot = xdr.expectUnionVariant(map_entry.val, 'scvMap').map;
           if (lot) {
             for (const asset of lot) {
-              lot_map.set(scValToNative(asset.key()), scValToNative(asset.val()));
+              lot_map.set(scValToNative(asset.key), scValToNative(asset.val));
             }
           }
           break;
         }
         case 'block': {
-          block = scValToNative(map_entry.val());
+          block = scValToNative(map_entry.val);
           break;
         }
         default:
@@ -198,30 +200,30 @@ export class PoolConfig {
 
   static fromScVal(sc_val: xdr.ScVal | string): PoolConfig {
     if (typeof sc_val == 'string') {
-      sc_val = xdr.ScVal.fromXDR(sc_val, 'base64');
+      sc_val = xdr.ScVal.fromXdr(sc_val, 'base64');
     }
     let backstopRate: number | undefined;
     let oracle: string | undefined;
     let status: number | undefined;
     let maxPositions: number | undefined;
     let minCollateral: i128 | undefined;
-    sc_val.map()?.map((config_entry) => {
-      const poolConfigKey = decodeEntryKey(config_entry.key());
+    xdr.expectUnionVariant(sc_val, 'scvMap').map?.map((config_entry) => {
+      const poolConfigKey = decodeEntryKey(config_entry.key);
       switch (poolConfigKey) {
         case 'bstop_rate':
-          backstopRate = Number(config_entry.val().u32().toString());
+          backstopRate = Number(xdr.expectUnionVariant(config_entry.val, 'scvU32').u32.toString());
           return;
         case 'oracle':
-          oracle = Address.fromScVal(config_entry.val()).toString();
+          oracle = Address.fromScVal(config_entry.val).toString();
           return;
         case 'status':
-          status = scValToNative(config_entry.val());
+          status = scValToNative(config_entry.val);
           return;
         case 'max_positions':
-          maxPositions = Number(config_entry.val().u32().toString());
+          maxPositions = Number(xdr.expectUnionVariant(config_entry.val, 'scvU32').u32.toString());
           return;
         case 'min_collateral':
-          minCollateral = scValToNative(config_entry.val());
+          minCollateral = scValToNative(config_entry.val);
           return;
         default:
           throw Error(`Invalid pool config key: should not contain ${poolConfigKey}`);

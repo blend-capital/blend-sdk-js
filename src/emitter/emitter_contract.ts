@@ -73,7 +73,7 @@ export class EmitterContract extends Contract {
     return this.call(
       'initialize',
       ...EmitterContract.spec.funcArgsToScVals('initialize', contractArgs)
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -85,7 +85,7 @@ export class EmitterContract extends Contract {
     return this.call(
       'distribute',
       ...EmitterContract.spec.funcArgsToScVals('distribute', {})
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -99,7 +99,7 @@ export class EmitterContract extends Contract {
     return this.call(
       'get_last_distro',
       ...EmitterContract.spec.funcArgsToScVals('get_last_distro', { backstop_id })
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -111,7 +111,7 @@ export class EmitterContract extends Contract {
     return this.call(
       'get_backstop',
       ...EmitterContract.spec.funcArgsToScVals('get_backstop', {})
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -130,7 +130,7 @@ export class EmitterContract extends Contract {
     return this.call(
       'queue_swap_backstop',
       ...EmitterContract.spec.funcArgsToScVals('queue_swap_backstop', contractArgs)
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -142,7 +142,7 @@ export class EmitterContract extends Contract {
     return this.call(
       'get_queued_swap',
       ...EmitterContract.spec.funcArgsToScVals('get_queued_swap', {})
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -157,7 +157,7 @@ export class EmitterContract extends Contract {
     return this.call(
       'cancel_swap_backstop',
       ...EmitterContract.spec.funcArgsToScVals('cancel_swap_backstop', {})
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -172,6 +172,6 @@ export class EmitterContract extends Contract {
     return this.call(
       'swap_backstop',
       ...EmitterContract.spec.funcArgsToScVals('swap_backstop', {})
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 }

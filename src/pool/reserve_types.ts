@@ -25,7 +25,7 @@ export class ReserveConfig {
     if (result.entries.length > 0) {
       return this.fromLedgerEntryData(result.entries[0].val);
     } else {
-      throw Error(`Unable to find ReserveConfig with key: ${ledger_key.toXDR('base64')}`);
+      throw Error(`Unable to find ReserveConfig with key: ${ledger_key.toXdr('base64')}`);
     }
   }
 
@@ -38,17 +38,17 @@ export class ReserveConfig {
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(poolId).toScAddress(),
         key: xdr.ScVal.scvVec(res),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
   }
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): ReserveConfig {
     if (typeof ledger_entry_data == 'string') {
-      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+      ledger_entry_data = xdr.LedgerEntryData.fromXdr(ledger_entry_data, 'base64');
     }
 
-    const as_scval = ledger_entry_data.contractData().val();
+    const as_scval = xdr.expectUnionVariant(ledger_entry_data, 'contractData').contractData.val;
     if (as_scval === undefined) {
       throw Error('ReserveConfig contract data value invalid');
     }
@@ -57,10 +57,10 @@ export class ReserveConfig {
 
   static fromScVal(scval_data: xdr.ScVal | string): ReserveConfig {
     if (typeof scval_data == 'string') {
-      scval_data = xdr.ScVal.fromXDR(scval_data, 'base64');
+      scval_data = xdr.ScVal.fromXdr(scval_data, 'base64');
     }
 
-    const data_entry_map = scval_data.map();
+    const data_entry_map = xdr.expectUnionVariant(scval_data, 'scvMap').map;
     if (data_entry_map == undefined) {
       throw Error('ReserveConfig contract data value is not a map');
     }
@@ -77,40 +77,40 @@ export class ReserveConfig {
     let r_three: number | undefined;
     let reactivity: number | undefined;
     for (const map_entry of data_entry_map) {
-      const key = decodeEntryKey(map_entry.key());
+      const key = decodeEntryKey(map_entry.key);
       switch (key) {
         case 'index':
-          index = scValToNative(map_entry.val());
+          index = scValToNative(map_entry.val);
           break;
         case 'decimals':
-          decimals = scValToNative(map_entry.val());
+          decimals = scValToNative(map_entry.val);
           break;
         case 'c_factor':
-          c_factor = scValToNative(map_entry.val());
+          c_factor = scValToNative(map_entry.val);
           break;
         case 'l_factor':
-          l_factor = scValToNative(map_entry.val());
+          l_factor = scValToNative(map_entry.val);
           break;
         case 'util':
-          util = scValToNative(map_entry.val());
+          util = scValToNative(map_entry.val);
           break;
         case 'max_util':
-          max_util = scValToNative(map_entry.val());
+          max_util = scValToNative(map_entry.val);
           break;
         case 'r_base':
-          r_base = scValToNative(map_entry.val());
+          r_base = scValToNative(map_entry.val);
           break;
         case 'r_one':
-          r_one = scValToNative(map_entry.val());
+          r_one = scValToNative(map_entry.val);
           break;
         case 'r_two':
-          r_two = scValToNative(map_entry.val());
+          r_two = scValToNative(map_entry.val);
           break;
         case 'r_three':
-          r_three = scValToNative(map_entry.val());
+          r_three = scValToNative(map_entry.val);
           break;
         case 'reactivity':
-          reactivity = scValToNative(map_entry.val());
+          reactivity = scValToNative(map_entry.val);
           break;
         default:
           throw Error(`Invalid ReserveConfig key should not contain ${key}`);
@@ -182,10 +182,10 @@ export class ReserveConfigV2 extends ReserveConfig {
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): ReserveConfigV2 {
     if (typeof ledger_entry_data == 'string') {
-      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+      ledger_entry_data = xdr.LedgerEntryData.fromXdr(ledger_entry_data, 'base64');
     }
 
-    const as_scval = ledger_entry_data.contractData().val();
+    const as_scval = xdr.expectUnionVariant(ledger_entry_data, 'contractData').contractData.val;
     if (as_scval === undefined) {
       throw Error('ReserveConfig contract data value invalid');
     }
@@ -194,9 +194,9 @@ export class ReserveConfigV2 extends ReserveConfig {
 
   static fromScVal(scval_data: xdr.ScVal | string): ReserveConfigV2 {
     if (typeof scval_data == 'string') {
-      scval_data = xdr.ScVal.fromXDR(scval_data, 'base64');
+      scval_data = xdr.ScVal.fromXdr(scval_data, 'base64');
     }
-    const data_entry_map = scval_data.map();
+    const data_entry_map = xdr.expectUnionVariant(scval_data, 'scvMap').map;
     if (data_entry_map == undefined) {
       throw Error('ReserveConfig contract data value is not a map');
     }
@@ -215,46 +215,46 @@ export class ReserveConfigV2 extends ReserveConfig {
     let supply_cap: bigint | undefined;
     let enabled: boolean | undefined;
     for (const map_entry of data_entry_map) {
-      const key = decodeEntryKey(map_entry.key());
+      const key = decodeEntryKey(map_entry.key);
       switch (key) {
         case 'index':
-          index = scValToNative(map_entry.val());
+          index = scValToNative(map_entry.val);
           break;
         case 'decimals':
-          decimals = scValToNative(map_entry.val());
+          decimals = scValToNative(map_entry.val);
           break;
         case 'c_factor':
-          c_factor = scValToNative(map_entry.val());
+          c_factor = scValToNative(map_entry.val);
           break;
         case 'l_factor':
-          l_factor = scValToNative(map_entry.val());
+          l_factor = scValToNative(map_entry.val);
           break;
         case 'util':
-          util = scValToNative(map_entry.val());
+          util = scValToNative(map_entry.val);
           break;
         case 'max_util':
-          max_util = scValToNative(map_entry.val());
+          max_util = scValToNative(map_entry.val);
           break;
         case 'r_base':
-          r_base = scValToNative(map_entry.val());
+          r_base = scValToNative(map_entry.val);
           break;
         case 'r_one':
-          r_one = scValToNative(map_entry.val());
+          r_one = scValToNative(map_entry.val);
           break;
         case 'r_two':
-          r_two = scValToNative(map_entry.val());
+          r_two = scValToNative(map_entry.val);
           break;
         case 'r_three':
-          r_three = scValToNative(map_entry.val());
+          r_three = scValToNative(map_entry.val);
           break;
         case 'reactivity':
-          reactivity = scValToNative(map_entry.val());
+          reactivity = scValToNative(map_entry.val);
           break;
         case 'supply_cap':
-          supply_cap = scValToNative(map_entry.val());
+          supply_cap = scValToNative(map_entry.val);
           break;
         case 'enabled':
-          enabled = scValToNative(map_entry.val());
+          enabled = scValToNative(map_entry.val);
           break;
         default:
           throw Error(`Invalid ReserveConfig key should not contain ${key}`);
@@ -315,7 +315,7 @@ export class ReserveData {
     if (result.entries.length > 0) {
       return this.fromLedgerEntryData(result.entries[0].val);
     } else {
-      throw Error(`Unable to find ReserveData with key: ${ledger_key.toXDR('base64')}`);
+      throw Error(`Unable to find ReserveData with key: ${ledger_key.toXdr('base64')}`);
     }
   }
 
@@ -328,17 +328,18 @@ export class ReserveData {
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(poolId).toScAddress(),
         key: xdr.ScVal.scvVec(res),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
   }
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): ReserveData {
     if (typeof ledger_entry_data == 'string') {
-      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+      ledger_entry_data = xdr.LedgerEntryData.fromXdr(ledger_entry_data, 'base64');
     }
 
-    const reserve_scval = ledger_entry_data.contractData().val();
+    const reserve_scval = xdr.expectUnionVariant(ledger_entry_data, 'contractData').contractData
+      .val;
     const reserveData = ReserveData.fromScVal(reserve_scval);
 
     return reserveData;
@@ -346,10 +347,10 @@ export class ReserveData {
 
   static fromScVal(sc_val: xdr.ScVal | string): ReserveData {
     if (typeof sc_val == 'string') {
-      sc_val = xdr.ScVal.fromXDR(sc_val, 'base64');
+      sc_val = xdr.ScVal.fromXdr(sc_val, 'base64');
     }
 
-    const data_entry_map = sc_val.map();
+    const data_entry_map = xdr.expectUnionVariant(sc_val, 'scvMap').map;
 
     if (data_entry_map == undefined) {
       throw Error('ReserveData contract data value is not a map');
@@ -363,28 +364,28 @@ export class ReserveData {
     let backstop_credit: bigint | undefined;
     let last_time: number | undefined;
     for (const map_entry of data_entry_map) {
-      const key = decodeEntryKey(map_entry.key());
+      const key = decodeEntryKey(map_entry.key);
       switch (key) {
         case 'd_rate':
-          d_rate = scValToNative(map_entry.val());
+          d_rate = scValToNative(map_entry.val);
           break;
         case 'b_rate':
-          b_rate = scValToNative(map_entry.val());
+          b_rate = scValToNative(map_entry.val);
           break;
         case 'ir_mod':
-          ir_mod = scValToNative(map_entry.val());
+          ir_mod = scValToNative(map_entry.val);
           break;
         case 'd_supply':
-          d_supply = scValToNative(map_entry.val());
+          d_supply = scValToNative(map_entry.val);
           break;
         case 'b_supply':
-          b_supply = scValToNative(map_entry.val());
+          b_supply = scValToNative(map_entry.val);
           break;
         case 'backstop_credit':
-          backstop_credit = scValToNative(map_entry.val());
+          backstop_credit = scValToNative(map_entry.val);
           break;
         case 'last_time':
-          last_time = Number(scValToNative(map_entry.val()));
+          last_time = Number(scValToNative(map_entry.val));
           break;
         default:
           throw Error(`Invalid ReserveData key should not contain ${key}`);
@@ -414,7 +415,7 @@ export class ReserveEmissionConfig extends EmissionConfig {
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(poolId).toScAddress(),
         key: xdr.ScVal.scvVec(res),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
   }
@@ -427,7 +428,7 @@ export class ReserveEmissionData extends EmissionData {
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(poolId).toScAddress(),
         key: xdr.ScVal.scvVec(res),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
   }
@@ -446,9 +447,9 @@ export class ContractReserve {
 
   static fromScVal(sc_val: xdr.ScVal | string): ContractReserve {
     if (typeof sc_val == 'string') {
-      sc_val = xdr.ScVal.fromXDR(sc_val, 'base64');
+      sc_val = xdr.ScVal.fromXdr(sc_val, 'base64');
     }
-    const data_entry_map = sc_val.map();
+    const data_entry_map = xdr.expectUnionVariant(sc_val, 'scvMap').map;
     if (data_entry_map == undefined) {
       throw Error('Reserve contract data value is not a map');
     }
@@ -457,19 +458,19 @@ export class ContractReserve {
     let data: ReserveData | undefined;
     let scalar: i128 | undefined;
     for (const map_entry of data_entry_map) {
-      const key = decodeEntryKey(map_entry.key());
+      const key = decodeEntryKey(map_entry.key);
       switch (key) {
         case 'asset':
-          asset = Address.fromScVal(map_entry.val()).toString();
+          asset = Address.fromScVal(map_entry.val).toString();
           break;
         case 'config':
-          config = ReserveConfigV2.fromScVal(map_entry.val());
+          config = ReserveConfigV2.fromScVal(map_entry.val);
           break;
         case 'data':
-          data = ReserveData.fromScVal(map_entry.val());
+          data = ReserveData.fromScVal(map_entry.val);
           break;
         case 'scalar':
-          scalar = scValToNative(map_entry.val());
+          scalar = scValToNative(map_entry.val);
           break;
         default:
           throw Error(`Invalid Reserve key: should not contain ${key}`);
@@ -487,24 +488,26 @@ export class ContractReserve {
  */
 export function getEmissionIndex(ledger_entry_data: xdr.LedgerEntryData | string): number {
   if (typeof ledger_entry_data == 'string') {
-    ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+    ledger_entry_data = xdr.LedgerEntryData.fromXdr(ledger_entry_data, 'base64');
   }
-  const ledgerEntryKey = ledger_entry_data.contractData()?.key()?.vec()?.at(1)?.u32();
+  const contractData = xdr.expectUnionVariant(ledger_entry_data, 'contractData').contractData;
+  const ledgerEntryKey = xdr.expectUnionVariant(contractData.key, 'scvVec').vec?.at(1);
   if (ledgerEntryKey == undefined) {
     throw new Error('Unable to parse emission entry token type');
   }
-  return ledgerEntryKey;
+  return xdr.expectUnionVariant(ledgerEntryKey, 'scvU32').u32;
 }
 
 export function getReserveId(ledger_entry_data: xdr.LedgerEntryData | string): string {
   if (typeof ledger_entry_data == 'string') {
-    ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+    ledger_entry_data = xdr.LedgerEntryData.fromXdr(ledger_entry_data, 'base64');
   }
-  const ledgerEntryKey = Address.fromScAddress(
-    ledger_entry_data.contractData()?.key()?.vec()?.at(1)?.address()
-  ).toString();
+  const contractData = xdr.expectUnionVariant(ledger_entry_data, 'contractData').contractData;
+  const ledgerEntryKey = xdr.expectUnionVariant(contractData.key, 'scvVec').vec?.at(1);
   if (ledgerEntryKey == undefined) {
     throw new Error('Unable to parse asset id from ledger entry data');
   }
-  return ledgerEntryKey;
+  return Address.fromScAddress(
+    xdr.expectUnionVariant(ledgerEntryKey, 'scvAddress').address
+  ).toString();
 }

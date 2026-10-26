@@ -223,8 +223,8 @@ describe('Pool Event Parsing', () => {
       const event: Api.RawEventResponse = {
         contractId: poolId,
         topic: [
-          nativeToScVal('claim', { type: 'symbol' }).toXDR('base64'),
-          nativeToScVal(from, { type: 'address' }).toXDR('base64'),
+          nativeToScVal('claim', { type: 'symbol' }).toXdr('base64'),
+          nativeToScVal(from, { type: 'address' }).toXdr('base64'),
         ],
         value: value,
         id: '1',
@@ -500,8 +500,8 @@ describe('Pool Event Parsing', () => {
       const event: Api.RawEventResponse = {
         contractId: poolId,
         topic: [
-          nativeToScVal('queue_set_reserve', { type: 'symbol' }).toXDR('base64'),
-          nativeToScVal(admin, { type: 'address' }).toXDR('base64'),
+          nativeToScVal('queue_set_reserve', { type: 'symbol' }).toXdr('base64'),
+          nativeToScVal(admin, { type: 'address' }).toXdr('base64'),
         ],
         value: value,
         id: '1',
@@ -560,8 +560,8 @@ describe('Pool Event Parsing', () => {
       const event: Api.RawEventResponse = {
         contractId: poolId,
         topic: [
-          nativeToScVal('new_liquidation_auction', { type: 'symbol' }).toXDR('base64'),
-          nativeToScVal(from, { type: 'address' }).toXDR('base64'),
+          nativeToScVal('new_liquidation_auction', { type: 'symbol' }).toXdr('base64'),
+          nativeToScVal(from, { type: 'address' }).toXdr('base64'),
         ],
         value: auctionData,
         id: '1',
@@ -596,8 +596,8 @@ describe('Pool Event Parsing', () => {
       const event: Api.RawEventResponse = {
         contractId: poolId,
         topic: [
-          nativeToScVal('new_auction', { type: 'symbol' }).toXDR('base64'),
-          nativeToScVal(auctionType, { type: 'u32' }).toXDR('base64'),
+          nativeToScVal('new_auction', { type: 'symbol' }).toXdr('base64'),
+          nativeToScVal(auctionType, { type: 'u32' }).toXdr('base64'),
         ],
         value: auctionData,
         id: '1',
@@ -632,9 +632,9 @@ describe('Pool Event Parsing', () => {
       const event: Api.RawEventResponse = {
         contractId: poolId,
         topic: [
-          nativeToScVal('fill_auction', { type: 'symbol' }).toXDR('base64'),
-          nativeToScVal(user, { type: 'address' }).toXDR('base64'),
-          nativeToScVal(auctionType, { type: 'u32' }).toXDR('base64'),
+          nativeToScVal('fill_auction', { type: 'symbol' }).toXdr('base64'),
+          nativeToScVal(user, { type: 'address' }).toXdr('base64'),
+          nativeToScVal(auctionType, { type: 'u32' }).toXdr('base64'),
         ],
         value: vecToScVal({ value: [filler, 500n], type: ['address', 'i128'] }),
         id: '1',
@@ -711,8 +711,8 @@ describe('Pool Event Parsing', () => {
       const event: Api.RawEventResponse = {
         contractId: poolId,
         topic: [
-          nativeToScVal('queue_set_reserve', { type: 'symbol' }).toXDR('base64'),
-          nativeToScVal(admin, { type: 'address' }).toXDR('base64'),
+          nativeToScVal('queue_set_reserve', { type: 'symbol' }).toXdr('base64'),
+          nativeToScVal(admin, { type: 'address' }).toXdr('base64'),
         ],
         value: value,
         id: '1',
@@ -819,12 +819,12 @@ describe('Pool Event Parsing', () => {
       const event: Api.RawEventResponse = {
         contractId: poolId,
         topic: [
-          nativeToScVal('new_auction', { type: 'symbol' }).toXDR('base64'),
-          nativeToScVal(auctionType, { type: 'u32' }).toXDR('base64'),
-          nativeToScVal(user, { type: 'address' }).toXDR('base64'),
+          nativeToScVal('new_auction', { type: 'symbol' }).toXdr('base64'),
+          nativeToScVal(auctionType, { type: 'u32' }).toXdr('base64'),
+          nativeToScVal(user, { type: 'address' }).toXdr('base64'),
         ],
         value: vecToScVal({
-          value: [percent, xdr.ScVal.fromXDR(auctionData, 'base64')],
+          value: [percent, xdr.ScVal.fromXdr(auctionData, 'base64')],
           type: ['u32', 'object'],
         }),
         id: '1',
@@ -865,12 +865,12 @@ describe('Pool Event Parsing', () => {
       const event: Api.RawEventResponse = {
         contractId: poolId,
         topic: [
-          nativeToScVal('fill_auction', { type: 'symbol' }).toXDR('base64'),
-          nativeToScVal(auctionType, { type: 'u32' }).toXDR('base64'),
-          nativeToScVal(user, { type: 'address' }).toXDR('base64'),
+          nativeToScVal('fill_auction', { type: 'symbol' }).toXdr('base64'),
+          nativeToScVal(auctionType, { type: 'u32' }).toXdr('base64'),
+          nativeToScVal(user, { type: 'address' }).toXdr('base64'),
         ],
         value: vecToScVal({
-          value: [filler, fillAmount, xdr.ScVal.fromXDR(auctionData, 'base64')],
+          value: [filler, fillAmount, xdr.ScVal.fromXdr(auctionData, 'base64')],
           type: ['address', 'i128', 'object'],
         }),
         id: '1',
@@ -932,12 +932,12 @@ describe('Pool Event Parsing', () => {
       const event: Api.RawEventResponse = {
         contractId: poolId,
         topic: [
-          nativeToScVal('flash_loan', { type: 'symbol' }).toXDR('base64'),
-          nativeToScVal(assetAddress, { type: 'address' }).toXDR('base64'),
-          nativeToScVal(fromAddress, { type: 'address' }).toXDR('base64'),
-          nativeToScVal(contractAddress, { type: 'address' }).toXDR('base64'),
+          nativeToScVal('flash_loan', { type: 'symbol' }).toXdr('base64'),
+          nativeToScVal(assetAddress, { type: 'address' }).toXdr('base64'),
+          nativeToScVal(fromAddress, { type: 'address' }).toXdr('base64'),
+          nativeToScVal(contractAddress, { type: 'address' }).toXdr('base64'),
         ],
-        value: nativeToScVal([1000n, 1010n], { type: 'i128' }).toXDR('base64'),
+        value: nativeToScVal([1000n, 1010n], { type: 'i128' }).toXdr('base64'),
         id: '1',
         transactionIndex: 1,
         operationIndex: 0,

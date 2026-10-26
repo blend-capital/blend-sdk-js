@@ -146,8 +146,8 @@ export function backstopEventV1FromEventResponse(
       // NOTE: Decode RawEventResponse to ScVals. Do not update to `rpc.Api.EventResponse`. This
       // will cause failures in the conversion functions due to the requirement that the exact same
       // `js-xdr` code is used. (the same version from two different sources does not work)
-      const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXDR(topic, 'base64'));
-      const value_scval = xdr.ScVal.fromXDR(eventResponse.value, 'base64');
+      const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXdr(topic, 'base64'));
+      const value_scval = xdr.ScVal.fromXdr(eventResponse.value, 'base64');
 
       // The first topic is the event name as a symbol
       const eventString = scValToNative(topic_scval[0]) as string;
@@ -174,7 +174,7 @@ export function backstopEventV1FromEventResponse(
           };
         }
         case BackstopEventType.RewardZone: {
-          const valueAsVec = value_scval.vec();
+          const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
           if (topic_scval.length !== 1 || valueAsVec.length !== 2) {
             return undefined;
           }
@@ -223,8 +223,8 @@ export function backstopEventV2FromEventResponse(
       // NOTE: Decode RawEventResponse to ScVals. Do not update to `rpc.Api.EventResponse`. This
       // will cause failures in the conversion functions due to the requirement that the exact same
       // `js-xdr` code is used. (the same version from two different sources does not work)
-      const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXDR(topic, 'base64'));
-      const value_scval = xdr.ScVal.fromXDR(eventResponse.value, 'base64');
+      const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXdr(topic, 'base64'));
+      const value_scval = xdr.ScVal.fromXdr(eventResponse.value, 'base64');
 
       // The first topic is the event name as a symbol
       const eventString = scValToNative(topic_scval[0]) as string;
@@ -239,7 +239,7 @@ export function backstopEventV2FromEventResponse(
       };
       switch (eventString) {
         case BackstopEventType.GulpEmissions: {
-          const valueAsVec = value_scval.vec();
+          const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
           if (topic_scval.length !== 1 && valueAsVec.length != 2) {
             return undefined;
           }
@@ -266,7 +266,7 @@ export function backstopEventV2FromEventResponse(
           };
         }
         case BackstopEventType.RewardZoneAdd: {
-          const valueAsVec = value_scval.vec();
+          const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
           if (topic_scval.length !== 1 || valueAsVec.length !== 2) {
             return undefined;
           }
@@ -281,7 +281,7 @@ export function backstopEventV2FromEventResponse(
           };
         }
         case BackstopEventType.RewardZoneRemove: {
-          const valueAsVec = value_scval.vec();
+          const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
           if (topic_scval.length !== 1) {
             return undefined;
           }
@@ -319,8 +319,8 @@ function backstopEventFromEventResponse(
     // NOTE: Decode RawEventResponse to ScVals. Do not update to `rpc.Api.EventResponse`. This
     // will cause failures in the conversion functions due to the requirement that the exact same
     // `js-xdr` code is used. (the same version from two different sources does not work)
-    const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXDR(topic, 'base64'));
-    const value_scval = xdr.ScVal.fromXDR(eventResponse.value, 'base64');
+    const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXdr(topic, 'base64'));
+    const value_scval = xdr.ScVal.fromXdr(eventResponse.value, 'base64');
 
     // The first topic is the event name as a symbol
     const eventString = scValToNative(topic_scval[0]) as string;
@@ -335,7 +335,7 @@ function backstopEventFromEventResponse(
     };
     switch (eventString) {
       case BackstopEventType.Deposit: {
-        const valueAsVec = value_scval.vec();
+        const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
         if (topic_scval.length !== 3 || valueAsVec.length !== 2) {
           return undefined;
         }
@@ -354,7 +354,7 @@ function backstopEventFromEventResponse(
         };
       }
       case BackstopEventType.QueueWithdrawal: {
-        const valueAsVec = value_scval.vec();
+        const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
         if (topic_scval.length !== 3 || valueAsVec.length !== 2) {
           return undefined;
         }
@@ -392,7 +392,7 @@ function backstopEventFromEventResponse(
         };
       }
       case BackstopEventType.Withdraw: {
-        const valueAsVec = value_scval.vec();
+        const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
         if (topic_scval.length !== 3 || valueAsVec.length !== 2) {
           return undefined;
         }
@@ -425,7 +425,7 @@ function backstopEventFromEventResponse(
         };
       }
       case BackstopEventType.Draw: {
-        const valueAsVec = value_scval.vec();
+        const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
         if (topic_scval.length !== 2 || valueAsVec.length !== 2) {
           return undefined;
         }

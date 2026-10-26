@@ -103,7 +103,7 @@ export abstract class BackstopContract extends Contract {
     return this.call(
       'deposit',
       ...BackstopContract.spec.funcArgsToScVals('deposit', contractArgs)
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -120,7 +120,7 @@ export abstract class BackstopContract extends Contract {
     return this.call(
       'queue_withdrawal',
       ...BackstopContract.spec.funcArgsToScVals('queue_withdrawal', contractArgs)
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -137,7 +137,7 @@ export abstract class BackstopContract extends Contract {
     return this.call(
       'dequeue_withdrawal',
       ...BackstopContract.spec.funcArgsToScVals('dequeue_withdrawal', contractArgs)
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -154,7 +154,7 @@ export abstract class BackstopContract extends Contract {
     return this.call(
       'withdraw',
       ...BackstopContract.spec.funcArgsToScVals('withdraw', contractArgs)
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -174,7 +174,7 @@ export abstract class BackstopContract extends Contract {
     return this.call(
       'donate',
       ...BackstopContract.spec.funcArgsToScVals('donate', contractArgs)
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -183,7 +183,7 @@ export abstract class BackstopContract extends Contract {
    * @returns A base64-encoded string representing the operation.
    */
   drop(): string {
-    return this.call('drop', ...BackstopContract.spec.funcArgsToScVals('drop', {})).toXDR('base64');
+    return this.call('drop', ...BackstopContract.spec.funcArgsToScVals('drop', {})).toXdr('base64');
   }
 
   /**
@@ -198,7 +198,7 @@ export abstract class BackstopContract extends Contract {
     return this.call(
       'user_balance',
       ...BackstopContract.spec.funcArgsToScVals('user_balance', { pool, user })
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -210,7 +210,7 @@ export abstract class BackstopContract extends Contract {
     return this.call(
       'backstop_token',
       ...BackstopContract.spec.funcArgsToScVals('backstop_token', {})
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 }
 
@@ -278,7 +278,7 @@ export class BackstopContractV1 extends BackstopContract {
     return this.call(
       'initialize',
       ...BackstopContractV1.spec.funcArgsToScVals('initialize', contractArgs)
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -290,7 +290,7 @@ export class BackstopContractV1 extends BackstopContract {
     return this.call(
       'gulp_emissions',
       ...BackstopContractV1.spec.funcArgsToScVals('gulp_emissions', {})
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -307,7 +307,7 @@ export class BackstopContractV1 extends BackstopContract {
     return this.call(
       'add_reward',
       ...BackstopContractV1.spec.funcArgsToScVals('add_reward', { to_add, to_remove })
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -319,7 +319,7 @@ export class BackstopContractV1 extends BackstopContract {
     return this.call(
       'update_tkn_val',
       ...BackstopContractV1.spec.funcArgsToScVals('update_tkn_val', {})
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -338,7 +338,7 @@ export class BackstopContractV1 extends BackstopContract {
     return this.call(
       'claim',
       ...BackstopContractV1.spec.funcArgsToScVals('claim', contractArgs)
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 }
 
@@ -379,7 +379,7 @@ export class BackstopContractV2 extends BackstopContract {
 
   static readonly parsers = {
     ...BackstopContract.parsers,
-    deploy: (result: string): string => scValToNative(xdr.ScVal.fromXDR(result, 'base64')),
+    deploy: (result: string): string => scValToNative(xdr.ScVal.fromXdr(result, 'base64')),
     poolData: (result: string): PoolBackstopDataV2 =>
       BackstopContractV2.spec.funcResToNative('pool_data', result),
     distribute: (result: string): i128 =>
@@ -406,20 +406,20 @@ export class BackstopContractV2 extends BackstopContract {
    */
   static deploy(
     deployer: string,
-    wasmHash: Buffer | string,
+    wasmHash: Uint8Array | string,
     args: BackstopConstructorArgs,
-    salt?: Buffer,
+    salt?: Uint8Array,
     format?: 'hex' | 'base64'
   ): string {
     return Operation.createCustomContract({
       address: Address.fromString(deployer),
       wasmHash:
         typeof wasmHash === 'string'
-          ? Buffer.from(wasmHash, format ?? 'hex')
-          : (wasmHash as Buffer),
+          ? xdr.Hash.fromXdr(wasmHash, format ?? 'hex').toBytes()
+          : wasmHash,
       salt,
       constructorArgs: this.spec.funcArgsToScVals('__constructor', args),
-    }).toXDR('base64');
+    }).toXdr('base64');
   }
 
   /**
@@ -431,7 +431,7 @@ export class BackstopContractV2 extends BackstopContract {
     return this.call(
       'distribute',
       ...BackstopContractV2.spec.funcArgsToScVals('distribute', {})
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -448,7 +448,7 @@ export class BackstopContractV2 extends BackstopContract {
     return this.call(
       'add_reward',
       ...BackstopContractV2.spec.funcArgsToScVals('add_reward', { to_add, to_remove })
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -464,7 +464,7 @@ export class BackstopContractV2 extends BackstopContract {
     return this.call(
       'remove_reward',
       ...BackstopContractV2.spec.funcArgsToScVals('remove_reward', { poolToRemove })
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -483,7 +483,7 @@ export class BackstopContractV2 extends BackstopContract {
     return this.call(
       'claim',
       ...BackstopContractV2.spec.funcArgsToScVals('claim', contractArgs)
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 
   /**
@@ -495,6 +495,6 @@ export class BackstopContractV2 extends BackstopContract {
     return this.call(
       'reward_zone',
       ...BackstopContractV2.spec.funcArgsToScVals('reward_zone', {})
-    ).toXDR('base64');
+    ).toXdr('base64');
   }
 }

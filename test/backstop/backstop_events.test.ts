@@ -290,7 +290,7 @@ describe('Backstop Event Parsing', () => {
       // Create an event where toRemove is null/undefined
       const event: Api.RawEventResponse = {
         contractId: backstopId,
-        topic: [nativeToScVal('rw_zone_add', { type: 'symbol' }).toXDR('base64')],
+        topic: [nativeToScVal('rw_zone_add', { type: 'symbol' }).toXdr('base64')],
         value: vecToScVal({
           value: [toAdd, xdr.ScVal.scvVoid()],
           type: ['address', null],

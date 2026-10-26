@@ -12,7 +12,7 @@ export function vecToScVal(val: { value: any; type: any }): string {
       scvals.push(nativeToScVal(val.value[i], { type: val.type[i] }));
     }
   }
-  return xdr.ScVal.scvVec(scvals).toXDR('base64');
+  return xdr.ScVal.scvVec(scvals).toXdr('base64');
 }
 
 export function auctionDataToScVal(auction: AuctionData): string {
@@ -53,7 +53,7 @@ export function auctionDataToScVal(auction: AuctionData): string {
       val: xdr.ScVal.scvMap(lotEntries),
     }),
   ]);
-  return auctionData.toXDR('base64');
+  return auctionData.toXdr('base64');
 }
 
 // Common event response setup
@@ -69,11 +69,11 @@ export function createEventResponse(
     topic: topics.map((t) =>
       Array.isArray(t.value)
         ? vecToScVal(t)
-        : nativeToScVal(t.value, { type: t.type }).toXDR('base64')
+        : nativeToScVal(t.value, { type: t.type }).toXdr('base64')
     ),
     value: Array.isArray(val.value)
       ? vecToScVal(val)
-      : nativeToScVal(val.value, { type: val.type }).toXDR('base64'),
+      : nativeToScVal(val.value, { type: val.type }).toXdr('base64'),
     id: '1',
     transactionIndex: 1,
     operationIndex: 0,

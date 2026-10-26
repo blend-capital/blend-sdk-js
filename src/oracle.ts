@@ -6,6 +6,7 @@ import {
   Networks,
   rpc,
   scValToNative,
+  SorobanDataBuilder,
   TransactionBuilder,
   xdr,
 } from '@stellar/stellar-sdk';
@@ -60,15 +61,15 @@ export async function getOraclePrice(
   const stellar_rpc = new rpc.Server(network.rpc, network.opts);
   const result = await stellar_rpc.simulateTransaction(tx_builder.build());
   if (rpc.Api.isSimulationSuccess(result)) {
-    const xdr_str = result.result?.retval.toXDR('base64');
+    const xdr_str = result.result?.retval.toXdr('base64');
     if (xdr_str) {
-      const price_result = xdr.ScVal.fromXDR(xdr_str, 'base64')?.value();
+      const price_result = xdr.ScVal.fromXdr(xdr_str, 'base64')?.value;
       if (price_result) {
         return {
           // eslint-disable-next-line
           // @ts-ignore
-          price: scValToNative(price_result[0]?.val()),
-          timestamp: Number(scValToNative(price_result[1]?.val())),
+          price: scValToNative(price_result[0]?.val),
+          timestamp: Number(scValToNative(price_result[1]?.val)),
         };
       }
     }
@@ -127,41 +128,42 @@ export async function getOracleDecimals(
 export function addReflectorEntries(txXdr: string): string {
   // network passphrase not relevant as TX XDR is returned, which
   // does not include a network passphrase.
-  const tx = TransactionBuilder.fromXDR(txXdr, Networks.PUBLIC);
+  const tx = TransactionBuilder.fromXdr(txXdr, Networks.PUBLIC);
   if (tx instanceof FeeBumpTransaction) {
-    return tx.toXDR();
+    return tx.toXdr();
   }
 
-  const sorobanData = tx.toEnvelope().v1().tx().ext().sorobanData();
-  const readEntries = sorobanData.resources().footprint().readOnly();
-  const readWriteEntries = sorobanData.resources().footprint().readWrite();
-  let bytes_read = sorobanData.resources().diskReadBytes();
+  const sorobanData = xdr.expectUnionVariant(
+    xdr.expectUnionVariant(tx.toEnvelope(), 'envelopeTypeTx').v1.tx.ext,
+    'sorobanData'
+  ).sorobanData;
+  const readEntries = sorobanData.resources.footprint.readOnly;
+  const readWriteEntries = sorobanData.resources.footprint.readWrite;
+  let bytes_read = sorobanData.resources.diskReadBytes;
   // Key: the reflector oracle contract address
   // Value: a map of index to the most recent timestamp for that index
   const mostRecentEntries: Map<string, Map<bigint, bigint>> = new Map();
   const newReadEntries = [];
   for (const entry of readEntries) {
-    switch (entry.switch()) {
-      case xdr.LedgerEntryType.contractData(): {
-        const contractData = entry.contractData();
-        const address = Address.fromScAddress(contractData.contract()).toString();
+    switch (entry.type) {
+      case 'contractData': {
+        const contractData = xdr.expectUnionVariant(entry, 'contractData').contractData;
+        const address = Address.fromScAddress(contractData.contract).toString();
 
         if (REFLECTOR_ORACLE_ADDRESSES.includes(address)) {
-          switch (contractData.key().switch()) {
-            case xdr.ScValType.scvU128(): {
-              const u128Key = contractData.key().u128();
-              const roundTimestamp = u128Key.hi().toBigInt();
-              const index = u128Key.lo().toBigInt();
-              if (
-                !mostRecentEntries.has(Address.fromScAddress(contractData.contract()).toString())
-              ) {
+          switch (contractData.key.type) {
+            case 'scvU128': {
+              const u128Key = xdr.expectUnionVariant(contractData.key, 'scvU128').u128;
+              const roundTimestamp = u128Key.hi;
+              const index = u128Key.lo;
+              if (!mostRecentEntries.has(Address.fromScAddress(contractData.contract).toString())) {
                 mostRecentEntries.set(
-                  Address.fromScAddress(contractData.contract()).toString(),
+                  Address.fromScAddress(contractData.contract).toString(),
                   new Map()
                 );
               }
               const contractEntries = mostRecentEntries.get(
-                Address.fromScAddress(contractData.contract()).toString()
+                Address.fromScAddress(contractData.contract).toString()
               );
 
               if (contractEntries.has(index)) {
@@ -192,12 +194,12 @@ export function addReflectorEntries(txXdr: string): string {
           new xdr.LedgerKeyContractData({
             contract: Address.fromString(contract).toScAddress(),
             key: xdr.ScVal.scvU128(
-              new xdr.UInt128Parts({
-                hi: xdr.Uint64.fromString(newRoundTimestamp.toString()),
-                lo: xdr.Uint64.fromString(index.toString()),
+              new xdr.Uint128Parts({
+                hi: newRoundTimestamp,
+                lo: index,
               })
             ),
-            durability: xdr.ContractDataDurability.temporary(),
+            durability: xdr.ContractDataDurability.temporary,
           })
         )
       );
@@ -208,23 +210,22 @@ export function addReflectorEntries(txXdr: string): string {
   }
 
   if (newReadEntries.length === 0) {
-    return tx.toXDR();
+    return tx.toXdr();
   }
 
-  const resourceFee = sorobanData.resourceFee().toBigInt();
+  const resourceFee = sorobanData.resourceFee;
   const baseFee = (BigInt(tx.fee) - resourceFee).toString();
   const newResourceFee = resourceFee + BigInt(newReadEntries.length) * REFLECTOR_ENTRY_RESOURCE_FEE;
-  sorobanData
-    .resources()
-    .footprint()
-    .readOnly([...readEntries, ...newReadEntries]);
-  sorobanData.resources().diskReadBytes(bytes_read);
-  sorobanData.resourceFee(xdr.Int64.fromString(newResourceFee.toString()));
+  const newSorobanData = new SorobanDataBuilder(sorobanData)
+    .setReadOnly([...readEntries, ...newReadEntries])
+    .setResources(sorobanData.resources.instructions, bytes_read, sorobanData.resources.writeBytes)
+    .setResourceFee(newResourceFee)
+    .build();
 
   return TransactionBuilder.cloneFrom(tx, {
     fee: baseFee,
-    sorobanData: sorobanData,
+    sorobanData: newSorobanData,
   })
     .build()
-    .toXDR();
+    .toXdr();
 }

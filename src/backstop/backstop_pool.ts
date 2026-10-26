@@ -92,7 +92,7 @@ export class BackstopPoolV1 extends BackstopPool {
           xdr.ScVal.scvSymbol('PoolEmis'),
           Address.fromString(poolId).toScVal(),
         ]),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
     const backstopPoolDataEntries = await stellarRpc.getLedgerEntries(
@@ -108,14 +108,18 @@ export class BackstopPoolV1 extends BackstopPool {
     let toGulpEmissions = BigInt(0);
     for (const entry of backstopPoolDataEntries.entries) {
       const ledgerData = entry.val;
-      const key = decodeEntryKey(ledgerData.contractData().key());
+      const key = decodeEntryKey(
+        xdr.expectUnionVariant(ledgerData, 'contractData').contractData.key
+      );
       switch (key) {
         case 'PoolBalance': {
           poolBalance = PoolBalance.fromLedgerEntryData(ledgerData);
           break;
         }
         case 'PoolEmis':
-          toGulpEmissions = scValToNative(ledgerData.contractData().val());
+          toGulpEmissions = scValToNative(
+            xdr.expectUnionVariant(ledgerData, 'contractData').contractData.val
+          );
           break;
         case 'BEmisCfg':
           emission_config = EmissionConfig.fromLedgerEntryData(ledgerData);
@@ -171,7 +175,7 @@ export class BackstopPoolV2 extends BackstopPool {
           xdr.ScVal.scvSymbol('PoolEmis'),
           Address.fromString(poolId).toScVal(),
         ]),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
     const backstopPoolDataEntries = await stellarRpc.getLedgerEntries(
@@ -184,7 +188,9 @@ export class BackstopPoolV2 extends BackstopPool {
     let poolBalance = new PoolBalance(BigInt(0), BigInt(0), BigInt(0));
     for (const entry of backstopPoolDataEntries.entries) {
       const ledgerData = entry.val;
-      const key = decodeEntryKey(ledgerData.contractData().key());
+      const key = decodeEntryKey(
+        xdr.expectUnionVariant(ledgerData, 'contractData').contractData.key
+      );
       switch (key) {
         case 'PoolBalance': {
           poolBalance = PoolBalance.fromLedgerEntryData(ledgerData);
@@ -218,17 +224,20 @@ export class PoolBalance {
           xdr.ScVal.scvSymbol('PoolBalance'),
           Address.fromString(poolId).toScVal(),
         ]),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
   }
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): PoolBalance {
     if (typeof ledger_entry_data == 'string') {
-      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+      ledger_entry_data = xdr.LedgerEntryData.fromXdr(ledger_entry_data, 'base64');
     }
 
-    const data_entry_map = ledger_entry_data.contractData().val().map();
+    const data_entry_map = xdr.expectUnionVariant(
+      xdr.expectUnionVariant(ledger_entry_data, 'contractData').contractData.val,
+      'scvMap'
+    ).map;
     if (data_entry_map == undefined) {
       throw Error('PoolBalance contract data value is not a map');
     }
@@ -236,16 +245,16 @@ export class PoolBalance {
     let tokens: bigint | undefined;
     let q4w: bigint | undefined;
     for (const map_entry of data_entry_map) {
-      const key = decodeEntryKey(map_entry.key());
+      const key = decodeEntryKey(map_entry.key);
       switch (key) {
         case 'shares':
-          shares = scValToNative(map_entry.val());
+          shares = scValToNative(map_entry.val);
           break;
         case 'tokens':
-          tokens = scValToNative(map_entry.val());
+          tokens = scValToNative(map_entry.val);
           break;
         case 'q4w':
-          q4w = scValToNative(map_entry.val());
+          q4w = scValToNative(map_entry.val);
           break;
         default:
           throw Error(`Invalid PoolBalance key: should not contain ${key}`);
@@ -268,7 +277,7 @@ export class BackstopEmissionConfig extends EmissionConfig {
           xdr.ScVal.scvSymbol('BEmisCfg'),
           Address.fromString(poolId).toScVal(),
         ]),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
   }
@@ -283,7 +292,7 @@ export class BackstopEmissionData extends EmissionData {
           xdr.ScVal.scvSymbol('BEmisData'),
           Address.fromString(poolId).toScVal(),
         ]),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
   }

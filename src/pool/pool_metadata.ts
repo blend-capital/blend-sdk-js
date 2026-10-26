@@ -23,14 +23,14 @@ export class PoolMetadata {
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(poolId).toScAddress(),
         key: xdr.ScVal.scvLedgerKeyContractInstance(),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
     const reserveListDataKey = xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(poolId).toScAddress(),
         key: xdr.ScVal.scvSymbol('ResList'),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
     let washHash: string | undefined;
@@ -45,27 +45,27 @@ export class PoolMetadata {
       reserveListDataKey
     );
     for (const entry of poolConfigEntries.entries ?? []) {
-      const ledgerData = entry.val.contractData();
-      const key = decodeEntryKey(ledgerData.key());
+      const ledgerData = xdr.expectUnionVariant(entry.val, 'contractData').contractData;
+      const key = decodeEntryKey(ledgerData.key);
       switch (key) {
         case 'ContractInstance': {
-          const instance = ledgerData.val().instance();
-          instance.storage()?.map((entry) => {
-            const instanceKey = decodeEntryKey(entry.key());
+          const instance = xdr.expectUnionVariant(ledgerData.val, 'scvContractInstance').instance;
+          instance.storage?.map((entry) => {
+            const instanceKey = decodeEntryKey(entry.key);
             switch (instanceKey) {
               case 'Admin':
-                admin = Address.fromScVal(entry.val()).toString();
+                admin = Address.fromScVal(entry.val).toString();
                 return;
               case 'Backstop':
-                backstop = Address.fromScVal(entry.val()).toString();
+                backstop = Address.fromScVal(entry.val).toString();
                 return;
               case 'BLNDTkn':
                 return;
               case 'Config':
-                poolConfig = PoolConfig.fromScVal(entry.val());
+                poolConfig = PoolConfig.fromScVal(entry.val);
                 return;
               case 'Name':
-                name = entry.val().str().toString();
+                name = xdr.expectUnionVariant(entry.val, 'scvString').str.toString();
                 return;
               case 'IsInit':
                 // do nothing
@@ -76,11 +76,13 @@ export class PoolMetadata {
                 );
             }
           });
-          washHash = instance.executable()?.wasmHash()?.toString('hex');
+          washHash = xdr
+            .expectUnionVariant(instance.executable, 'contractExecutableWasm')
+            .wasmHash.toString();
           break;
         }
         case 'ResList':
-          reserveList = scValToNative(ledgerData.val());
+          reserveList = scValToNative(ledgerData.val);
           break;
         default:
           throw Error(

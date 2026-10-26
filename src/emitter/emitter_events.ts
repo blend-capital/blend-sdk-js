@@ -68,8 +68,8 @@ export function emitterEventFromEventResponse(
     // NOTE: Decode RawEventResponse to ScVals. Do not update to `rpc.Api.EventResponse`. This
     // will cause failures in the conversion functions due to the requirement that the exact same
     // `js-xdr` code is used. (the same version from two different sources does not work)
-    const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXDR(topic, 'base64'));
-    const value_scval = xdr.ScVal.fromXDR(eventResponse.value, 'base64');
+    const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXdr(topic, 'base64'));
+    const value_scval = xdr.ScVal.fromXdr(eventResponse.value, 'base64');
 
     // The first topic is the event name as a symbol
     const eventString = scValToNative(topic_scval[0]) as string;
@@ -85,7 +85,7 @@ export function emitterEventFromEventResponse(
     };
     switch (eventString) {
       case EmitterEventType.Distribute: {
-        const valueAsVec = value_scval.vec();
+        const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
         if (topic_scval.length !== 1 || valueAsVec.length !== 2) {
           return undefined;
         }

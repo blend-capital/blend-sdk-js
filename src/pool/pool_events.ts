@@ -296,8 +296,8 @@ export function poolEventV1FromEventResponse(
       // NOTE: Decode RawEventResponse to ScVals. Do not update to `rpc.Api.EventResponse`. This
       // will cause failures in the conversion functions due to the requirement that the exact same
       // `js-xdr` code is used. (the same version from two different sources does not work)
-      const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXDR(topic, 'base64'));
-      const value_scval = xdr.ScVal.fromXDR(eventResponse.value, 'base64');
+      const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXdr(topic, 'base64'));
+      const value_scval = xdr.ScVal.fromXdr(eventResponse.value, 'base64');
 
       // The first topic is the event name as a symbol
       const eventString = scValToNative(topic_scval[0]) as string;
@@ -312,7 +312,7 @@ export function poolEventV1FromEventResponse(
       };
       switch (eventString) {
         case PoolEventType.UpdatePool: {
-          const valueAsVec = value_scval.vec();
+          const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
           if (topic_scval.length !== 2 || valueAsVec?.length !== 2) {
             return undefined;
           }
@@ -333,7 +333,7 @@ export function poolEventV1FromEventResponse(
           } as PoolUpdatePoolV1Event;
         }
         case PoolEventType.QueueSetReserve: {
-          const valueAsVec = value_scval.vec();
+          const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
           if (topic_scval.length !== 2 || valueAsVec?.length !== 2) {
             return undefined;
           }
@@ -393,7 +393,7 @@ export function poolEventV1FromEventResponse(
           };
         }
         case PoolEventType.FillAuction: {
-          const valueAsVec = value_scval.vec();
+          const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
           if (topic_scval.length !== 3 && valueAsVec.length == 2) {
             return undefined;
           }
@@ -449,8 +449,8 @@ export function poolEventV2FromEventResponse(
       // NOTE: Decode RawEventResponse to ScVals. Do not update to `rpc.Api.EventResponse`. This
       // will cause failures in the conversion functions due to the requirement that the exact same
       // `js-xdr` code is used. (the same version from two different sources does not work)
-      const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXDR(topic, 'base64'));
-      const value_scval = xdr.ScVal.fromXDR(eventResponse.value, 'base64');
+      const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXdr(topic, 'base64'));
+      const value_scval = xdr.ScVal.fromXdr(eventResponse.value, 'base64');
 
       // The first topic is the event name as a symbol
       const eventString = scValToNative(topic_scval[0]) as string;
@@ -464,7 +464,7 @@ export function poolEventV2FromEventResponse(
       };
       switch (eventString) {
         case PoolEventType.UpdatePool: {
-          const valueAsVec = value_scval.vec();
+          const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
           if (topic_scval.length !== 2 || valueAsVec?.length !== 3) {
             return undefined;
           }
@@ -486,7 +486,7 @@ export function poolEventV2FromEventResponse(
           } as PoolUpdatePoolV2Event;
         }
         case PoolEventType.QueueSetReserve: {
-          const valueAsVec = value_scval.vec();
+          const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
           if (topic_scval.length !== 2 || valueAsVec?.length !== 2) {
             return undefined;
           }
@@ -515,7 +515,7 @@ export function poolEventV2FromEventResponse(
         }
 
         case PoolEventType.NewAuction: {
-          const valueAsVec = value_scval.vec();
+          const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
 
           if (topic_scval.length !== 3 && valueAsVec.length !== 2) {
             return undefined;
@@ -539,7 +539,7 @@ export function poolEventV2FromEventResponse(
         }
 
         case PoolEventType.FillAuction: {
-          const valueAsVec = value_scval.vec();
+          const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
           if (topic_scval.length !== 3 && valueAsVec.length !== 3) {
             return undefined;
           }
@@ -590,7 +590,7 @@ export function poolEventV2FromEventResponse(
           };
         }
         case PoolEventType.Gulp: {
-          const valueAsVec = value_scval.vec();
+          const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
           if (topic_scval.length !== 2 || valueAsVec?.length !== 2) {
             return undefined;
           }
@@ -625,7 +625,7 @@ export function poolEventV2FromEventResponse(
           };
         }
         case PoolEventType.FlashLoan: {
-          const valueAsVec = value_scval.vec();
+          const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
           if (topic_scval.length !== 4 && valueAsVec?.length !== 2) {
             return undefined;
           }
@@ -670,8 +670,8 @@ function poolEventFromEventResponse(
     // NOTE: Decode RawEventResponse to ScVals. Do not update to `rpc.Api.EventResponse`. This
     // will cause failures in the conversion functions due to the requirement that the exact same
     // `js-xdr` code is used. (the same version from two different sources does not work)
-    const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXDR(topic, 'base64'));
-    const value_scval = xdr.ScVal.fromXDR(eventResponse.value, 'base64');
+    const topic_scval = eventResponse.topic.map((topic) => xdr.ScVal.fromXdr(topic, 'base64'));
+    const value_scval = xdr.ScVal.fromXdr(eventResponse.value, 'base64');
 
     // The first topic is the event name as a symbol
     const eventString = scValToNative(topic_scval[0]) as string;
@@ -712,7 +712,7 @@ function poolEventFromEventResponse(
         } as PoolCancelSetReserveEvent;
       }
       case PoolEventType.SetReserve: {
-        const valueAsVec = value_scval.vec();
+        const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
         if (topic_scval.length !== 1 || valueAsVec?.length !== 2) {
           return undefined;
         }
@@ -747,7 +747,7 @@ function poolEventFromEventResponse(
       }
 
       case PoolEventType.ReserveEmissionUpdate: {
-        const valueAsVec = value_scval.vec();
+        const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
         if (topic_scval.length !== 1 || valueAsVec?.length !== 3) {
           return undefined;
         }
@@ -766,12 +766,12 @@ function poolEventFromEventResponse(
         } as PoolReserveEmissionUpdateEvent;
       }
       case PoolEventType.Claim: {
-        const valueAsVec = value_scval.vec();
+        const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
         if (topic_scval.length !== 2 || valueAsVec?.length !== 2) {
           return undefined;
         }
         const from = Address.fromScVal(topic_scval[1]).toString();
-        const reserveTokenIds = valueAsVec[0].vec().map((val) => {
+        const reserveTokenIds = xdr.expectUnionVariant(valueAsVec[0], 'scvVec').vec.map((val) => {
           const as_num = Number(scValToNative(val));
           if (isNaN(as_num)) {
             throw Error('Invalid event');
@@ -790,7 +790,7 @@ function poolEventFromEventResponse(
 
       case PoolEventType.BadDebt: {
         if (topic_scval.length == 2) {
-          const valueAsVec = value_scval.vec();
+          const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
           if (valueAsVec?.length !== 2) {
             return undefined;
           }
@@ -825,7 +825,7 @@ function poolEventFromEventResponse(
       case PoolEventType.WithdrawCollateral:
       case PoolEventType.Borrow:
       case PoolEventType.Repay: {
-        const valueAsVec = value_scval.vec();
+        const valueAsVec = xdr.expectUnionVariant(value_scval, 'scvVec').vec;
         if (topic_scval.length !== 3 || valueAsVec?.length !== 2) {
           return undefined;
         }

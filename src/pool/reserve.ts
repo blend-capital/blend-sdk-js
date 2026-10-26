@@ -546,7 +546,9 @@ export class ReserveV1 extends Reserve {
     let emissionSupplyData: EmissionData | undefined;
     for (const entry of reserveLedgerEntries.entries) {
       const ledgerEntry = entry.val;
-      const key = decodeEntryKey(ledgerEntry.contractData().key());
+      const key = decodeEntryKey(
+        xdr.expectUnionVariant(ledgerEntry, 'contractData').contractData.key
+      );
       switch (key) {
         case 'ResConfig':
           reserveConfig = ReserveConfig.fromLedgerEntryData(ledgerEntry);
@@ -653,7 +655,9 @@ export class ReserveV1 extends Reserve {
 
     for (const entry of reserveLedgerEntries.entries) {
       const ledgerEntry = entry.val;
-      const key = decodeEntryKey(ledgerEntry.contractData().key());
+      const key = decodeEntryKey(
+        xdr.expectUnionVariant(ledgerEntry, 'contractData').contractData.key
+      );
       switch (key) {
         case 'ResConfig': {
           const reserveId = getReserveId(ledgerEntry);
@@ -777,7 +781,9 @@ export class ReserveV2 extends Reserve {
     let emissionSupplyData: EmissionDataV2 | undefined;
     for (const entry of reserveLedgerEntries.entries) {
       const ledgerEntry = entry.val;
-      const key = decodeEntryKey(ledgerEntry.contractData().key());
+      const key = decodeEntryKey(
+        xdr.expectUnionVariant(ledgerEntry, 'contractData').contractData.key
+      );
       switch (key) {
         case 'ResConfig':
           reserveConfig = ReserveConfigV2.fromLedgerEntryData(ledgerEntry);
@@ -865,7 +871,9 @@ export class ReserveV2 extends Reserve {
 
     for (const entry of reserveLedgerEntries.entries) {
       const ledgerEntry = entry.val;
-      const key = decodeEntryKey(ledgerEntry.contractData().key());
+      const key = decodeEntryKey(
+        xdr.expectUnionVariant(ledgerEntry, 'contractData').contractData.key
+      );
       switch (key) {
         case 'ResConfig': {
           const reserveId = getReserveId(ledgerEntry);

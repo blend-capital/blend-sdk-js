@@ -19,12 +19,12 @@ export async function simulateAndParse<T>(
     networkPassphrase: network.passphrase,
     fee: BASE_FEE,
     timebounds: { maxTime: TimeoutInfinite, minTime: 0 },
-  }).addOperation(xdr.Operation.fromXDR(operation, 'base64'));
+  }).addOperation(xdr.Operation.fromXdr(operation, 'base64'));
   const transaction = txBuilder.build();
   const simulation = await stellarRpc.simulateTransaction(transaction);
   if (rpc.Api.isSimulationSuccess(simulation) && simulation.result.retval) {
     return {
-      result: parser(simulation.result.retval.toXDR('base64')),
+      result: parser(simulation.result.retval.toXdr('base64')),
       latestLedger: simulation.latestLedger,
     };
   }
