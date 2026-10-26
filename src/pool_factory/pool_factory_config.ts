@@ -11,7 +11,7 @@ export class PoolFactoryConfig {
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(poolFactoryId).toScAddress(),
         key: xdr.ScVal.scvLedgerKeyContractInstance(),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
 
@@ -22,40 +22,39 @@ export class PoolFactoryConfig {
     const poolFactoryConfigEntries =
       (await stellarRpc.getLedgerEntries(contractInstanceKey)).entries ?? [];
     for (const entry of poolFactoryConfigEntries) {
-      const ledgerData = entry.val.contractData();
-      const key = decodeEntryKey(ledgerData.key());
+      const ledgerData = xdr.expectUnionVariant(entry.val, 'contractData').contractData;
+      const key = decodeEntryKey(ledgerData.key);
       switch (key) {
         case 'ContractInstance': {
-          ledgerData
-            .val()
-            .instance()
-            .storage()
-            ?.map((entry) => {
-              const instanceKey = decodeEntryKey(entry.key());
+          xdr
+            .expectUnionVariant(ledgerData.val, 'scvContractInstance')
+            .instance.storage?.map((entry) => {
+              const instanceKey = decodeEntryKey(entry.key);
               switch (instanceKey) {
                 case 'PoolMeta':
-                  entry
-                    .val()
-                    .map()
-                    .map((mapEntry) => {
-                      const poolMetaKey = mapEntry.key().sym().toString();
-                      switch (poolMetaKey) {
-                        case 'backstop':
-                          backstop = Address.fromScVal(mapEntry.val()).toString();
-                          break;
-                        case 'blnd_id':
-                          blndTkn = Address.fromScVal(mapEntry.val()).toString();
-                          break;
-                        case 'pool_hash':
-                          poolHash = mapEntry.val().bytes().toString('hex');
-                          break;
-                        case 'IsInit':
-                          // do nothing
-                          break;
-                        default:
-                          throw Error(`Invalid PoolMeta key: should not contain ${poolMetaKey}`);
-                      }
-                    });
+                  xdr.expectUnionVariant(entry.val, 'scvMap').map.map((mapEntry) => {
+                    const poolMetaKey = xdr
+                      .expectUnionVariant(mapEntry.key, 'scvSymbol')
+                      .sym.toString();
+                    switch (poolMetaKey) {
+                      case 'backstop':
+                        backstop = Address.fromScVal(mapEntry.val).toString();
+                        break;
+                      case 'blnd_id':
+                        blndTkn = Address.fromScVal(mapEntry.val).toString();
+                        break;
+                      case 'pool_hash':
+                        poolHash = xdr
+                          .expectUnionVariant(mapEntry.val, 'scvBytes')
+                          .bytes.toString();
+                        break;
+                      case 'IsInit':
+                        // do nothing
+                        break;
+                      default:
+                        throw Error(`Invalid PoolMeta key: should not contain ${poolMetaKey}`);
+                    }
+                  });
                   break;
                 default:
                   throw Error(

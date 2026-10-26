@@ -2,19 +2,19 @@ import { xdr } from '@stellar/stellar-sdk';
 
 export function decodeEntryKey(entryKey: xdr.ScVal): string {
   let key: string | undefined;
-  switch (entryKey.switch()) {
+  switch (entryKey.type) {
     // Key is a ScVec[ScvSym, ScVal]
-    case xdr.ScValType.scvVec():
-      key = entryKey.vec().at(0).sym().toString();
+    case 'scvVec':
+      key = xdr.expectUnionVariant(entryKey.vec.at(0), 'scvSymbol').sym.toString();
       break;
-    case xdr.ScValType.scvSymbol():
-      key = entryKey.sym().toString();
+    case 'scvSymbol':
+      key = entryKey.sym.toString();
       break;
-    case xdr.ScValType.scvLedgerKeyContractInstance():
+    case 'scvLedgerKeyContractInstance':
       key = 'ContractInstance';
       break;
     default:
-      throw Error(`Invalid ledger entry key type: should not contain type ${entryKey.switch()}`);
+      throw Error(`Invalid ledger entry key type: should not contain type ${entryKey.type}`);
   }
   return key;
 }

@@ -28,5 +28,5 @@ export function PoolFactoryDataKeyToXDR(poolFactoryDataKey?: PoolFactoryDataKey)
 export interface PoolInitMeta {
   backstop: string;
   blnd_id: string;
-  pool_hash: Buffer;
+  pool_hash: Uint8Array;
 }

@@ -1,5 +1,4 @@
 import { Horizon } from '@stellar/stellar-sdk';
-import { Buffer } from 'buffer';
 
 export * from './backstop/index.js';
 export * from './emitter/index.js';
@@ -37,10 +36,4 @@ export interface Network {
   passphrase: string;
   maxConcurrentRequests?: number;
   opts?: Horizon.Server.Options;
-}
-
-if (typeof window !== 'undefined') {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore Buffer exists
-  window.Buffer = window.Buffer || Buffer;
 }

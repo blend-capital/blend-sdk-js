@@ -34,7 +34,9 @@ export class PoolUser {
     const emissions: Map<number, PoolUserEmissionData> = new Map();
     for (const entry of ledgerEntries.entries) {
       const ledgerEntry = entry.val;
-      const key = decodeEntryKey(ledgerEntry.contractData().key());
+      const key = decodeEntryKey(
+        xdr.expectUnionVariant(ledgerEntry, 'contractData').contractData.key
+      );
       switch (key) {
         case 'Positions':
           positions = Positions.fromLedgerEntryData(ledgerEntry);

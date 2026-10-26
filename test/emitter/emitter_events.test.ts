@@ -46,14 +46,14 @@ describe('Emitter Event Parsing', () => {
       // Create a mock event with the appropriate Swap structure
       const event: Api.RawEventResponse = {
         contractId: emitterId,
-        topic: [nativeToScVal('q_swap', { type: 'symbol' }).toXDR('base64')],
+        topic: [nativeToScVal('q_swap', { type: 'symbol' }).toXdr('base64')],
         value: nativeToScVal(mockSwap, {
           type: {
             new_backstop: ['symbol', 'address'],
             new_backstop_token: ['symbol', 'address'],
             unlock_time: ['symbol', 'i128'],
           },
-        }).toXDR('base64'),
+        }).toXdr('base64'),
         id: '1',
         transactionIndex: 1,
         operationIndex: 0,
@@ -79,14 +79,14 @@ describe('Emitter Event Parsing', () => {
       // Create a mock event with the appropriate Swap structure
       const event: Api.RawEventResponse = {
         contractId: emitterId,
-        topic: [nativeToScVal('del_swap', { type: 'symbol' }).toXDR('base64')],
+        topic: [nativeToScVal('del_swap', { type: 'symbol' }).toXdr('base64')],
         value: nativeToScVal(mockSwap, {
           type: {
             new_backstop: ['symbol', 'address'],
             new_backstop_token: ['symbol', 'address'],
             unlock_time: ['symbol', 'i128'],
           },
-        }).toXDR('base64'),
+        }).toXdr('base64'),
         id: '1',
         transactionIndex: 1,
         operationIndex: 0,
@@ -112,14 +112,14 @@ describe('Emitter Event Parsing', () => {
       // Create a mock event with the appropriate Swap structure
       const event: Api.RawEventResponse = {
         contractId: emitterId,
-        topic: [nativeToScVal('swap', { type: 'symbol' }).toXDR('base64')],
+        topic: [nativeToScVal('swap', { type: 'symbol' }).toXdr('base64')],
         value: nativeToScVal(mockSwap, {
           type: {
             new_backstop: ['symbol', 'address'],
             new_backstop_token: ['symbol', 'address'],
             unlock_time: ['symbol', 'i128'],
           },
-        }).toXDR('base64'),
+        }).toXdr('base64'),
         id: '1',
         transactionIndex: 1,
         operationIndex: 0,
@@ -150,8 +150,8 @@ describe('Emitter Event Parsing', () => {
 
       const event: Api.RawEventResponse = {
         contractId: emitterId,
-        topic: [nativeToScVal('drop', { type: 'symbol' }).toXDR('base64')],
-        value: nativeToScVal(dropList).toXDR('base64'),
+        topic: [nativeToScVal('drop', { type: 'symbol' }).toXdr('base64')],
+        value: nativeToScVal(dropList).toXdr('base64'),
         id: '1',
         transactionIndex: 1,
         operationIndex: 0,

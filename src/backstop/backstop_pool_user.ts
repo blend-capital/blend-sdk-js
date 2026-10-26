@@ -40,7 +40,9 @@ export class BackstopPoolUser {
     let emissions: BackstopUserEmissions | undefined;
     for (const entry of ledgerEntries.entries) {
       const ledgerData = entry.val;
-      const key = decodeEntryKey(ledgerData.contractData().key());
+      const key = decodeEntryKey(
+        xdr.expectUnionVariant(ledgerData, 'contractData').contractData.key
+      );
       switch (key) {
         case 'UserBalance': {
           balances = UserBalance.fromLedgerEntryData(ledgerData, timestamp);

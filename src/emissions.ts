@@ -102,7 +102,9 @@ export class EmissionsV1 extends Emissions {
       let emissionData: EmissionData | undefined = undefined;
       for (const entry of entriesResponse.entries) {
         const ledgerData = entry.val;
-        const key = decodeEntryKey(ledgerData.contractData().key());
+        const key = decodeEntryKey(
+          xdr.expectUnionVariant(ledgerData, 'contractData').contractData.key
+        );
         switch (key) {
           case 'EmisConfig':
           case 'BEmisCfg':
@@ -166,7 +168,9 @@ export class EmissionsV2 extends Emissions {
       let emissionData: EmissionDataV2 | undefined = undefined;
       for (const entry of entriesResponse.entries) {
         const ledgerData = entry.val;
-        const key = decodeEntryKey(ledgerData.contractData().key());
+        const key = decodeEntryKey(
+          xdr.expectUnionVariant(ledgerData, 'contractData').contractData.key
+        );
         switch (key) {
           case 'EmisData':
           case 'BEmisData':
@@ -199,22 +203,25 @@ export class EmissionConfig {
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): EmissionConfig {
     if (typeof ledger_entry_data == 'string') {
-      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+      ledger_entry_data = xdr.LedgerEntryData.fromXdr(ledger_entry_data, 'base64');
     }
-    const data_entry_map = ledger_entry_data.contractData().val().map();
+    const data_entry_map = xdr.expectUnionVariant(
+      xdr.expectUnionVariant(ledger_entry_data, 'contractData').contractData.val,
+      'scvMap'
+    ).map;
     if (data_entry_map == undefined) {
       throw Error('EmissionConfig contract data value is not a map');
     }
     let expiration: number | undefined;
     let eps: bigint | undefined;
     for (const map_entry of data_entry_map) {
-      const key = decodeEntryKey(map_entry.key());
+      const key = decodeEntryKey(map_entry.key);
       switch (key) {
         case 'expiration':
-          expiration = Number(scValToNative(map_entry.val()));
+          expiration = Number(scValToNative(map_entry.val));
           break;
         case 'eps':
-          eps = scValToNative(map_entry.val());
+          eps = scValToNative(map_entry.val);
           break;
         default:
           throw Error(`EmissionConfig invalid key: should not contain ${key}`);
@@ -232,10 +239,13 @@ export class EmissionData {
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): EmissionData {
     if (typeof ledger_entry_data == 'string') {
-      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+      ledger_entry_data = xdr.LedgerEntryData.fromXdr(ledger_entry_data, 'base64');
     }
 
-    const data_entry_map = ledger_entry_data.contractData().val().map();
+    const data_entry_map = xdr.expectUnionVariant(
+      xdr.expectUnionVariant(ledger_entry_data, 'contractData').contractData.val,
+      'scvMap'
+    ).map;
     if (data_entry_map == undefined) {
       throw Error('EmissionData contract data value is not a map');
     }
@@ -243,13 +253,13 @@ export class EmissionData {
     let index: bigint | undefined;
     let last_time: number | undefined;
     for (const map_entry of data_entry_map) {
-      const key = decodeEntryKey(map_entry.key());
+      const key = decodeEntryKey(map_entry.key);
       switch (key) {
         case 'index':
-          index = scValToNative(map_entry.val());
+          index = scValToNative(map_entry.val);
           break;
         case 'last_time':
-          last_time = Number(scValToNative(map_entry.val()));
+          last_time = Number(scValToNative(map_entry.val));
           break;
         default:
           throw new Error(`EmissionData invalid key: should not contain ${key}`);
@@ -276,10 +286,13 @@ export class EmissionDataV2 extends EmissionData {
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): EmissionDataV2 {
     if (typeof ledger_entry_data == 'string') {
-      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+      ledger_entry_data = xdr.LedgerEntryData.fromXdr(ledger_entry_data, 'base64');
     }
 
-    const data_entry_map = ledger_entry_data.contractData().val().map();
+    const data_entry_map = xdr.expectUnionVariant(
+      xdr.expectUnionVariant(ledger_entry_data, 'contractData').contractData.val,
+      'scvMap'
+    ).map;
     if (data_entry_map == undefined) {
       throw Error('EmissionData contract data value is not a map');
     }
@@ -289,19 +302,19 @@ export class EmissionDataV2 extends EmissionData {
     let index: bigint | undefined;
     let last_time: number | undefined;
     for (const map_entry of data_entry_map) {
-      const key = decodeEntryKey(map_entry.key());
+      const key = decodeEntryKey(map_entry.key);
       switch (key) {
         case 'expiration':
-          expiration = Number(scValToNative(map_entry.val()));
+          expiration = Number(scValToNative(map_entry.val));
           break;
         case 'eps':
-          eps = scValToNative(map_entry.val());
+          eps = scValToNative(map_entry.val);
           break;
         case 'index':
-          index = scValToNative(map_entry.val());
+          index = scValToNative(map_entry.val);
           break;
         case 'last_time':
-          last_time = Number(scValToNative(map_entry.val()));
+          last_time = Number(scValToNative(map_entry.val));
           break;
         default:
           throw new Error(`EmissionData invalid key: should not contain ${key}`);
@@ -332,10 +345,10 @@ export class UserEmissions {
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): UserEmissions {
     if (typeof ledger_entry_data == 'string') {
-      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+      ledger_entry_data = xdr.LedgerEntryData.fromXdr(ledger_entry_data, 'base64');
     }
 
-    const scval = ledger_entry_data.contractData().val();
+    const scval = xdr.expectUnionVariant(ledger_entry_data, 'contractData').contractData.val;
 
     const userEmissions = UserEmissions.fromScVal(scval);
 
@@ -344,10 +357,10 @@ export class UserEmissions {
 
   static fromScVal(sc_val: xdr.ScVal | string): UserEmissions | undefined {
     if (typeof sc_val == 'string') {
-      sc_val = xdr.ScVal.fromXDR(sc_val, 'base64');
+      sc_val = xdr.ScVal.fromXdr(sc_val, 'base64');
     }
 
-    const data_entry_map = sc_val.map();
+    const data_entry_map = xdr.expectUnionVariant(sc_val, 'scvMap').map;
     if (data_entry_map == undefined) {
       throw Error('UserEmissions contract data value is not a map');
     }
@@ -355,13 +368,13 @@ export class UserEmissions {
     let accrued: bigint | undefined;
     let index: bigint | undefined;
     for (const map_entry of data_entry_map) {
-      const key = decodeEntryKey(map_entry.key());
+      const key = decodeEntryKey(map_entry.key);
       switch (key) {
         case 'accrued':
-          accrued = scValToNative(map_entry.val());
+          accrued = scValToNative(map_entry.val);
           break;
         case 'index':
-          index = scValToNative(map_entry.val());
+          index = scValToNative(map_entry.val);
           break;
         default:
           throw Error(`UserEmissions invalid key: should not contain ${key}`);

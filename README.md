@@ -31,7 +31,7 @@ const user: Address = // G... some Address
 const to_lend: bigint = // ... the amount to lend as a bigint fixed point number with the tokens decimals 
 
 const pool_contract = new PoolContract(poolId);
-const supply_op = xdr.Operation.fromXDR(
+const supply_op = xdr.Operation.fromXdr(
     pool_contract.submit({
         from: user,
         spender: user,

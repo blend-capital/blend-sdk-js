@@ -19,7 +19,7 @@ export class Positions {
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(poolId).toScAddress(),
         key: xdr.ScVal.scvVec(res),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
   }
@@ -37,7 +37,9 @@ export class Positions {
     let userPositions: Positions | undefined = undefined;
     for (const entry of positionResp.entries ?? []) {
       const ledgerData = entry.val;
-      const key = decodeEntryKey(ledgerData.contractData().key());
+      const key = decodeEntryKey(
+        xdr.expectUnionVariant(ledgerData, 'contractData').contractData.key
+      );
       switch (key) {
         case 'Positions':
           userPositions = Positions.fromLedgerEntryData(ledgerData);
@@ -54,18 +56,20 @@ export class Positions {
 
   static fromLedgerEntryData(ledger_entry_data: xdr.LedgerEntryData | string): Positions {
     if (typeof ledger_entry_data == 'string') {
-      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+      ledger_entry_data = xdr.LedgerEntryData.fromXdr(ledger_entry_data, 'base64');
     }
 
-    return Positions.fromScVal(ledger_entry_data.contractData().val());
+    return Positions.fromScVal(
+      xdr.expectUnionVariant(ledger_entry_data, 'contractData').contractData.val
+    );
   }
 
   static fromScVal(sc_val: xdr.ScVal | string): Positions {
     if (typeof sc_val == 'string') {
-      sc_val = xdr.ScVal.fromXDR(sc_val, 'base64');
+      sc_val = xdr.ScVal.fromXdr(sc_val, 'base64');
     }
 
-    const data_entry_map = sc_val.map();
+    const data_entry_map = xdr.expectUnionVariant(sc_val, 'scvMap').map;
     if (data_entry_map == undefined) {
       throw Error('UserPositions contract data value is not a map');
     }
@@ -74,34 +78,43 @@ export class Positions {
     let supply_map: Map<u32, i128> | undefined;
 
     for (const map_entry of data_entry_map) {
-      const key = decodeEntryKey(map_entry.key());
+      const key = decodeEntryKey(map_entry.key);
       switch (key) {
         case 'liabilities': {
           liability_map = new Map<u32, i128>();
-          const liabilities = map_entry.val().map();
+          const liabilities = xdr.expectUnionVariant(map_entry.val, 'scvMap').map;
           if (liabilities) {
             for (const liability of liabilities) {
-              liability_map.set(liability.key().u32(), scValToNative(liability.val()));
+              liability_map.set(
+                xdr.expectUnionVariant(liability.key, 'scvU32').u32,
+                scValToNative(liability.val)
+              );
             }
           }
           break;
         }
         case 'collateral': {
           collateral_map = new Map<u32, i128>();
-          const collaterals = map_entry.val().map();
+          const collaterals = xdr.expectUnionVariant(map_entry.val, 'scvMap').map;
           if (collaterals) {
             for (const collateral of collaterals) {
-              collateral_map.set(collateral.key().u32(), scValToNative(collateral.val()));
+              collateral_map.set(
+                xdr.expectUnionVariant(collateral.key, 'scvU32').u32,
+                scValToNative(collateral.val)
+              );
             }
           }
           break;
         }
         case 'supply': {
           supply_map = new Map<u32, i128>();
-          const supplies = map_entry.val().map();
+          const supplies = xdr.expectUnionVariant(map_entry.val, 'scvMap').map;
           if (supplies) {
             for (const supply of supplies) {
-              supply_map.set(supply.key().u32(), scValToNative(supply.val()));
+              supply_map.set(
+                xdr.expectUnionVariant(supply.key, 'scvU32').u32,
+                scValToNative(supply.val)
+              );
             }
           }
           break;
@@ -137,7 +150,7 @@ export class PoolUserEmissionData extends UserEmissions {
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(poolId).toScAddress(),
         key: xdr.ScVal.scvVec(res),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
   }
@@ -146,20 +159,14 @@ export class PoolUserEmissionData extends UserEmissions {
     ledger_entry_data: xdr.LedgerEntryData | string
   ): number {
     if (typeof ledger_entry_data == 'string') {
-      ledger_entry_data = xdr.LedgerEntryData.fromXDR(ledger_entry_data, 'base64');
+      ledger_entry_data = xdr.LedgerEntryData.fromXdr(ledger_entry_data, 'base64');
     }
-    const emission_index = ledger_entry_data
-      ?.contractData()
-      ?.key()
-      ?.vec()
-      ?.at(1)
-      ?.map()
-      ?.at(0)
-      ?.val()
-      ?.u32();
+    const contractData = xdr.expectUnionVariant(ledger_entry_data, 'contractData').contractData;
+    const keyVal = xdr.expectUnionVariant(contractData.key, 'scvVec').vec?.at(1);
+    const emission_index = keyVal && xdr.expectUnionVariant(keyVal, 'scvMap').map?.at(0)?.val;
     if (emission_index == undefined) {
       throw new Error("Invalid userEmissionData: should contain 'reserve_id'");
     }
-    return emission_index;
+    return xdr.expectUnionVariant(emission_index, 'scvU32').u32;
   }
 }

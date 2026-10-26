@@ -11,7 +11,7 @@ export class EmitterConfig {
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(emitterId).toScAddress(),
         key: xdr.ScVal.scvLedgerKeyContractInstance(),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
 
@@ -20,22 +20,20 @@ export class EmitterConfig {
     const emitterConfigEntries =
       (await stellarRpc.getLedgerEntries(contractInstanceKey)).entries ?? [];
     for (const entry of emitterConfigEntries) {
-      const ledgerData = entry.val.contractData();
-      const key = decodeEntryKey(ledgerData.key());
+      const ledgerData = xdr.expectUnionVariant(entry.val, 'contractData').contractData;
+      const key = decodeEntryKey(ledgerData.key);
       switch (key) {
         case 'ContractInstance':
-          ledgerData
-            .val()
-            .instance()
-            .storage()
-            ?.map((entry) => {
-              const instanceKey = decodeEntryKey(entry.key());
+          xdr
+            .expectUnionVariant(ledgerData.val, 'scvContractInstance')
+            .instance.storage?.map((entry) => {
+              const instanceKey = decodeEntryKey(entry.key);
               switch (instanceKey) {
                 case 'BlendId':
-                  blndTkn = Address.fromScVal(entry.val()).toString();
+                  blndTkn = Address.fromScVal(entry.val).toString();
                   return;
                 case 'Backstop':
-                  backstop = Address.fromScVal(entry.val()).toString();
+                  backstop = Address.fromScVal(entry.val).toString();
                   return;
                 case 'IsInit':
                   // do nothing

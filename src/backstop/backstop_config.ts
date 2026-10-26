@@ -19,14 +19,14 @@ export class BackstopConfig {
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(backstopId).toScAddress(),
         key: xdr.ScVal.scvLedgerKeyContractInstance(),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
     const rewardZoneDataKey = xdr.LedgerKey.contractData(
       new xdr.LedgerKeyContractData({
         contract: Address.fromString(backstopId).toScAddress(),
         key: xdr.ScVal.scvSymbol('RZ'),
-        durability: xdr.ContractDataDurability.persistent(),
+        durability: xdr.ContractDataDurability.persistent,
       })
     );
 
@@ -41,31 +41,29 @@ export class BackstopConfig {
       rewardZoneDataKey
     );
     for (const entry of backstopConfigEntries.entries) {
-      const ledgerData = entry.val.contractData();
-      const key = decodeEntryKey(ledgerData.key());
+      const ledgerData = xdr.expectUnionVariant(entry.val, 'contractData').contractData;
+      const key = decodeEntryKey(ledgerData.key);
       switch (key) {
         case 'ContractInstance':
-          ledgerData
-            .val()
-            .instance()
-            .storage()
-            ?.map((entry) => {
-              const instanceKey = decodeEntryKey(entry.key());
+          xdr
+            .expectUnionVariant(ledgerData.val, 'scvContractInstance')
+            .instance.storage?.map((entry) => {
+              const instanceKey = decodeEntryKey(entry.key);
               switch (instanceKey) {
                 case 'BLNDTkn':
-                  blndTkn = Address.fromScVal(entry.val()).toString();
+                  blndTkn = Address.fromScVal(entry.val).toString();
                   break;
                 case 'BToken':
-                  backstopTkn = Address.fromScVal(entry.val()).toString();
+                  backstopTkn = Address.fromScVal(entry.val).toString();
                   break;
                 case 'USDCTkn':
-                  usdcTkn = Address.fromScVal(entry.val()).toString();
+                  usdcTkn = Address.fromScVal(entry.val).toString();
                   break;
                 case 'PoolFact':
-                  poolFactory = Address.fromScVal(entry.val()).toString();
+                  poolFactory = Address.fromScVal(entry.val).toString();
                   break;
                 case 'Emitter':
-                  emitter = Address.fromScVal(entry.val()).toString();
+                  emitter = Address.fromScVal(entry.val).toString();
                   break;
                 case 'IsInit':
                   // do nothing
@@ -78,12 +76,9 @@ export class BackstopConfig {
             });
           break;
         case 'RZ':
-          ledgerData
-            .val()
-            .vec()
-            .map((address) => {
-              rewardZone.push(Address.fromScVal(address).toString());
-            });
+          xdr.expectUnionVariant(ledgerData.val, 'scvVec').vec.map((address) => {
+            rewardZone.push(Address.fromScVal(address).toString());
+          });
           break;
         default:
           throw Error(`Invalid backstop config key: should not contain ${key}`);
